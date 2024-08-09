@@ -105,9 +105,20 @@ function get_locker_status($locker_id, $db, $colors) {
 </div>
 
 <script>
+function convertToLocalTime(utcDateString) {
+    const utcDate = new Date(utcDateString + 'Z'); // Ensures the string is treated as UTC
+    return utcDate.toLocaleString();
+}
+
 function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems) {
     document.getElementById('lockerName').innerText = lockerName;
-    document.getElementById('lastChecked').innerText = lastChecked;
+
+    if (lastChecked !== 'Never') {
+        document.getElementById('lastChecked').innerText = convertToLocalTime(lastChecked);
+    } else {
+        document.getElementById('lastChecked').innerText = lastChecked;
+    }
+
     document.getElementById('checkedBy').innerText = checkedBy;
 
     if (missingItems.length > 0) {
@@ -125,3 +136,6 @@ function closeModal() {
 </script>
 
 <?php include 'templates/footer.php'; ?>
+
+</body>
+</html>
