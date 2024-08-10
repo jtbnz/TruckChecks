@@ -15,6 +15,9 @@ $selected_date = isset($_GET['check_date']) ? $_GET['check_date'] : null;
 $reports = [];
 
 if ($selected_date) {
+    // Convert the selected date to UTC format
+    $selected_date_utc = (new DateTime($selected_date))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d');
+
     $reports_query = $db->prepare('
         SELECT trucks.name as truck_name, lockers.name as locker_name, checks.check_date, checks.checked_by, items.name as item_name, check_items.is_present 
         FROM checks
@@ -25,31 +28,21 @@ if ($selected_date) {
         WHERE DATE(checks.check_date) = :check_date
         ORDER BY trucks.name, lockers.name, items.name
     ');
-    $reports_query->execute(['check_date' => $selected_date]);
+    $reports_query->execute(['check_date' => $selected_date_utc]);
     $reports = $reports_query->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function array_to_csv_download($array, $filename = "export.csv", $delimiter = ",") {
-    // Open raw memory as file, no need for temp files
-    $f = fopen('php://memory', 'w'); 
-
-    // Add UTF-8 BOM for Excel compatibility
+    $f = fopen('php://memory', 'w');
     fputs($f, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-    // Loop over the input array
-    foreach ($array as $line) { 
-        // Generate CSV lines from the inner arrays
-        fputcsv($f, $line, $delimiter); 
+    foreach ($array as $line) {
+        fputcsv($f, $line, $delimiter);
     }
 
-    // Rewind the "file" with the csv lines
     fseek($f, 0);
-
-    // Tell the browser it's going to be a csv file
     header('Content-Type: application/csv');
     header('Content-Disposition: attachment; filename="' . $filename . '";');
-
-    // Output all remaining data on the file pointer
     fpassthru($f);
 }
 
@@ -80,25 +73,19 @@ if (isset($_POST['download_csv']) && !empty($reports)) {
     <title>Reports</title>
     <link rel="stylesheet" href="styles/reports.css">
     <script>
-        function convertToLocalDate(utcDateString) {
-            const utcDate = new Date(utcDateString + 'Z'); // Ensures the string is treated as UTC
-            return utcDate.toLocaleDateString(); // Only the date part, in local timezone
+        function convertToLocalDateTime(utcDateString) {
+            const utcDate = new Date(utcDateString + 'Z'); // Ensure it's treated as UTC
+            return utcDate.toLocaleString(); // Converts to local date and time string
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Update dropdown options to local date
-            const dropdownOptions = document.querySelectorAll('#check_date option');
-            dropdownOptions.forEach(function(option) {
-                const utcDate = option.value;
-                if (utcDate) {
-                    option.textContent = convertToLocalDate(utcDate);
-                }
-            });
-
             // Update report timestamps to local date and time
             const timeElements = document.querySelectorAll('.utc-time');
             timeElements.forEach(function(element) {
-                element.textContent = convertToLocalDate(element.getAttribute('data-utc-time')) + ' ' + new Date(element.getAttribute('data-utc-time') + 'Z').toLocaleTimeString();
+                const utcDate = element.getAttribute('data-utc-time');
+                if (utcDate) {
+                    element.textContent = convertToLocalDateTime(utcDate);
+                }
             });
 
             // Handle expand/collapse
@@ -192,7 +179,7 @@ if (isset($_POST['download_csv']) && !empty($reports)) {
 
         <table>
             <tr>
-                <td><span class="utc-time" data-utc-time="<?= $report['check_date'] ?>"></span></td>
+                <td><span class="utc-time" data-utc-time="<?= htmlspecialchars($report['check_date']) ?>"></span></td>
                 <td><?= htmlspecialchars($report['checked_by']) ?></td>
                 <td><?= htmlspecialchars($report['item_name']) ?></td>
                 <td><?= $report['is_present'] ? 'Yes' : 'No' ?></td>
