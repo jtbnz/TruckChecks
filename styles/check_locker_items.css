@@ -111,3 +111,22 @@ footer {
         font-size: 20px;
     }
 }
+.days-since-check {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 2px solid #007bff; /* Border color */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3); /* Shadow */
+    background-color: #f8f9fa; /* Background color */
+    color: #333; /* Text color */
+    font-weight: bold;
+    text-align: center; /* Center the text within the span */
+    margin: 0 auto; /* Center the span horizontally */
+}
+
+.center-container {
+    text-align: center; /* Center the span within the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
