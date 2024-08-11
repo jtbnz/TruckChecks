@@ -47,14 +47,17 @@ Page for adding, editing, and deleting trucks in the system.
 Page for adding, editing, and deleting lockers for a selected truck.
 
 ### `maintain_locker_items.php`
-Page for adding, editing, and deleting items within a selected locker. Requires php-qrcode. Defaults to http so you may want to change this!
-```composer2 require endroid/qr-code```
+Page for adding, editing, and deleting items within a selected locker. 
 
 ### `reports.php`
 Provides reports based on previous inspections. Users can select a date and view which lockers were checked, who checked them, and any missing items.
 
 ### `qr-codes.php`
-Generates QR Codes for each locker for printing 
+Generates QR Codes for each locker for printing. Requires php-qrcode. Defaults to http so you may want to change this!
+
+```
+composer2 require endroid/qr-code
+```
 
 ### `db.php`
 Handles the database connection. Update this file with your MySQL connection details.
