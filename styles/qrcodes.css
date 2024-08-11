@@ -1,0 +1,50 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 30px;
+}
+
+.locker-grid {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.locker-item {
+    margin: 15px;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    text-align: center;
+    width: 150px;
+}
+
+.locker-item img {
+    width: 100%;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+.locker-item p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.locker-item a {
+    font-size: 12px;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.locker-item a:hover {
+    text-decoration: underline;
+}

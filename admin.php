@@ -22,6 +22,7 @@ include 'templates/header.php';
     <a href="maintain_trucks.php" class="button touch-button">Maintain Trucks</a>
     <a href="maintain_lockers.php" class="button touch-button">Maintain Lockers</a>
     <a href="maintain_locker_items.php" class="button touch-button">Maintain Locker Items</a>
+    <a href="qr-codes.php" class="button touch-button">Generate QR Codes</a>
     <a href="reports.php" class="button touch-button">Reports</a>
 </div>
 

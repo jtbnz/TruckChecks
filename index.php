@@ -1,6 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truck Checks</title>
+    <link rel="stylesheet" href="/55Check/styles/styles.css?id=V8">
+    <script>
+        // Automatically refresh the page every 30 seconds
+        setTimeout(function(){
+            window.location.reload(1);
+        }, 30000); // 30 seconds
+
+        // Function to display the last refreshed time in local browser time zone
+        function displayLastRefreshed() {
+            const now = new Date();
+            const formattedTime = now.toLocaleString(); // Local time string
+            document.getElementById('last-refreshed').textContent = 'Last refreshed at: ' + formattedTime;
+        }
+
+        // Run the function when the page loads
+        window.onload = displayLastRefreshed;
+    </script>
+</head>
+<body>
+
+
 <?php
 include 'db.php';
-include 'templates/header.php';
+//include 'templates/header.php';
 
 session_start();
 
@@ -50,8 +77,6 @@ function get_locker_status($locker_id, $db, $colors) {
     }
 }
 ?>
-
-<h1>Truck Checks</h1>
 
 <?php foreach ($trucks as $truck): ?>
     <div class="truck-listing">
@@ -135,7 +160,11 @@ function closeModal() {
 }
 </script>
 
-<?php include 'templates/footer.php'; ?>
+<!-- Footer section -->
+<footer>
+
+    <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
+</footer>
 
 </body>
 </html>
