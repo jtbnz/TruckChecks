@@ -33,9 +33,11 @@ h2, h3 {
     text-align: center;
     font-size: 18px;
     border-radius: 8px;
+    border: 2px solid #000000; /* Border color */
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 3px 3px 5px rgba(0, 0, 0, 0.3); /* Shadow */
     background-color: #f0f0f0;
     color: #333;
-    border: 2px solid transparent;
     cursor: pointer;
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
@@ -55,7 +57,7 @@ h2, h3 {
     margin: 30px auto;
     padding: 15px 30px;
     font-size: 18px;
-    background-color: #007bff;
+    background-color: #12044C;
     color: white;
     border-radius: 8px;
     border: none;
