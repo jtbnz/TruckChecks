@@ -1,66 +1,82 @@
 <?php
-include 'db.php';
-include 'templates/header.php';
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-session_start();
+include 'db.php'; // Include your database connection
 
 $db = get_db_connection();
 
-// Fetch the last 105 unique check dates
-$check_dates_query = $db->query('SELECT DISTINCT DATE(check_date) as check_date FROM checks ORDER BY check_date DESC LIMIT 105');
-$check_dates = $check_dates_query->fetchAll(PDO::FETCH_ASSOC);
+// Fetch unique check dates for the dropdown
+$dates_query = $db->query('SELECT DISTINCT DATE(check_date) as last_checked FROM checks ORDER BY check_date DESC');
+$dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
-// Handle form submission for date selection
-$selected_date = isset($_GET['check_date']) ? $_GET['check_date'] : null;
-$reports = [];
+// Handle form submission to filter by date
+$selected_date = isset($_POST['check_date']) ? $_POST['check_date'] : null;
+
+$report_data = [];
+$missing_items = [];
 
 if ($selected_date) {
-    // Convert the selected date to UTC format
-    $selected_date_utc = (new DateTime($selected_date))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d');
+    // Fetch the most recent check for each locker on the selected date
+    $report_query = $db->prepare("
+        SELECT 
+            t.name as truck_name, 
+            l.name as locker_name, 
+            i.name as item_name, 
+            ci.is_present as checked, 
+            c.check_date,
+            c.id as check_id
+        FROM checks c
+        JOIN check_items ci ON c.id = ci.check_id
+        JOIN lockers l ON c.locker_id = l.id
+        JOIN trucks t ON l.truck_id = t.id
+        JOIN items i ON ci.item_id = i.id
+        WHERE DATE(c.check_date) = :selected_date
+        AND c.check_date = (
+            SELECT MAX(inner_c.check_date) 
+            FROM checks inner_c 
+            WHERE inner_c.locker_id = c.locker_id 
+            AND DATE(inner_c.check_date) = :selected_date_inner
+        )
+        ORDER BY t.name, l.name
+    ");
+    
+    // Bind the parameter for both the main query and the subquery
+    $report_query->bindParam(':selected_date', $selected_date);
+    $report_query->bindParam(':selected_date_inner', $selected_date);
+    
+    $report_query->execute();
+    $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
 
-    $reports_query = $db->prepare('
-        SELECT trucks.name as truck_name, lockers.name as locker_name, checks.check_date, checks.checked_by, items.name as item_name, check_items.is_present 
-        FROM checks
-        INNER JOIN lockers ON checks.locker_id = lockers.id
-        INNER JOIN trucks ON lockers.truck_id = trucks.id
-        INNER JOIN check_items ON checks.id = check_items.check_id
-        INNER JOIN items ON check_items.item_id = items.id
-        WHERE DATE(checks.check_date) = :check_date
-        ORDER BY trucks.name, lockers.name, items.name
-    ');
-    $reports_query->execute(['check_date' => $selected_date_utc]);
-    $reports = $reports_query->fetchAll(PDO::FETCH_ASSOC);
+    // Identify missing items for the selected date
+    foreach ($report_data as $entry) {
+        if (!$entry['checked']) {
+            $missing_items[] = $entry;
+        }
+    }
 }
 
-function array_to_csv_download($array, $filename = "export.csv", $delimiter = ",") {
-    $f = fopen('php://memory', 'w');
-    fputs($f, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
-
-    foreach ($array as $line) {
-        fputcsv($f, $line, $delimiter);
+function countItemsChecked($truck_name, $report_data) {
+    $count = 0;
+    foreach ($report_data as $entry) {
+        if ($entry['truck_name'] === $truck_name) {
+            $count++;
+        }
     }
-
-    fseek($f, 0);
-    header('Content-Type: application/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '";');
-    fpassthru($f);
+    return $count;
 }
 
-if (isset($_POST['download_csv']) && !empty($reports)) {
-    $csv_data = [["Truck", "Locker", "Check Date", "Checked By", "Item", "Present"]];
-    
-    foreach ($reports as $report) {
-        $csv_data[] = [
-            $report['truck_name'],
-            $report['locker_name'],
-            $report['check_date'],
-            $report['checked_by'],
-            $report['item_name'],
-            $report['is_present'] ? 'Yes' : 'No'
-        ];
+// Handle CSV export
+if (isset($_POST['export_csv'])) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment;filename=report_' . $selected_date . '.csv');
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date']);
+    foreach ($report_data as $row) {
+        fputcsv($output, $row);
     }
-    
-    array_to_csv_download($csv_data, "report_{$selected_date}.csv");
+    fclose($output);
     exit;
 }
 ?>
@@ -70,134 +86,95 @@ if (isset($_POST['download_csv']) && !empty($reports)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports</title>
-    <link rel="stylesheet" href="styles/reports.css">
-    <script>
-        function convertToLocalDateTime(utcDateString) {
-            const utcDate = new Date(utcDateString + 'Z'); // Ensure it's treated as UTC
-            return utcDate.toLocaleString(); // Converts to local date and time string
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Update report timestamps to local date and time
-            const timeElements = document.querySelectorAll('.utc-time');
-            timeElements.forEach(function(element) {
-                const utcDate = element.getAttribute('data-utc-time');
-                if (utcDate) {
-                    element.textContent = convertToLocalDateTime(utcDate);
-                }
-            });
-
-            // Handle expand/collapse
-            const truckHeaders = document.querySelectorAll('.truck-header');
-            truckHeaders.forEach(function(header) {
-                header.addEventListener('click', function() {
-                    const truckSection = header.nextElementSibling;
-                    truckSection.classList.toggle('hidden');
-                });
-            });
-
-            const lockerHeaders = document.querySelectorAll('.locker-header');
-            lockerHeaders.forEach(function(header) {
-                header.addEventListener('click', function() {
-                    const lockerSection = header.nextElementSibling;
-                    lockerSection.classList.toggle('hidden');
-                });
-            });
-        });
-    </script>
-    <style>
-        .hidden {
-            display: none;
-        }
-        .truck-header, .locker-header {
-            cursor: pointer;
-            font-weight: bold;
-            padding: 10px;
-            background-color: #f1f1f1;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-        }
-        .truck-section, .locker-section {
-            padding-left: 20px;
-            margin-bottom: 10px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+    <title>Locker Check Reports</title>
+    <link rel="stylesheet" href="styles/reports.css"> <!-- Link to your CSS -->
 </head>
 <body>
 
-<h1>Reports</h1>
+<h1>Locker Check Reports</h1>
 
-<form method="GET">
-    <label for="check_date">Select a Check Date:</label>
-    <select name="check_date" id="check_date" onchange="this.form.submit()">
-        <option value="">-- Select Date --</option>
-        <?php foreach ($check_dates as $date): ?>
-            <option value="<?= $date['check_date'] ?>" <?= $selected_date == $date['check_date'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($date['check_date']) ?>
+<!-- Dropdown form to select a check date -->
+<form method="post" action="">
+    <label for="check_date">Select Check Date:</label>
+    <select name="check_date" id="check_date" required>
+        <option value="">-- Select a Date --</option>
+        <?php foreach ($dates as $date): ?>
+            <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars($date['last_checked']) ?>
             </option>
         <?php endforeach; ?>
     </select>
+    <button type="submit">View Report</button>
+    <?php if ($selected_date): ?>
+        <button type="submit" name="export_csv">Export as CSV</button>
+    <?php endif; ?>
 </form>
 
-<?php if ($selected_date && !empty($reports)): ?>
-    <h2>Report for <?= htmlspecialchars($selected_date) ?></h2>
-    <?php 
-    $current_truck = '';
-    $current_locker = '';
-    ?>
-    <?php foreach ($reports as $report): ?>
-        <?php if ($current_truck !== $report['truck_name']): ?>
-            <?php if ($current_truck !== ''): ?>
-                </div> <!-- Close previous truck section -->
-            <?php endif; ?>
-            <div class="truck-header"><?= htmlspecialchars($report['truck_name']) ?></div>
-            <div class="truck-section hidden">
-            <?php $current_truck = $report['truck_name']; ?>
-        <?php endif; ?>
-
-        <?php if ($current_locker !== $report['locker_name']): ?>
-            <?php if ($current_locker !== ''): ?>
-                </div> <!-- Close previous locker section -->
-            <?php endif; ?>
-            <div class="locker-header"><?= htmlspecialchars($report['locker_name']) ?></div>
-            <div class="locker-section hidden">
-            <?php $current_locker = $report['locker_name']; ?>
-        <?php endif; ?>
-
-        <table>
-            <tr>
-                <td><span class="utc-time" data-utc-time="<?= htmlspecialchars($report['check_date']) ?>"></span></td>
-                <td><?= htmlspecialchars($report['checked_by']) ?></td>
-                <td><?= htmlspecialchars($report['item_name']) ?></td>
-                <td><?= $report['is_present'] ? 'Yes' : 'No' ?></td>
-            </tr>
-        </table>
-    <?php endforeach; ?>
-    </div> <!-- Close last locker section -->
-    </div> <!-- Close last truck section -->
-
-    <form method="POST" style="text-align: center; margin-top: 20px;">
-        <input type="hidden" name="download_csv" value="1">
-        <button type="submit" class="button touch-button">Download as CSV</button>
-    </form>
-<?php elseif ($selected_date): ?>
-    <p>No checks found for this date.</p>
+<!-- Missing items section -->
+<?php if ($selected_date && !empty($missing_items)): ?>
+    <div class="missing-items">
+        <h2>Missing Items for <?= htmlspecialchars($selected_date) ?></h2>
+        <ul>
+            <?php foreach ($missing_items as $item): ?>
+                <li>
+                    <strong><?= htmlspecialchars($item['item_name']) ?></strong> 
+                    in Locker <strong><?= htmlspecialchars($item['locker_name']) ?></strong> 
+                    on Truck <strong><?= htmlspecialchars($item['truck_name']) ?></strong>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
 <?php endif; ?>
 
-<?php include 'templates/footer.php'; ?>
+<!-- Report data -->
+<?php if ($selected_date && !empty($report_data)): ?>
+    <div class="report">
+        <?php
+        $current_truck = null;
+        foreach ($report_data as $entry):
+            if ($current_truck !== $entry['truck_name']):
+                if ($current_truck !== null):
+                    echo '</div>'; // Close previous truck section
+                endif;
+                $current_truck = $entry['truck_name'];
+                $total_checked_items = countItemsChecked($current_truck, $report_data); // Calculate total checked items
+        ?>
+            <div class="truck-section">
+                <h2 class="truck-name" onclick="toggleVisibility('truck-<?= md5($current_truck) ?>')">
+                    <?= htmlspecialchars($current_truck) ?> (Total Items Checked: <?= $total_checked_items ?>)
+                </h2>
+                <div id="truck-<?= md5($current_truck) ?>" class="locker-section" style="display: none;">
+        <?php
+            endif;
+        ?>
+                    <div class="locker-item">
+                        <p><strong>Locker:</strong> <?= htmlspecialchars($entry['locker_name']) ?></p>
+                        <p><strong>Item:</strong> <?= htmlspecialchars($entry['item_name']) ?></p>
+                        <p><strong>Checked:</strong> <?= $entry['checked'] ? 'Yes' : 'No' ?></p>
+                        <p><strong>Check Date:</strong> <?= htmlspecialchars($entry['check_date']) ?></p>
+                    </div>
+        <?php
+        endforeach;
+        if ($current_truck !== null):
+            echo '</div>'; // Close last truck section
+        endif;
+        ?>
+    </div>
+<?php elseif ($selected_date): ?>
+    <p>No report data available for the selected date.</p>
+<?php endif; ?>
 
+<!-- JavaScript to handle expand/collapse functionality -->
+<script>
+    function toggleVisibility(id) {
+        const element = document.getElementById(id);
+        if (element.style.display === 'none') {
+            element.style.display = 'block';
+        } else {
+            element.style.display = 'none';
+        }
+    }
+</script>
+<?php include 'templates/footer.php'; ?>
 </body>
 </html>

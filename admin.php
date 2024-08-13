@@ -24,6 +24,7 @@ include 'templates/header.php';
     <a href="maintain_locker_items.php" class="button touch-button">Maintain Locker Items</a>
     <a href="qr-codes.php" class="button touch-button">Generate QR Codes</a>
     <a href="reports.php" class="button touch-button">Reports</a>
+    <a href="backups.php" class="button touch-button">Generate a downloadable backup of the SQL DB</a>
 </div>
 
 <?php include 'templates/footer.php'; ?>
