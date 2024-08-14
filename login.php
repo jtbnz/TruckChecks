@@ -6,7 +6,7 @@ session_start();
 
 // Check if the user is already logged in
 if (isset($_COOKIE['logged_in']) && $_COOKIE['logged_in'] == 'true') {
-    header('Location: protected_page.php');
+    header('Location: admin.php');
     exit;
 }
 
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         setcookie('logged_in', 'true', time() + (90 * 24 * 60 * 60), "/");
 
         // Redirect to a protected page
-        header('Location: protected_page.php');
+        header('Location: admin.php');
         exit;
     } else {
         $error = "Incorrect password.";
@@ -38,5 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <input type="password" name="password" id="password" required>
         <input type="submit" value="Login">
     </form>
+    <?php include 'templates/footer.php'; ?>    
 </body>
 </html>

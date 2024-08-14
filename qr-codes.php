@@ -29,7 +29,7 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 
 <?php
 
-  $locker_url = 'http://' . $_SERVER['HTTP_HOST'] . '/index.php';
+  $locker_url = 'https://' . $_SERVER['HTTP_HOST'] . '/index.php';
 
                 // Generate the QR code
                 $result = Builder::create()
@@ -68,7 +68,7 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
             <?php foreach ($lockers as $locker): ?>
                 <?php
                 // Generate the URL with both truck_id and locker_id as parameters
-                $locker_url = 'http://' . $_SERVER['HTTP_HOST'] . '/check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
+                $locker_url = 'https://' . $_SERVER['HTTP_HOST'] . '/check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
 
                 // Generate the QR code
                 $result = Builder::create()

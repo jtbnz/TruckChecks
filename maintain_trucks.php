@@ -1,4 +1,14 @@
 <?php
+// Include password file
+include('password.php');
+// Start the session
+session_start();
+
+// Check if the user is logged in
+if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+    header('Location: login.php');
+    exit;
+}
 include 'db.php';
 include 'templates/header.php';
 
@@ -41,5 +51,10 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
         </li>
     <?php endforeach; ?>
 </ul>
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Admin Page</a>
+
+</div>
 
 <?php include 'templates/footer.php'; ?>

@@ -52,11 +52,8 @@ Page for adding, editing, and deleting items within a selected locker.
 ### `reports.php`
 Provides reports based on previous inspections. Users can select a date and view which lockers were checked, who checked them, and any missing items.
 
-### `backups.php`
-Create a zip file of the mysql dump and download it.
-
 ### `qr-codes.php`
-Generates QR Codes for each locker for printing. Requires php-qrcode. Defaults to http so you may want to change this!
+Generates QR Codes for each locker for printing. Requires php-qrcode. 
 
 ```
 composer2 require endroid/qr-code

@@ -1,0 +1,28 @@
+services:
+  web:
+    build: .
+    container_name: apache_php
+    volumes:
+      - ./www:/var/www/html
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: tpassword
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: tuser
+      MYSQL_PASSWORD: tpassword
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./setup.sql:/docker-entrypoint-initdb.d/setup.sql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf # Mount custom my.cnf
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:

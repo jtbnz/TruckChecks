@@ -1,4 +1,14 @@
 <?php
+// Include password file
+include('password.php');
+// Start the session
+session_start();
+
+// Check if the user is logged in
+if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+    header('Location: login.php');
+    exit;
+}
 include 'db.php';
 include 'templates/header.php';
 
@@ -82,7 +92,7 @@ if ($selected_truck_id) {
                     <input type="hidden" name="locker_id" value="<?= $locker['id'] ?>">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="text" name="locker_name" value="<?= htmlspecialchars($locker['name']) ?>" required>
-                    <textarea name="locker_notes"><?= htmlspecialchars($locker['notes']) ?></textarea>
+                    <textarea name="locker_notes"><?= htmlspecialchars($locker['notes'] ?? '') ?></textarea>
                     <button type="submit">Edit</button>
                 </form>
                 <a href="?delete_locker_id=<?= $locker['id'] ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this locker?');">Delete</a>
@@ -92,5 +102,11 @@ if ($selected_truck_id) {
 <?php else: ?>
     <p>Please select a truck to manage its lockers.</p>
 <?php endif; ?>
+
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Admin Page</a>
+
+</div>
 
 <?php include 'templates/footer.php'; ?>

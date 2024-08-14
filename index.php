@@ -1,3 +1,8 @@
+<?php
+session_start();
+include 'db.php';
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,10 +31,10 @@
 
 
 <?php
-include 'db.php';
+;
 //include 'templates/header.php';
 
-session_start();
+
 
 // Default colors
 $colors = [
@@ -115,7 +120,11 @@ function get_locker_status($locker_id, $db, $colors) {
 
 <!-- Admin Button -->
 <div style="text-align: center; margin-top: 40px;">
-    <a href="admin.php" class="button touch-button">Admin</a>
+    <a href="login.php" class="button touch-button">Admin</a>
+
+<!-- Reports Button -->
+
+    <a href="reports.php" class="button touch-button">Reports</a>
 </div>
 
 <!-- Modal -->
@@ -130,16 +139,13 @@ function get_locker_status($locker_id, $db, $colors) {
 </div>
 
 <script>
-function convertToLocalTime(utcDateString) {
-    const utcDate = new Date(utcDateString + 'Z'); // Ensures the string is treated as UTC
-    return utcDate.toLocaleString();
-}
+
 
 function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems) {
     document.getElementById('lockerName').innerText = lockerName;
 
     if (lastChecked !== 'Never') {
-        document.getElementById('lastChecked').innerText = convertToLocalTime(lastChecked);
+        document.getElementById('lastChecked').innerText = lastChecked;
     } else {
         document.getElementById('lastChecked').innerText = lastChecked;
     }

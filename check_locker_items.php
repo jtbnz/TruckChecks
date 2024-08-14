@@ -1,8 +1,9 @@
 <?php
+session_start();
 include 'db.php';
 include 'templates/header.php';
 
-session_start();
+
 
 $db = get_db_connection();
 
@@ -13,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     $checked_items = isset($_POST['checked_items']) ? $_POST['checked_items'] : [];
 
     // Insert a new check record
-    $check_query = $db->prepare('INSERT INTO checks (locker_id, check_date, checked_by) VALUES (:locker_id, NOW(), :checked_by)');
+    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by) VALUES (:locker_id, CONVERT_TZ(NOW(),'UTC', 'Pacific/Auckland'), :checked_by)");
     $check_query->execute([
         'locker_id' => $locker_id,
         'checked_by' => $checked_by
@@ -70,11 +71,23 @@ if ($selected_truck_id) {
 
         if ($last_check) {
             $last_check_date = new DateTime($last_check['check_date']);
+            date_default_timezone_set('Pacific/Auckland');
             $today = new DateTime();
-            $days_since_last_check = $today->diff($last_check_date)->days;
+            $current_datetime2 = date('Y-m-d H:i:s');
+           
+            $interval = $today->diff($last_check_date);
+            $days_since_last_check = $interval->days;
+           
+            // Check if there is a time difference, and round up if there is any non-zero time difference
+            if ($interval->h > 0 || $interval->i > 0 || $interval->s > 0) {
+                $days_since_last_check += 1;
+            }
+
+
 
             if ($days_since_last_check == 0) {
                 $days_since_last_check_text = "Locker has been checked today by " . htmlspecialchars($last_check['checked_by']);
+                $last_check_text = "";
             } else {
                 $days_since_last_check_text = "Days since last check: " . $days_since_last_check  ;
                 $last_check_text = " (" . htmlspecialchars($last_check['checked_by']) . ")";

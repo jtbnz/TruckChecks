@@ -1,4 +1,14 @@
 <?php
+// Include password file
+include('password.php');
+// Start the session
+session_start();
+
+// Check if the user is logged in
+if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+    header('Location: login.php');
+    exit;
+}
 include 'db.php';
 include 'templates/header.php';
 
@@ -84,7 +94,7 @@ if ($selected_truck_id) {
                 <option value="">-- Select Locker --</option>
                 <?php foreach ($lockers as $locker): ?>
                     <option value="<?= $locker['id'] ?>" <?= $selected_locker_id == $locker['id'] ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($locker['name']) ?>
+                        <?= htmlspecialchars($locker['name'] ?? '') ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -121,4 +131,8 @@ if ($selected_truck_id) {
     <p>Please select a truck to manage its lockers and items.</p>
 <?php endif; ?>
 
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Admin Page</a>
+
+</div>
 <?php include 'templates/footer.php'; ?>
