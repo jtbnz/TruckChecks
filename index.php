@@ -121,9 +121,7 @@ function get_locker_status($locker_id, $db, $colors) {
 <!-- Admin Button -->
 <div style="text-align: center; margin-top: 40px;">
     <a href="login.php" class="button touch-button">Admin</a>
-
-<!-- Reports Button -->
-
+    <a href="settings.php" class="button touch-button">Settings</a> 
     <a href="reports.php" class="button touch-button">Reports</a>
 </div>
 
