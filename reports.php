@@ -20,6 +20,15 @@ $missing_items = [];
 if ($selected_date) {
     // Fetch the most recent check for each locker on the selected date
     $report_query = $db->prepare("
+
+        WITH LatestChecks AS (
+            SELECT 
+                locker_id, 
+                MAX(id) AS latest_check_id
+            FROM checks
+            WHERE DATE(check_date) = :selected_date
+            GROUP BY locker_id
+        )
         SELECT 
             t.name as truck_name, 
             l.name as locker_name, 
@@ -29,23 +38,15 @@ if ($selected_date) {
             c.checked_by,
             c.id as check_id
         FROM checks c
+        JOIN LatestChecks lc ON c.id = lc.latest_check_id
         JOIN check_items ci ON c.id = ci.check_id
         JOIN lockers l ON c.locker_id = l.id
         JOIN trucks t ON l.truck_id = t.id
         JOIN items i ON ci.item_id = i.id
-        WHERE DATE(c.check_date) = :selected_date
-        AND c.check_date = (
-            SELECT MAX(inner_c.check_date) 
-            FROM checks inner_c 
-            WHERE inner_c.locker_id = c.locker_id 
-            AND DATE(inner_c.check_date) = :selected_date_inner
-        )
-        ORDER BY t.name, l.name
+        ORDER BY t.name, l.name;
     ");
     
-    // Bind the parameter for both the main query and the subquery
-    $report_query->bindParam(':selected_date', $selected_date);
-    $report_query->bindParam(':selected_date_inner', $selected_date);
+
     
     $report_query->execute();
     $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
