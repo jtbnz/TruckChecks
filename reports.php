@@ -157,16 +157,17 @@ if (isset($_POST['export_csv'])) {
         ?>
                 <div class="locker-subsection">
                     <h3 class="locker-name" onclick="toggleVisibility('locker-<?= $locker_id ?>')">
-                        Locker: <?= htmlspecialchars($current_locker) ?> (Checked By: <?= htmlspecialchars($entry['checked_by']) ?>)
+                        Locker: <?= htmlspecialchars($current_locker) ?> (Checked By: <?= htmlspecialchars($entry['checked_by']) ?> <?= htmlspecialchars($entry['check_date']) ?>)
                     </h3>
                     <div id="locker-<?= $locker_id ?>" class="items-section" style="display: none;">
         <?php
             endif;
         ?>
                         <div class="locker-item">
-                            <p><strong>Item:</strong> <?= htmlspecialchars($entry['item_name']) ?></p>
-                            <p><strong>Checked:</strong> <?= $entry['checked'] ? 'Yes' : 'No' ?></p>
-                            <p><strong>Check Date:</strong> <?= htmlspecialchars($entry['check_date']) ?></p>
+                                <table ><TR>
+                                <td > <?= htmlspecialchars($entry['item_name']) ?> </td>
+                                <td> <?= $entry['checked'] ? 'Yes' : 'No' ?></td>
+                            </tr></table>
                         </div>
         <?php
         endforeach;
