@@ -1,7 +1,11 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+session_start();
+// Check if the user is logged in
+
+if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+    header('Location: login.php');
+    exit;
+}
 
 include 'db.php'; // Include the database connection file
 $db   = 'dbname';

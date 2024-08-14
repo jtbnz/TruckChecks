@@ -26,6 +26,7 @@ if ($selected_date) {
             i.name as item_name, 
             ci.is_present as checked, 
             c.check_date,
+            c.checked_by,
             c.id as check_id
         FROM checks c
         JOIN check_items ci ON c.id = ci.check_id
@@ -72,15 +73,13 @@ if (isset($_POST['export_csv'])) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment;filename=report_' . $selected_date . '.csv');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date']);
+    fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date', 'Checked By']);
     foreach ($report_data as $row) {
         fputcsv($output, $row);
     }
     fclose($output);
     exit;
-}
-?>
-
+}?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,38 +130,57 @@ if (isset($_POST['export_csv'])) {
     <div class="report">
         <?php
         $current_truck = null;
+        $current_locker = null;
         foreach ($report_data as $entry):
             if ($current_truck !== $entry['truck_name']):
                 if ($current_truck !== null):
-                    echo '</div>'; // Close previous truck section
+                    echo '</div> <!-- Close previous truck section -->'; // Close previous truck section
                 endif;
                 $current_truck = $entry['truck_name'];
                 $total_checked_items = countItemsChecked($current_truck, $report_data); // Calculate total checked items
+                $truck_id = md5($current_truck); // Generate a unique ID for the truck
         ?>
             <div class="truck-section">
-                <h2 class="truck-name" onclick="toggleVisibility('truck-<?= md5($current_truck) ?>')">
+                <h2 class="truck-name" >
                     <?= htmlspecialchars($current_truck) ?> (Total Items Checked: <?= $total_checked_items ?>)
-                </h2>
-                <div id="truck-<?= md5($current_truck) ?>" class="locker-section" style="display: none;">
+                </h2></div>
+            <div id="truck-<?= $truck_id ?>" class="locker-section" style="display: block;">
+        <?php
+            endif;
+
+            if ($current_locker !== $entry['locker_name']):
+                if ($current_locker !== null):
+                    echo '</div></div><!-- Close previous locker section -->'; // Close previous locker section
+                endif;
+                $current_locker = $entry['locker_name'];
+                $locker_id = md5($current_truck . $current_locker); // Generate a unique ID for the locker
+        ?>
+                <div class="locker-subsection">
+                    <h3 class="locker-name" onclick="toggleVisibility('locker-<?= $locker_id ?>')">
+                        Locker: <?= htmlspecialchars($current_locker) ?> (Checked By: <?= htmlspecialchars($entry['checked_by']) ?>)
+                    </h3>
+                    <div id="locker-<?= $locker_id ?>" class="items-section" style="display: none;">
         <?php
             endif;
         ?>
-                    <div class="locker-item">
-                        <p><strong>Locker:</strong> <?= htmlspecialchars($entry['locker_name']) ?></p>
-                        <p><strong>Item:</strong> <?= htmlspecialchars($entry['item_name']) ?></p>
-                        <p><strong>Checked:</strong> <?= $entry['checked'] ? 'Yes' : 'No' ?></p>
-                        <p><strong>Check Date:</strong> <?= htmlspecialchars($entry['check_date']) ?></p>
-                    </div>
+                        <div class="locker-item">
+                            <p><strong>Item:</strong> <?= htmlspecialchars($entry['item_name']) ?></p>
+                            <p><strong>Checked:</strong> <?= $entry['checked'] ? 'Yes' : 'No' ?></p>
+                            <p><strong>Check Date:</strong> <?= htmlspecialchars($entry['check_date']) ?></p>
+                        </div>
         <?php
         endforeach;
+        if ($current_locker !== null):
+            echo '</div> <!-- Close last locker section -->'; // Close last locker section
+        endif;
         if ($current_truck !== null):
-            echo '</div>'; // Close last truck section
+            echo '</div> <!-- Close last truck section -->'; // Close last truck section
         endif;
         ?>
     </div>
-<?php elseif ($selected_date): ?>
-    <p>No report data available for the selected date.</p>
+
 <?php endif; ?>
+
 
 <!-- JavaScript to handle expand/collapse functionality -->
 <script>
