@@ -54,7 +54,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
                     <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p>
                 </div>
 
-?>
+
 
 <?php foreach ($trucks as $truck): ?>
     <h2><?= htmlspecialchars($truck['name']) ?></h2>
