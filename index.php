@@ -3,7 +3,8 @@ session_start();
 include 'db.php';
 
 // Read the version number from the version.txt file
-$version = file_get_contents('version.txt');
+$version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
 ?>
 
 <!DOCTYPE html>
@@ -173,7 +174,7 @@ function closeModal() {
     <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
-        
+
     </div>   
 </footer>
 
