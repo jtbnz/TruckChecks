@@ -7,7 +7,7 @@ session_start();
 if (isset($_SESSION['is_demo'])) {
     
     if($_SESSION['is_demo'] === true) {
-        echo "<h1>Demo Mode</h2>: ";
+        echo "<h1>Demo Mode</h2> ";
     } else{
         echo "<!--Not in Demo Mode-->";}
     }

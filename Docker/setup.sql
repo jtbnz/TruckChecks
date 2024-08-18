@@ -56,6 +56,10 @@ CREATE TABLE `email_addresses` (
   `email` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ;
+
+ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`;
+
+
 -- Insert sample data into `trucks` table
 INSERT INTO `trucks` (`name`) VALUES 
 ('Truck 1'),
