@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backup Database</title>
-    <link rel="stylesheet" href="styles/styles.css"> <!-- Link to your stylesheet if any -->
+    <link rel="stylesheet" href="styles/styles.css?id=V7"> <!-- Link to your stylesheet if any -->
 </head>
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
