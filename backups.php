@@ -14,6 +14,8 @@ $pass = 'dbpassword';
 
 // Paths and filenames
 $backup_dir = 'backups';
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Only run the backup creation when the form is submitted

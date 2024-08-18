@@ -10,6 +10,8 @@ include 'db.php'; // Adjust to your database connection script
 
 $db = get_db_connection();
 
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+
 // Fetch all trucks and lockers
 $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 

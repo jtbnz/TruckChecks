@@ -24,7 +24,7 @@ include 'templates/header.php';
 
 
 $pdo = get_db_connection();
-
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 
 // Fetch the latest check date
@@ -111,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $updateEmailStmt->execute([$updatedEmail, $emailId]);
     }
 }
+
 ?>
 
 <!DOCTYPE html>

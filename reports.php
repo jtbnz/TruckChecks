@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 include 'db.php'; // Include your database connection
 
 $db = get_db_connection();
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 // Fetch unique check dates for the dropdown
 $dates_query = $db->query('SELECT DISTINCT DATE(check_date) as last_checked FROM checks ORDER BY check_date DESC');
