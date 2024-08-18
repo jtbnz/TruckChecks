@@ -1,11 +1,11 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL); */
 
 include('password.php');
 
-session_start();
+// session_start();
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -72,7 +72,7 @@ $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 // Prepare email content
 $emailContent = "Latest Missing Items Report\n\n";
 foreach ($checks as $check) {
-    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}\n";
+    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}\n\n";
 }
 
 echo "Message to send: " . $emailContent ;
@@ -147,5 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         ?>
     </ul>
+    <?php include 'templates/footer.php'; ?>
 </body>
 </html>

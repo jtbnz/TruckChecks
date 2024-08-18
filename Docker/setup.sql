@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS `checks`;
 DROP TABLE IF EXISTS `items`;
 DROP TABLE IF EXISTS `lockers`;
 DROP TABLE IF EXISTS `trucks`;
-DROP TABLE IF EXISTS 'email_addresses'
+DROP TABLE IF EXISTS `email_addresses`;
 -- Create the `trucks` table
 CREATE TABLE `trucks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,6 +49,13 @@ CREATE TABLE `check_items` (
     FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
 );
 
+
+
+CREATE TABLE `email_addresses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `email` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ;
 -- Insert sample data into `trucks` table
 INSERT INTO `trucks` (`name`) VALUES 
 ('Truck 1'),
@@ -111,3 +118,6 @@ INSERT INTO `check_items` (`check_id`, `item_id`, `is_present`) VALUES
 (1, 3, false),  -- Item 3 missing in this check
 (2, 4, true),
 (2, 5, true);
+
+
+	
