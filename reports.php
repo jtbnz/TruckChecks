@@ -47,6 +47,8 @@ if ($selected_date) {
     ");
     
 
+    $report_query->bindParam(':selected_date', $selected_date);
+
     
     $report_query->execute();
     $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);

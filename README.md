@@ -14,8 +14,10 @@ This is a web-based application for managing and tracking the inspection of truc
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/truck-checks.git
-    cd truck-checks
+    mkdir checks
+    cd checks
+    git clone https://github.com/jtbnz/TruckChecks.git .
+    
     ```
 
 2. **Set up the MySQL database**:
