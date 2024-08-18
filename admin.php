@@ -8,6 +8,8 @@ if (isset($_SESSION['is_demo'])) {
     
     if($_SESSION['is_demo'] === true) {
         echo "<h1>Demo Mode</h2> ";
+        echo "<h2>Demo mode adds the background stripes and the word DEMO in the middle of the screen</h2>";
+        echo "there is also the Delete Demo Checks Data button which will reset the checks but not the locker changes";
     } else{
         echo "<!--Not in Demo Mode-->";}
     }
