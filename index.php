@@ -13,7 +13,7 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truck Checks</title>
-    <link rel="stylesheet" href="/55Check/styles/styles.css?id=V13">
+    <link rel="stylesheet" href="styles/styles.css?id=V14">
     <script>
         // Automatically refresh the page every 30 seconds
         setTimeout(function(){
