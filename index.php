@@ -66,7 +66,7 @@ function get_locker_status($locker_id, $db, $colors) {
     }
 
     // Check if the locker was checked in the last 7 days
-    $recent_check = (new DateTime())->diff(new DateTime($check['check_date']))->days < 7;
+    $recent_check = (new DateTime())->diff(new DateTime($check['check_date']))->days < 6;
 
     // Fetch missing items from the last check
     $query = $db->prepare('SELECT items.name FROM check_items INNER JOIN items ON check_items.item_id = items.id WHERE check_items.check_id = :check_id AND check_items.is_present = 0');

@@ -1,10 +1,12 @@
+--USE Database `db`
+
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS `check_items`;
 DROP TABLE IF EXISTS `checks`;
 DROP TABLE IF EXISTS `items`;
 DROP TABLE IF EXISTS `lockers`;
 DROP TABLE IF EXISTS `trucks`;
-
+DROP TABLE IF EXISTS 'email_addresses'
 -- Create the `trucks` table
 CREATE TABLE `trucks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

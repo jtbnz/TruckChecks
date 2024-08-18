@@ -1,5 +1,8 @@
 
 <?php
+session_start();
+
+$_SESSION['is_demo'] = false;
 function get_db_connection() {
     $host = 'localhost';
     $db   = 'database_name';
