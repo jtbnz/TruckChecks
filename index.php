@@ -173,6 +173,7 @@ function closeModal() {
     <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
+        
     </div>   
 </footer>
 
