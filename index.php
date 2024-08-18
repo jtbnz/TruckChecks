@@ -1,6 +1,9 @@
 <?php
 session_start();
 include 'db.php';
+
+// Read the version number from the version.txt file
+$version = file_get_contents('version.txt');
 ?>
 
 <!DOCTYPE html>
@@ -9,7 +12,7 @@ include 'db.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truck Checks</title>
-    <link rel="stylesheet" href="/55Check/styles/styles.css?id=V12">
+    <link rel="stylesheet" href="/55Check/styles/styles.css?id=V13">
     <script>
         // Automatically refresh the page every 30 seconds
         setTimeout(function(){
@@ -168,6 +171,9 @@ function closeModal() {
 <footer>
 
     <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
+    <div class="version-number">
+        Version: <?php echo htmlspecialchars($version); ?>
+    </div>   
 </footer>
 
 </body>
