@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 // Include the database connection
 include 'db.php';
 $db = get_db_connection();
+include 'templates/header.php';
 
 // Check if the session variable 'is_demo' is set and true
 $showButton = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
