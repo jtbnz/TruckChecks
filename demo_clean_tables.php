@@ -82,6 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
         document.getElementById('popup').style.display = 'none';
     }
 </script>
-
+<?php include 'templates/footer.php'; ?>
 </body>
 </html>
