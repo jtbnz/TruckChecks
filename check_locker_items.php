@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     $checked_items = isset($_POST['checked_items']) ? $_POST['checked_items'] : [];
 
     // Insert a new check record
-    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id, CONVERT_TZ(NOW(),'UTC', 'Pacific/Auckland'), :checked_by, 0 )");
+    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id, CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
     $check_query->execute([
         'locker_id' => $locker_id,
         'checked_by' => $checked_by
