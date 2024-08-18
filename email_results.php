@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <title>Manage Email Addresses</title>
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
     <h2>Email Addresses</h2>
     <form method="post">
         <label for="email">Add Email:</label>

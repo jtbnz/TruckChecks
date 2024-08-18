@@ -31,7 +31,7 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
         window.onload = displayLastRefreshed;
     </script>
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
 
 <?php

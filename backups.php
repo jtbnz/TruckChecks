@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Backup Database</title>
     <link rel="stylesheet" href="styles/styles.css"> <!-- Link to your stylesheet if any -->
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Backup Database</h1>
 

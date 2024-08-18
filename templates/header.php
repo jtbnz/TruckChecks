@@ -3,6 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Truck Checklist</title>
-    <link rel="stylesheet" href="styles/styles.css?id=V5">
+    <link rel="stylesheet" href="styles/styles.css?id=V6">
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">

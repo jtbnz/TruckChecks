@@ -91,7 +91,7 @@ if (isset($_POST['export_csv'])) {
     <title>Locker Check Reports</title>
     <link rel="stylesheet" href="styles/reports.css?id=V5"> <!-- Link to your CSS -->
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Locker Check Reports</h1>
 

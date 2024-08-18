@@ -23,7 +23,7 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
     <title>Locker QR Codes</title>
     <link rel="stylesheet" href="styles/qrcodes.css"> <!-- Optional: Add your CSS file for styling -->
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Locker QR Codes</h1>
 
