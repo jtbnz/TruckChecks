@@ -86,7 +86,7 @@ function get_locker_status($locker_id, $db, $colors) {
 <?php foreach ($trucks as $truck): ?>
     <div class="truck-listing">
         <a href="check_locker_items.php?truck_id=<?= $truck['id'] ?>" class="truck-button">
-            <?= htmlspecialchars($truck['name']) ?> - Check Locker
+            <?= htmlspecialchars($truck['name']) ?> - Locker Checks
         </a>
 
         <?php
