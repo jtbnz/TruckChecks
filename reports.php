@@ -89,7 +89,7 @@ if (isset($_POST['export_csv'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Locker Check Reports</title>
-    <link rel="stylesheet" href="styles/reports.css"> <!-- Link to your CSS -->
+    <link rel="stylesheet" href="styles/reports.css?id=V5"> <!-- Link to your CSS -->
 </head>
 <body>
 
