@@ -276,7 +276,7 @@ body.demo-mode {
 body.demo-mode::before {
     content: "DEMO";
     position: fixed; /* Fixed position so it stays in place while scrolling */
-    font-size: 40pt;
+    font-size: 60pt;
     color: rgba(211, 211, 211, 0.3); /* Light grey */
     top: 50%;
     left: 50%;

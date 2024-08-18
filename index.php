@@ -13,7 +13,7 @@ $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Truck Checks</title>
-    <link rel="stylesheet" href="styles/styles.css?id=V15">
+    <link rel="stylesheet" href="styles/styles.css?id=V16">
     <script>
         // Automatically refresh the page every 30 seconds
         setTimeout(function(){
