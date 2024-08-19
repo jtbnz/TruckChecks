@@ -327,10 +327,10 @@ body.demo-mode::after {
 
 .add-locker-form {
     display: flex;
-    align-items: left;
+    align-items: center;
     width: 100%;
     max-width: 800px; /* Adjust this max-width as needed */
-    margin: 0 auto; /* Center the form on the page */
+    margin: 0; /* Align form to the left */
 }
 
 .input-container {
