@@ -35,6 +35,9 @@ include 'templates/header.php';
     <a href="maintain_trucks.php" class="button touch-button">Maintain Trucks</a>
     <a href="maintain_lockers.php" class="button touch-button">Maintain Lockers</a>
     <a href="maintain_locker_items.php" class="button touch-button">Maintain Locker Items</a>
+    <a href="reset_locker_checks.php" class="button touch-button">Reset Locker Checks</a> 
+</div>
+<div class="button-container" style="margin-top: 20px;">
     <a href="qr-codes.php" class="button touch-button">Generate QR Codes</a>
     <a href="backups.php" class="button touch-button">Download a backup</a>
     <a href="email_results.php" class="button touch-button">Email the last check missing items</a>
