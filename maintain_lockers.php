@@ -74,27 +74,36 @@ if ($selected_truck_id) {
 
 <?php if ($selected_truck_id): ?>
     <h2>Add or Edit Locker</h2>
-    <form method="POST">
+    <form method="POST" class="add-truck-form">
+    <div class="input-container">
         <input type="hidden" name="locker_id" value="<?= isset($locker['id']) ? $locker['id'] : '' ?>">
         <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
+        
         <label for="locker_name">Locker Name:</label>
         <input type="text" name="locker_name" id="locker_name" required value="<?= isset($locker['name']) ? htmlspecialchars($locker['name']) : '' ?>">
-        <label for="locker_notes">Locker Notes:</label>
+                <label for="locker_notes">Locker Notes:</label>
         <textarea name="locker_notes" id="locker_notes"><?= isset($locker['notes']) ? htmlspecialchars($locker['notes']) : '' ?></textarea>
-        <button type="submit"><?= isset($locker['id']) ? 'Update Locker' : 'Add Locker' ?></button>
+    </div>
+    <div class="button-container">
+        <button class="button touch-button" type="submit"><?= isset($locker['id']) ? 'Update Locker' : 'Add Locker' ?></button>
+    </div>
     </form>
 
     <h2>Existing Lockers</h2>
     <ul>
         <?php foreach ($lockers as $locker): ?>
             <li>
-                <form method="POST" style="display:inline;">
+            <div class="input-container">
+                <form method="POST" style="display:inline;" class="add-truck-form">
                     <input type="hidden" name="locker_id" value="<?= $locker['id'] ?>">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="text" name="locker_name" value="<?= htmlspecialchars($locker['name']) ?>" required>
                     <textarea name="locker_notes"><?= htmlspecialchars($locker['notes'] ?? '') ?></textarea>
+            </div>
+            <div class="button-container">
                     <button type="submit">Edit</button>
                 </form>
+            </div>
                 <a href="?delete_locker_id=<?= $locker['id'] ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this locker?');">Delete</a>
             </li>
         <?php endforeach; ?>
