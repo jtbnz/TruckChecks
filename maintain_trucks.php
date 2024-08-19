@@ -37,9 +37,13 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 <h1>Maintain Trucks</h1>
 
 <h2>Add New Truck</h2>
-<form method="POST">
-    <input type="text" name="truck_name" placeholder="Truck Name" required>
-    <button type="submit" name="add_truck">Add Truck</button>
+<form method="POST" class="add-truck-form">
+    <div class="input-container">
+        <input type="text" name="truck_name" placeholder="Truck Name" required>
+    </div>
+    <div class="button-container">
+        <button type="submit" name="add_truck" class="button touch-button">Add Truck</button>
+    </div>
 </form>
 
 <h2>Existing Trucks</h2>

@@ -317,3 +317,24 @@ body.demo-mode::after {
     z-index: -1;
 }
 
+.add-truck-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 800px; /* Adjust this max-width as needed */
+    margin: 0 auto; /* Center the form on the page */
+}
+
+.input-container {
+    width: 50%; /* Set the width of the input field to 50% */
+}
+
+.input-container input {
+    width: 100%; /* Ensure the input takes up the full width of its container */
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* Ensures padding is included in the width */
+}
