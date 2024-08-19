@@ -132,3 +132,11 @@ footer {
     justify-content: center;
     align-items: center;
 }
+
+
+.version-number {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #888;
+}

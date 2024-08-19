@@ -119,3 +119,11 @@ body.demo-mode::after {
     background-size: 100px 100px;
     z-index: -1;
 }
+
+
+.version-number {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+    color: #888;
+}
