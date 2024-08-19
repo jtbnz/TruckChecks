@@ -43,6 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     if (!empty($item_name) && !empty($item_id)) {
         $query = $db->prepare('UPDATE items SET name = :name WHERE id = :id');
         $query->execute(['name' => $item_name, 'id' => $item_id]);
+        $query_string = "UPDATE items SET name = '$item_name' AND id = $item_id";
+        echo "<!-- Executed Query: $query_string -->";
     }
 }
 
