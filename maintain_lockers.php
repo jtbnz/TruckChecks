@@ -93,8 +93,9 @@ if ($selected_truck_id) {
     <ul>
         <?php foreach ($lockers as $locker): ?>
             <li>
-            <div class="input-container">
+
                 <form method="POST" class="add-truck-form">
+                <div class="input-container">
                     <input type="hidden" name="locker_id" value="<?= $locker['id'] ?>">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="text" name="locker_name" value="<?= htmlspecialchars($locker['name']) ?>" required>
@@ -102,8 +103,9 @@ if ($selected_truck_id) {
             </div>
             <div class="button-container">
                     <button class="button touch-button" type="submit">Edit</button>
+                    </div>
                 </form>
-            </div>
+
                 <a href="?delete_locker_id=<?= $locker['id'] ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this locker?');">Delete</a>
             </li>
         <?php endforeach; ?>
