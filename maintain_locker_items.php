@@ -102,21 +102,30 @@ if ($selected_truck_id) {
 
         <?php if ($selected_locker_id): ?>
             <h2>Add Item to <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h2>
-            <form method="POST">
+            <form method="POST"  class="add-locker-form">
+            <div class="input-container">                
                 <input type="text" name="item_name" placeholder="Item Name" required>
                 <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
-                <button type="submit" name="add_item">Add Item</button>
+            </div>
+            <div class="button-container">
+                <button class="button touch-button" type="submit" name="add_item">Add Item</button>
+            </div>                
             </form>
+
 
             <h2>Existing Items</h2>
             <ul>
                 <?php foreach ($items as $item): ?>
                     <li>
-                        <form method="POST" style="display:inline;">
+                    <form method="POST" class="add-locker-form">
+                    <div class="input-container">
                             <input type="text" name="item_name" value="<?= htmlspecialchars($item['name']) ?>" required>
                             <input type="hidden" name="item_id" value="<?= $item['id'] ?>">
-                            <button type="submit" name="edit_item">Edit</button>
-                        </form>
+                    </div>
+                    <div class="button-container">
+                        <button class="button touch-button" type="submit">Edit</button>
+                    </div>
+                    </form>
                         <a href="?delete_item_id=<?= $item['id'] ?>&locker_id=<?= $selected_locker_id ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
                     </li>
                 <?php endforeach; ?>
