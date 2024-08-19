@@ -39,8 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <h3>You can either choose to ignore all checks performed within the last 6 days, or reset this status.</h3>
     
     <form method="POST" action="">
+    <div class="button-container" style="margin-top: 20px;">
         <button type="submit" name="ignore_recent_checks" class="button">Ignore Recent Checks</button>
         <button type="submit" name="reset_ignore_recent_checks" class="button">Reset Ignore Recent Checks</button>
+        </div>
     </form>
     
     <?php if (!empty($message)): ?>
