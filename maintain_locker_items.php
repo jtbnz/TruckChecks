@@ -40,10 +40,10 @@ if (isset($_GET['delete_item_id'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     $item_name = $_POST['item_name'];
     $item_id = $_POST['item_id'];
-    echo "<!-- ------------------------------------------ -->";
-    echo "<!-- item_name: $item_name, item_id: $item_id -->";
-    echo "<!-- ------------------------------------------ -->";
-    
+    echo " <br>------------------------------------------ ";
+    echo "<br> item_name: $item_name, item_id: $item_id ";
+    echo "<br>------------------------------------------ ";
+
     if (!empty($item_name) && !empty($item_id)) {
         $query = $db->prepare('UPDATE items SET name = :name WHERE id = :id');
         $query->execute(['name' => $item_name, 'id' => $item_id]);
