@@ -74,7 +74,7 @@ if ($selected_truck_id) {
 
 <?php if ($selected_truck_id): ?>
     <h2>Add or Edit Locker</h2>
-    <form method="POST" class="add-truck-form">
+    <form method="POST" class="add-locker-form">
     <div class="input-container">
         <input type="hidden" name="locker_id" value="<?= isset($locker['id']) ? $locker['id'] : '' ?>">
         <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
@@ -94,7 +94,7 @@ if ($selected_truck_id) {
         <?php foreach ($lockers as $locker): ?>
             <li>
 
-                <form method="POST" class="add-truck-form">
+                <form method="POST" class="add-locker-form">
                 <div class="input-container">
                     <input type="hidden" name="locker_id" value="<?= $locker['id'] ?>">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">

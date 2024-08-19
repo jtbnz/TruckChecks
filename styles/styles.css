@@ -325,6 +325,14 @@ body.demo-mode::after {
     margin: 0 auto; /* Center the form on the page */
 }
 
+.add-locker-form {
+    display: flex;
+    align-items: left;
+    width: 100%;
+    max-width: 800px; /* Adjust this max-width as needed */
+    margin: 0 auto; /* Center the form on the page */
+}
+
 .input-container {
     width: 50%; /* Set the width of the input field to 50% */
 }
