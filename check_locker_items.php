@@ -121,6 +121,7 @@ if ($selected_truck_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Check Locker Items</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles/check_locker_items.css?id=V4">
     <script>
         document.addEventListener('DOMContentLoaded', function() {
