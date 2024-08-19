@@ -40,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     <form method="POST" action="">
     <div class="button-container" style="margin-top: 20px;">
-        <button type="submit" name="ignore_recent_checks" class="button">Ignore Recent Checks</button>
-        <button type="submit" name="reset_ignore_recent_checks" class="button">Reset Ignore Recent Checks</button>
+        <button type="submit" name="ignore_recent_checks" class="button touch-button">Ignore Recent Checks</button>
+        <button type="submit" name="reset_ignore_recent_checks" class="button touch-button">Reset Ignore Recent Checks</button>
         </div>
     </form>
     
