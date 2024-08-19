@@ -320,7 +320,6 @@ body.demo-mode::after {
 .add-truck-form {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     width: 100%;
     max-width: 800px; /* Adjust this max-width as needed */
     margin: 0 auto; /* Center the form on the page */
