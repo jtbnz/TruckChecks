@@ -34,7 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
     <h1>Reset Locker Checks</h1>
-    <p>This page allows you to manage the status of recent locker checks. You can either choose to ignore all checks performed within the last 6 days, or reset this status.</p>
+    <h2>This page allows you to ignore recent checks so that the main page will show all lockers as red.</h2>
+    <h2>This can be useful if locker checks have been completed during the week</h2>
+    <h3>You can either choose to ignore all checks performed within the last 6 days, or reset this status.</h3>
     
     <form method="POST" action="">
         <button type="submit" name="ignore_recent_checks" class="button">Ignore Recent Checks</button>
