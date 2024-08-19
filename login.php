@@ -1,8 +1,9 @@
 <?php
 include('password.php');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Start the session
-session_start();
 
 // Check if the user is already logged in
 if (isset($_COOKIE['logged_in']) && $_COOKIE['logged_in'] == 'true') {

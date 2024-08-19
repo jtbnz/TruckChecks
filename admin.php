@@ -1,8 +1,7 @@
 <?php
-// Include password file
+
+include 'templates/header.php';
 include('password.php');
-// Start the session
-session_start();
 
 if (isset($_SESSION['is_demo'])) {
     
@@ -24,7 +23,7 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
 
 $showButton = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
-include 'templates/header.php';
+
 ?>
 
 <h1>Admin Page</h1>

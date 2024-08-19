@@ -5,7 +5,7 @@ error_reporting(E_ALL); */
 
 include('password.php');
 
-// session_start();
+
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -17,8 +17,6 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     exit;
 }
 include 'db.php';
-
-
 include 'templates/header.php';
 
 

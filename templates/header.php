@@ -7,12 +7,24 @@
     <link rel="stylesheet" href="styles/styles.css?id=V24">
 </head>
 <? $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true; ?>
-<?
-// Get the latest Git tag version
-$version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+<?php
 
-// Set the session variable
-$_SESSION['version'] = $version;
+// Check if session has not already been started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if the version session variable is not set
+if (!isset($_SESSION['version'])) {
+    // Get the latest Git tag version
+    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
+    // Set the session variable
+    $_SESSION['version'] = $version;
+} else {
+    // Use the already set session variable
+    $version = $_SESSION['version'];
+}
 ?>
 
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">

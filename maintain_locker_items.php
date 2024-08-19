@@ -1,16 +1,18 @@
 <?php
-// Include password file
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 include('password.php');
-// Start the session
-session_start();
+include 'db.php';
+include 'templates/header.php';
 
 // Check if the user is logged in
 if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     header('Location: login.php');
     exit;
 }
-include 'db.php';
-include 'templates/header.php';
+
 
 $db = get_db_connection();
 

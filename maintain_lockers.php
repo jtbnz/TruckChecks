@@ -1,16 +1,20 @@
 <?php
 // Include password file
 include('password.php');
-// Start the session
-session_start();
+include 'db.php';
+include 'templates/header.php';
+
+// Check if session has not already been started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Check if the user is logged in
 if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     header('Location: login.php');
     exit;
 }
-include 'db.php';
-include 'templates/header.php';
+
 
 $db = get_db_connection();
 

@@ -2,8 +2,17 @@
 
 
 // Include the database connection
+include 'password.php';
 include 'db.php';
 include 'templates/header.php';
+
+
+// Check if the user is logged in
+if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+    header('Location: login.php');
+    exit;
+}
+
 
 $db = get_db_connection();
 

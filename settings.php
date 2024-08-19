@@ -1,6 +1,7 @@
 <?php
 
-session_start();
+
+include 'templates/header.php';
 
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -8,7 +9,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 
-include 'templates/header.php';
 ?>
 
 <h1>Settings</h1>
