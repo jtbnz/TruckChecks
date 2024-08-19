@@ -51,7 +51,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
         ```
         
 4. **Configure local files**:
-- **db.php**: update with your username,password,database name
+- **db.php**: update with your username,password,database name - This also has the demo toggle field
 - **password.php**: update with your admin password
 - **backups.php**: update with your username,password,database name
 
