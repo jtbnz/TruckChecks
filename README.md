@@ -49,8 +49,13 @@ Truck Checks is a web application designed to manage and monitor the inventory o
         ```
         composer2 require endroid/qr-code
         ```
+4. **Configure local files**:
+    `db.php` update with your username,password,database name
+    `password.php` update with your admin password
+    `backups.php` update with your username,password,database name
 
-4. **Run the application**:
+
+5. **Run the application**:
     - Point your web server to the `index.php` file or use Docker to run the application.
 
 ## Usage
