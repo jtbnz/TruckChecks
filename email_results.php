@@ -39,6 +39,7 @@ $checksQuery = "WITH LatestChecks AS (
                     FROM checks
                     WHERE check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
                     GROUP BY locker_id
+                    -- ?
                 )
                 SELECT 
                     t.name as truck_name, 
@@ -59,6 +60,27 @@ $checksQuery = "WITH LatestChecks AS (
                 
 $checksStmt = $pdo->prepare($checksQuery);
 $checksStmt->execute([$latestCheckDate]);
+
+//debug why no rows returned
+$errorInfo = $stmt->errorInfo();
+if ($errorInfo[0] != '00000') {
+    // An error occurred, display error details
+    echo "SQLSTATE error code: " . $errorInfo[0] . "<br>";
+    echo "Driver-specific error code: " . $errorInfo[1] . "<br>";
+    echo "Driver-specific error message: " . $errorInfo[2] . "<br>";
+} else {
+    // No errors, check if data is being returned
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (empty($results)) {
+        echo "No data returned by the query.";
+    } else {
+        echo "Data retrieved successfully.";
+        print_r($results);
+    }
+}
+
+// end debug can be removed
+
 $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch email addresses
