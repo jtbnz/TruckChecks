@@ -168,6 +168,22 @@ if ($selected_truck_id) {
                 card.classList.add('checked');
             }
         }
+
+        function split_long_words($text, $max_length = 9) {
+            // Split the text into words
+            $words = explode(' ', $text);
+
+            // Iterate through each word and split if it's longer than max_length
+            foreach ($words as &$word) {
+                if (strlen($word) > $max_length) {
+                    $word = wordwrap($word, $max_length, '-', true);
+                }
+            }
+
+            // Join the words back into a single string
+            return implode(' ', $words);
+        }
+
     </script>
 </head>
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
@@ -227,10 +243,11 @@ if ($selected_truck_id) {
                 <form method="POST">
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
                     <div class="item-grid">
-                        <?php foreach ($items as $item): ?>
+                        <?php foreach ($items as $item):                         
+                            $split_name = split_long_words($item['name']);  ?>
                             <div class="item-card" onclick="toggleCheck(this)">
                                 <input type="checkbox" name="checked_items[]" value="<?= $item['id'] ?>" class="hidden-checkbox">
-                                <div class="item-content"><?= htmlspecialchars($item['name']) ?></div>
+                                <div class="item-content"><?= htmlspecialchars($split_name) ?></div>
                             </div>
                         <?php endforeach; ?>
                     </div>
