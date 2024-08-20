@@ -72,7 +72,7 @@ $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 $emailContent = "Latest Missing Items Report\n\n These are the lockers that have missing items recorded in the last 7 days:\n\n";
 $emailContent .= "The last check was recorded was {$latestCheckDate}\n\n";
 foreach ($checks as $check) {
-    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}\n\n";
+    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, At {$check['check_date']}\n\n";
 }
 
 echo "Message to send: " . $emailContent ;
