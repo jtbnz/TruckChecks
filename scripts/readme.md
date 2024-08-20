@@ -62,13 +62,14 @@ This is used as the server could be running in a different timezone. e.g. mine i
     crontab -e
     ```
 
-2. Add the following cron job to run the bash script every minute:
+2. Add the following cron job to run the bash script every hour from Monday to Friday:
 
     ```bash
-    * * * * * /path/to/email_checks.sh
+    0 * * * 1-5 /path/to/cron_script.sh
     ```
 
-    This cron job runs the script every minute to ensure it catches the exact time for 7:30 PM in Auckland, taking into account summer and winter time.
+    This cron job ensures that the script runs at the start of every hour during weekdays to check if it should execute the cURL request based on the conditions defined in the script. This should handle most server timezones.  The email will only be sent if it matches the time set above
+
 
 ### 4. Testing
 
