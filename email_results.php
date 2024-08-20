@@ -39,7 +39,7 @@ $checksQuery = "WITH LatestChecks AS (
                     FROM checks
                     WHERE check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
                     GROUP BY locker_id
-                    -- ?
+
                 )
                 SELECT 
                     t.name as truck_name, 
@@ -59,7 +59,7 @@ $checksQuery = "WITH LatestChecks AS (
                 ORDER BY t.name, l.name;";
                 
 $checksStmt = $pdo->prepare($checksQuery);
-$checksStmt->execute([$latestCheckDate]);
+$checksStmt->execute();
 
 //debug why no rows returned
 $errorInfo = $checksStmt->errorInfo();
