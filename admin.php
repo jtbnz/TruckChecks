@@ -2,6 +2,7 @@
 
 include 'templates/header.php';
 include('password.php');
+include ('db.php');
 
 if (isset($_SESSION['is_demo'])) {
     
