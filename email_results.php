@@ -62,7 +62,7 @@ $checksStmt = $pdo->prepare($checksQuery);
 $checksStmt->execute([$latestCheckDate]);
 
 //debug why no rows returned
-$errorInfo = $stmt->errorInfo();
+$errorInfo = $checksStmt->errorInfo();
 if ($errorInfo[0] != '00000') {
     // An error occurred, display error details
     echo "SQLSTATE error code: " . $errorInfo[0] . "<br>";
