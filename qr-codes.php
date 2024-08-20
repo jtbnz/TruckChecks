@@ -10,6 +10,23 @@ include 'db.php'; // Adjust to your database connection script
 
 $db = get_db_connection();
 
+// Check if session has not already been started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if the version session variable is not set
+if (!isset($_SESSION['version'])) {
+    // Get the latest Git tag version
+    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
+    // Set the session variable
+    $_SESSION['version'] = $version;
+} else {
+    // Use the already set session variable
+    $version = $_SESSION['version'];
+}
+
 $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 // Fetch all trucks and lockers

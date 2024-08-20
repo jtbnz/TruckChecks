@@ -6,7 +6,27 @@ error_reporting(E_ALL);
 include 'db.php'; // Include your database connection
 
 $db = get_db_connection();
+
+// Check if session has not already been started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if the version session variable is not set
+if (!isset($_SESSION['version'])) {
+    // Get the latest Git tag version
+    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
+    // Set the session variable
+    $_SESSION['version'] = $version;
+} else {
+    // Use the already set session variable
+    $version = $_SESSION['version'];
+}
+
 $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+
+
 
 // Fetch unique check dates for the dropdown
 $dates_query = $db->query('SELECT DISTINCT DATE(check_date) as last_checked FROM checks ORDER BY check_date DESC');
@@ -90,7 +110,9 @@ if (isset($_POST['export_csv'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Locker Check Reports</title>
-    <link rel="stylesheet" href="styles/reports.css?id=V9"> <!-- Link to your CSS -->
+    <link rel="stylesheet" href="styles/reports.css?id=V9"> 
+
+
 </head>
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 

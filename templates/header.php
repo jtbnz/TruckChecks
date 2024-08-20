@@ -6,7 +6,7 @@
     <title>Truck Checklist</title>
     <link rel="stylesheet" href="styles/styles.css?id=V24">
 </head>
-<? $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true; ?>
+
 <?php
 
 // Check if session has not already been started
@@ -25,6 +25,9 @@ if (!isset($_SESSION['version'])) {
     // Use the already set session variable
     $version = $_SESSION['version'];
 }
+
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+
 ?>
 
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
