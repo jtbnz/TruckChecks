@@ -25,9 +25,22 @@ if (!isset($_SESSION['version'])) {
 
 $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
-
-
 $db = get_db_connection();
+
+function split_long_words($text, $max_length = 9) {
+    // Split the text into words
+    $words = explode(' ', $text);
+
+    // Iterate through each word and split if it's longer than max_length
+    foreach ($words as &$word) {
+        if (strlen($word) > $max_length) {
+            $word = wordwrap($word, $max_length, '-', true);
+        }
+    }
+
+    // Join the words back into a single string
+    return implode(' ', $words);
+}
 
 // Handle form submission to update the checks and check_items tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
@@ -169,20 +182,7 @@ if ($selected_truck_id) {
             }
         }
 
-        function split_long_words($text, $max_length = 9) {
-            // Split the text into words
-            $words = explode(' ', $text);
 
-            // Iterate through each word and split if it's longer than max_length
-            foreach ($words as &$word) {
-                if (strlen($word) > $max_length) {
-                    $word = wordwrap($word, $max_length, '-', true);
-                }
-            }
-
-            // Join the words back into a single string
-            return implode(' ', $words);
-        }
 
     </script>
 </head>
