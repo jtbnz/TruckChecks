@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL); 
+error_reporting(E_ALL);  */
 
 include('password.php');
 
@@ -60,28 +60,7 @@ $checksQuery = "WITH LatestChecks AS (
                 
 $checksStmt = $pdo->prepare($checksQuery);
 $checksStmt->execute();
-
-//debug why no rows returned
-$errorInfo = $checksStmt->errorInfo();
-if ($errorInfo[0] != '00000') {
-    // An error occurred, display error details
-    echo "SQLSTATE error code: " . $errorInfo[0] . "<br>";
-    echo "Driver-specific error code: " . $errorInfo[1] . "<br>";
-    echo "Driver-specific error message: " . $errorInfo[2] . "<br>";
-} else {
-    // No errors, check if data is being returned
-    $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
-    if (empty($checks)) {
-        echo "No data returned by the query.";
-    } else {
-        echo "Data retrieved successfully.";
-        print_r($checks);
-    }
-}
-
-// end debug can be removed
-
-//$checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+$checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch email addresses
 $emailQuery = "SELECT email FROM email_addresses";
