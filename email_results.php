@@ -37,7 +37,7 @@ $checksQuery = "WITH LatestChecks AS (
                         locker_id, 
                         MAX(id) AS latest_check_id
                     FROM checks
-                    WHERE DATE(check_date) = ?
+                    WHERE check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
                     GROUP BY locker_id
                 )
                 SELECT 
@@ -68,7 +68,8 @@ $emailStmt->execute();
 $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Prepare email content
-$emailContent = "Latest Missing Items Report\n\n";
+$emailContent = "Latest Missing Items Report\n\n These are the lockers that have missing items recorded in the last 7 days:\n\n";
+$emailContent .= "The last check was recorded was {$latestCheckDate}\n\n";
 foreach ($checks as $check) {
     $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}\n\n";
 }
