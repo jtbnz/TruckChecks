@@ -139,7 +139,8 @@ if ($selected_truck_id) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Check Locker Items</title>
-    <link rel="stylesheet" href="styles/check_locker_items.css?id=V4">
+    <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php  echo $version;  ?> ">
+    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Load the last checked-by name from localStorage
