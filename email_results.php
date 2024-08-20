@@ -70,18 +70,18 @@ if ($errorInfo[0] != '00000') {
     echo "Driver-specific error message: " . $errorInfo[2] . "<br>";
 } else {
     // No errors, check if data is being returned
-    $results = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
-    if (empty($results)) {
+    $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+    if (empty($checks)) {
         echo "No data returned by the query.";
     } else {
         echo "Data retrieved successfully.";
-        print_r($results);
+        print_r($checks);
     }
 }
 
 // end debug can be removed
 
-$checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+//$checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Fetch email addresses
 $emailQuery = "SELECT email FROM email_addresses";
