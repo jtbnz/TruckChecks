@@ -5,7 +5,25 @@ error_reporting(E_ALL);
 
 //session_start();
 include 'db.php';
-include 'templates/header.php';
+//include 'templates/header.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if the version session variable is not set
+if (!isset($_SESSION['version'])) {
+    // Get the latest Git tag version
+    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
+    // Set the session variable
+    $_SESSION['version'] = $version;
+} else {
+    // Use the already set session variable
+    $version = $_SESSION['version'];
+}
+
+$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 
 
