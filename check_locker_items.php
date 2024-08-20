@@ -27,14 +27,20 @@ $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 $db = get_db_connection();
 
-function split_long_words($text, $max_length = 9) {
+function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     // Split the text into words
     $words = explode(' ', $text);
 
-    // Iterate through each word and split if it's longer than max_length
+    // Iterate through each word and apply the necessary transformations
     foreach ($words as &$word) {
-        if (strlen($word) > $max_length) {
+        $word_length = strlen($word);
+
+        if ($word_length > $max_length) {
+            // Split the word if it is longer than the max_length
             $word = wordwrap($word, $max_length, '-', true);
+        } elseif ($word_length >= $reduce_font_threshold) {
+            // Reduce the font size if the word length is between 9 and 12 characters
+            $word = '<span style="font-size: smaller;">' . htmlspecialchars($word) . '</span>';
         }
     }
 
@@ -244,7 +250,7 @@ if ($selected_truck_id) {
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
                     <div class="item-grid">
                         <?php foreach ($items as $item):                         
-                            $split_name = split_long_words($item['name']);  ?>
+                            $split_name = process_words($item['name']);  ?>
                             <div class="item-card" onclick="toggleCheck(this)">
                                 <input type="checkbox" name="checked_items[]" value="<?= $item['id'] ?>" class="hidden-checkbox">
                                 <div class="item-content"><?= htmlspecialchars($split_name) ?></div>
