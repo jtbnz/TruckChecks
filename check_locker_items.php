@@ -253,7 +253,7 @@ if ($selected_truck_id) {
                             $split_name = process_words($item['name']);  ?>
                             <div class="item-card" onclick="toggleCheck(this)">
                                 <input type="checkbox" name="checked_items[]" value="<?= $item['id'] ?>" class="hidden-checkbox">
-                                <div class="item-content"><?= htmlspecialchars($split_name) ?></div>
+                                <div class="item-content"><?= $split_name ?></div>
                             </div>
                         <?php endforeach; ?>
                     </div>
