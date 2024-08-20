@@ -70,7 +70,7 @@ if ($errorInfo[0] != '00000') {
     echo "Driver-specific error message: " . $errorInfo[2] . "<br>";
 } else {
     // No errors, check if data is being returned
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $results = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
     if (empty($results)) {
         echo "No data returned by the query.";
     } else {
