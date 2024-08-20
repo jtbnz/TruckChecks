@@ -2,7 +2,7 @@
 
 # Define the timezone, PHP script, and target URL
 TIMEZONE="Pacific/Auckland"
-URL="https://kiaora.tech/55Check/email_results.php"
+URL="https://yourserver/email_results.php"
 PHP_SCRIPT="/scripts/check_holiday.php"
 LOGFILE="/scripts/logfile.log"
 

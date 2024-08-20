@@ -34,7 +34,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/TruckChecks.git
+    git clone https://github.com/jtbnz/TruckChecks.git
     cd TruckChecks
     ```
 
@@ -102,6 +102,7 @@ This project supports Docker for easy deployment.
 - **Docker/**: Contains Docker-related files for containerizing the application.
 - **styles/**: CSS files for styling the application.
 - **templates/**: HTML templates used throughout the application.
+- **scripts/**: Local scripts used to email the checks automatically with timezone handling
 
 ## Contributing
 

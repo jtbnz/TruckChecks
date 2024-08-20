@@ -12,7 +12,7 @@ This is used as the server could be running in a different timezone. e.g. mine i
 ## Files
 
 - **check_holiday.php**: A PHP script that checks if a given date is a public holiday using the `public-holidays.nz` API.
-- **cron_script.sh**: A bash script that checks the current time and day in Auckland timezone, determines if it's a public holiday, and if not, executes a cURL request to the specified URL.
+- **email_checks.sh**: A bash script that checks the current time and day in Auckland timezone, determines if it's a public holiday, and if not, executes a cURL request to the specified URL.
 
 ## Setup Instructions
 
@@ -24,7 +24,7 @@ This is used as the server could be running in a different timezone. e.g. mine i
     $apikey = "your_actual_apikey_here"; // Replace with your API key
     ```
 
-2. **Paths**: Ensure the PHP script is accessible to the bash script. The path to this script will be referenced in `cron_script.sh`.
+2. **Paths**: Ensure the PHP script is accessible to the bash script. The path to this script will be referenced in `email_checks.sh`.
 
 3. **Changing the Public Holiday Anniversary Check**: By default, the script is set to ignore all "Anniversary Day" holidays except for "Auckland Anniversary Day". If you need to change this to a different anniversary, modify this line:
 
@@ -34,7 +34,7 @@ This is used as the server could be running in a different timezone. e.g. mine i
 
     - Replace `'Auckland Anniversary Day'` with the desired anniversary name.
 
-### 2. Configure the `cron_script.sh` Script
+### 2. Configure the `email_checks.sh` Script
 
 1. **PHP Script Path**: Update the path to `check_holiday.php` in the bash script:
 
@@ -51,7 +51,7 @@ This is used as the server could be running in a different timezone. e.g. mine i
 3. **URL for cURL Request**: Update the URL that the script will request using cURL:
 
     ```bash
-    URL="https://kiaora.tech/55Check/email_results.php" # Update if needed
+    URL="https://yourserver/email_results.php" # Update 
     ```
 
 ### 3. Set Up the Cron Job
@@ -65,7 +65,7 @@ This is used as the server could be running in a different timezone. e.g. mine i
 2. Add the following cron job to run the bash script every minute:
 
     ```bash
-    * * * * * /path/to/cron_script.sh
+    * * * * * /path/to/email_checks.sh
     ```
 
     This cron job runs the script every minute to ensure it catches the exact time for 7:30 PM in Auckland, taking into account summer and winter time.
@@ -74,10 +74,10 @@ This is used as the server could be running in a different timezone. e.g. mine i
 
 To ensure everything is set up correctly:
 
-1. Manually run the `cron_script.sh` script to verify it behaves as expected:
+1. Manually run the `email_checks.sh` script to verify it behaves as expected:
 
     ```bash
-    /path/to/cron_script.sh
+    /path/to/email_checks.sh
     ```
 
 2. Check the log file to see the output and ensure the script is functioning properly.
@@ -92,7 +92,7 @@ The bash script logs its activities to the specified log file. Check this log pe
 
 ## Customization
 **Different Public Holidays:*** Modify the logic in check_holiday.php if you need to account for different holidays or change the criteria for skipping tasks.
-**Time Adjustments:*** If you need to adjust the time or days when the script runs, modify the corresponding logic in cron_script.sh.
+**Time Adjustments:*** If you need to adjust the time or days when the script runs, modify the corresponding logic in email_checks.sh.
 
 ## Acknowledgements
 ***https://www.public-holidays.nz/ API*** for providing the public holiday data.
