@@ -170,7 +170,7 @@ if ($selected_truck_id) {
         }
     </script>
 </head>
-<body>
+<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Check Locker Items</h1>
 
