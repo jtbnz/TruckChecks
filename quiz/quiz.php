@@ -126,7 +126,7 @@ if ($quiz === null) {
         }
 
         .quiz-options button {
-            margin: 2vh 0;
+            margin: 1vh 0;
             padding: 1vh 0;
             font-size: 5vw; /* Scales with viewport width */
             cursor: pointer;
@@ -153,7 +153,7 @@ if ($quiz === null) {
 
         .score-container {
             margin-top: 5vh;
-            padding: 3vh;
+            padding: 2vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             display: inline-block;
