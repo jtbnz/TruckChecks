@@ -110,13 +110,13 @@ if ($quiz === null) {
         }
 
         .quiz-container {
-            margin-top: 5vh;
+            margin-top: 3vh;
             padding: 0 5vw;
         }
 
         .quiz-question {
             font-size: 5vw; /* Scales with viewport width */
-            margin-bottom: 4vh;
+            margin-bottom: 2vh;
         }
 
         .quiz-options {
@@ -205,7 +205,7 @@ if ($quiz === null) {
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
     <div class="quiz-container">
     <div class="quiz-question">
-        On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where would you find <br><strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
+        On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where would you find the <br><strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
     </div>
     <div class="quiz-options">
         <?php foreach ($quiz['options'] as $option): ?>
