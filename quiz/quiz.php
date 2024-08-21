@@ -1,8 +1,12 @@
+
 <?php
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+include '../db.php'
 
+
+$db = get_db_connection();
 
 session_start();
 
@@ -31,25 +35,8 @@ if (time() - $_SESSION['quiz_start_time'] > 86400) { // 86400 seconds = 24 hours
     reset_quiz_scores();
 }
 
-
-
-// Include the database connection
-include '../db.php';
-
-
-$db = get_db_connection();
-
-
-// Initialize session variables for correct answers if not already set
-if (!isset($_SESSION['correct_first'])) {
-    $_SESSION['correct_first'] = 0;
-    $_SESSION['correct_second'] = 0;
-    $_SESSION['correct_third'] = 0;
-}
-
 // Function to fetch a random quiz question
 function get_quiz_question($db) {
-    // Step 1: Fetch a random item, its locker, and the associated truck_id and truck_name from the database
     $sql = "SELECT i.id as item_id, i.name as item_name, l.id as locker_id, l.name as locker_name, t.name as truck_name, l.truck_id
             FROM items i
             JOIN lockers l ON i.locker_id = l.id
@@ -60,12 +47,10 @@ function get_quiz_question($db) {
     $stmt->execute();
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Check if the item was retrieved
     if (!$item) {
-        return null; // Handle no item found case
+        return null; 
     }
 
-    // Step 2: Fetch 2 other random lockers from the same truck
     $sql = "SELECT id, name FROM lockers WHERE id != :locker_id AND truck_id = :truck_id ORDER BY RAND() LIMIT 2";
     $stmt = $db->prepare($sql);
     $stmt->bindValue(':locker_id', $item['locker_id'], PDO::PARAM_INT);
@@ -74,7 +59,6 @@ function get_quiz_question($db) {
 
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Combine the correct locker with the other options and shuffle them
     $options = array_merge([['id' => $item['locker_id'], 'name' => $item['locker_name']]], $other_lockers);
     shuffle($options);
 
@@ -86,11 +70,12 @@ function get_quiz_question($db) {
     ];
 }
 
-
-
-
-// Generate a new quiz question
 $quiz = get_quiz_question($db);
+
+if ($quiz === null) {
+    echo "No quiz available.";
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -122,6 +107,14 @@ $quiz = get_quiz_question($db);
             background-color: red;
             color: white;
         }
+        .score-container {
+            margin-top: 30px;
+            padding: 15px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            display: inline-block;
+            background-color: #f9f9f9;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +130,14 @@ $quiz = get_quiz_question($db);
             </button>
         <?php endforeach; ?>
     </div>
+
+    <div class="score-container" id="score-container">
+        <!-- The scores will be dynamically updated here -->
+        <p>Correct lockers selected:</p>
+        <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
+        <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
+        <p>3rd attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
+    </div>
 </div>
 
 <script>
@@ -147,12 +148,12 @@ $quiz = get_quiz_question($db);
         if (selectedLockerId === correctLockerId) {
             button.classList.add('correct');
             trackAttempts(attemptCount);
-            setTimeout(showScorePopup, 500);
+            updateScore();
         } else {
             button.classList.add('wrong');
             if (attemptCount >= 3) {
                 trackAttempts(attemptCount);
-                setTimeout(showScorePopup, 500);
+                updateScore();
             }
         }
     }
@@ -164,13 +165,15 @@ $quiz = get_quiz_question($db);
         xhr.send('attempts=' + attempts);
     }
 
-    function showScorePopup() {
+    function updateScore() {
         let xhr = new XMLHttpRequest();
         xhr.open('GET', 'get_score.php', true);
         xhr.onload = function() {
             if (xhr.status === 200) {
-                alert(xhr.responseText);
-                window.location.reload(); // Reload to get a new question
+                let scores = xhr.responseText.split("\n");
+                document.getElementById('score-first').innerText = scores[0].split(": ")[1];
+                document.getElementById('score-second').innerText = scores[1].split(": ")[1];
+                document.getElementById('score-third').innerText = scores[2].split(": ")[1];
             }
         };
         xhr.send();
