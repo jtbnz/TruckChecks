@@ -102,70 +102,105 @@ if ($quiz === null) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../styles/styles.css?id=<?php  echo $version;  ?> ">   
     <style>
-
-.quiz-container {
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
             text-align: center;
+        }
+
+        .quiz-container {
             margin-top: 5vh;
-            padding: 0 2vw;
+            padding: 0 5vw;
         }
+
         .quiz-question {
-            font-size: 7vw; /* Larger font size for mobile */
-            margin-bottom: 5vh;
+            font-size: 5vw; /* Scales with viewport width */
+            margin-bottom: 4vh;
         }
+
         .quiz-options {
             display: flex;
             flex-direction: column; /* Stack buttons vertically */
             align-items: center;
         }
+
         .quiz-options button {
             margin: 2vh 0;
-            padding: 0;
-            font-size: 6vw; /* Larger font size */
+            padding: 2vh 0;
+            font-size: 5vw; /* Scales with viewport width */
             cursor: pointer;
-            width: 80vw; /* Full width on mobile */
-            height: 80vw; /* Ensures square shape */
-            max-width: 200px; /* Limit width for larger screens */
-            max-height: 200px; /* Limit height for larger screens */
+            width: 80vw; /* Use most of the width on mobile */
+            max-width: 300px; /* Limit the width on larger screens */
+            height: 80vw; /* Square shape on mobile */
+            max-height: 300px; /* Limit the height on larger screens */
+            border: none;
+            border-radius: 10px; /* Optional: Rounded corners */
             display: flex;
             justify-content: center;
             align-items: center;
-            border: none;
-            border-radius: 8px; /* Optional rounded corners */
         }
+
         .quiz-options button.correct {
             background-color: green;
             color: white;
         }
+
         .quiz-options button.wrong {
             background-color: red;
             color: white;
         }
+
         .score-container {
             margin-top: 5vh;
-            padding: 1vh;
+            padding: 3vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             display: inline-block;
             background-color: #f9f9f9;
-            font-size: 6vw; /* Larger font size for mobile */
-            width: 80vw; /* Full width on mobile */
-            max-width: 400px; /* Limit width for larger screens */
+            font-size: 5vw; /* Scales with viewport width */
+            width: 80vw; /* Use most of the width on mobile */
+            max-width: 300px; /* Limit the width on larger screens */
             text-align: left;
         }
 
-        /* Larger screens */
+        /* Adjustments for larger screens */
         @media (min-width: 768px) {
             .quiz-question {
-                font-size: 3vw; /* Adjust font size for larger screens */
+                font-size: 2rem; /* 2 rem units for desktop */
             }
+
             .quiz-options button {
-                font-size: 3vw; /* Adjust font size for larger screens */
+                font-size: 1.5rem; /* Adjusted font size for desktop */
+                width: 300px; /* Fixed width for desktop */
+                height: 300px; /* Fixed height for desktop */
             }
+
             .score-container {
-                font-size: 2vw; /* Adjust font size for larger screens */
+                font-size: 1.5rem; /* Adjusted font size for desktop */
+                width: 300px; /* Fixed width for desktop */
+            }
+        }
+
+        /* Adjustments for even larger screens */
+        @media (min-width: 1200px) {
+            .quiz-question {
+                font-size: 2.5rem; /* Slightly larger for very large screens */
+            }
+
+            .quiz-options button {
+                font-size: 2rem; /* Larger font for very large screens */
+                width: 350px; /* Larger width */
+                height: 350px; /* Larger height */
+            }
+
+            .score-container {
+                font-size: 2rem; /* Larger font for very large screens */
+                width: 350px; /* Larger width */
             }
         }
     </style>
+
 </head>
 <body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
     <div class="quiz-container">
