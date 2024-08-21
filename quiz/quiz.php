@@ -152,7 +152,7 @@ if ($quiz === null) {
         }
 
         .score-container {
-            margin-top: 5vh;
+            margin-top: 2vh;
             padding: 2vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
@@ -216,7 +216,7 @@ if ($quiz === null) {
     </div>
 
     <div class="score-container" id="score-container">
-        <p>Correct lockers selected:</p>
+        <p>Score:</p>
         <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
         <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
         <p>3rd attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
