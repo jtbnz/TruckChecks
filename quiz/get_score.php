@@ -10,9 +10,12 @@ if (time() - $_SESSION['quiz_start_time'] > 86400) {
     $_SESSION['quiz_start_time'] = time(); // Reset the timestamp
 }
 
-// Return the score as plain text, each score on a new line
+// Calculate the total score
+$total_score = ($_SESSION['correct_first'] * 3) + ($_SESSION['correct_second'] * 2) + ($_SESSION['correct_third'] * 1);
+
+// Return the score and total score
 echo "1st attempt: " . $_SESSION['correct_first'] . "\n";
 echo "2nd attempt: " . $_SESSION['correct_second'] . "\n";
-echo "3rd attempt: " . $_SESSION['correct_third'];
+echo "3rd attempt: " . $_SESSION['correct_third'] . "\n";
+echo "Total Score: " . $total_score;
 ?>
-

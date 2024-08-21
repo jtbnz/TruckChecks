@@ -216,7 +216,7 @@ if ($quiz === null) {
     </div>
 
     <div class="score-container" id="score-container">
-        <p><strong>Score: </strong><?php echo $_SESSION['total_correct']; ?></strong></p>
+        <p><strong>Score: </strong><span id="total-score"><<?php echo ($_SESSION['correct_first'] * 3) + ($_SESSION['correct_second'] * 2) + ($_SESSION['correct_third'] * 1); ?></span></strong></p>
         <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
         <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
         <p>3rd attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
@@ -254,18 +254,19 @@ if ($quiz === null) {
     }
 
     function updateScore() {
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', 'get_score.php', true);
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                let scores = xhr.responseText.split("\n");
-                document.getElementById('score-first').innerText = scores[0].split(": ")[1];
-                document.getElementById('score-second').innerText = scores[1].split(": ")[1];
-                document.getElementById('score-third').innerText = scores[2].split(": ")[1];
-            }
-        };
-        xhr.send();
-    }
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', 'get_score.php', true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            let scores = xhr.responseText.split("\n");
+            document.getElementById('score-first').innerText = scores[0].split(": ")[1];
+            document.getElementById('score-second').innerText = scores[1].split(": ")[1];
+            document.getElementById('score-third').innerText = scores[2].split(": ")[1];
+            document.getElementById('total-score').innerText = scores[3].split(": ")[1];
+        }
+    };
+    xhr.send();
+}
 
     function disableAllButtons() {
         let buttons = document.querySelectorAll('.quiz-options button');
