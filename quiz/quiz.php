@@ -132,7 +132,6 @@ if ($quiz === null) {
     </div>
 
     <div class="score-container" id="score-container">
-        <!-- The scores will be dynamically updated here -->
         <p>Correct lockers selected:</p>
         <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
         <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
@@ -140,44 +139,53 @@ if ($quiz === null) {
     </div>
 </div>
 
+
 <script>
-    let attemptCount = 0;
+ let attemptCount = 0;
 
-    function checkAnswer(button, selectedLockerId, correctLockerId) {
-        attemptCount++;
-        if (selectedLockerId === correctLockerId) {
-            button.classList.add('correct');
-            trackAttempts(attemptCount);
-            updateScore();
-        } else {
-            button.classList.add('wrong');
-            if (attemptCount >= 3) {
-                trackAttempts(attemptCount);
-                updateScore();
-            }
+function checkAnswer(button, selectedLockerId, correctLockerId) {
+    attemptCount++;
+    
+    if (selectedLockerId === correctLockerId) {
+        button.classList.add('correct');
+        alert('Correct!');
+        trackAttempts(attemptCount);
+        updateScore();
+        // Disable all buttons to prevent further clicking after correct answer
+        disableAllButtons();
+    } else {
+        button.classList.add('wrong');
+    }
+}
+
+function trackAttempts(attempts) {
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', 'track_attempts.php', true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.send('attempts=' + attempts);
+}
+
+function updateScore() {
+    let xhr = new XMLHttpRequest();
+    xhr.open('GET', 'get_score.php', true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            let scores = xhr.responseText.split("\n");
+            document.getElementById('score-first').innerText = scores[0].split(": ")[1];
+            document.getElementById('score-second').innerText = scores[1].split(": ")[1];
+            document.getElementById('score-third').innerText = scores[2].split(": ")[1];
         }
-    }
+    };
+    xhr.send();
+}
 
-    function trackAttempts(attempts) {
-        let xhr = new XMLHttpRequest();
-        xhr.open('POST', 'track_attempts.php', true);
-        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        xhr.send('attempts=' + attempts);
-    }
+function disableAllButtons() {
+    let buttons = document.querySelectorAll('.quiz-options button');
+    buttons.forEach(button => {
+        button.disabled = true; // Disable the button to prevent further clicks
+    });
+}
 
-    function updateScore() {
-        let xhr = new XMLHttpRequest();
-        xhr.open('GET', 'get_score.php', true);
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                let scores = xhr.responseText.split("\n");
-                document.getElementById('score-first').innerText = scores[0].split(": ")[1];
-                document.getElementById('score-second').innerText = scores[1].split(": ")[1];
-                document.getElementById('score-third').innerText = scores[2].split(": ")[1];
-            }
-        };
-        xhr.send();
-    }
 </script>
 
 </body>
