@@ -127,13 +127,13 @@ if ($quiz === null) {
 
         .quiz-options button {
             margin: 2vh 0;
-            padding: 2vh 0;
+            padding: 1vh 0;
             font-size: 5vw; /* Scales with viewport width */
             cursor: pointer;
-            width: 80vw; /* Use most of the width on mobile */
-            max-width: 300px; /* Limit the width on larger screens */
-            height: 80vw; /* Square shape on mobile */
-            max-height: 300px; /* Limit the height on larger screens */
+            width: 40vw; /* Use most of the width on mobile */
+            max-width: 150px; /* Limit the width on larger screens */
+            height: 40vw; /* Square shape on mobile */
+            max-height: 150px; /* Limit the height on larger screens */
             border: none;
             border-radius: 10px; /* Optional: Rounded corners */
             display: flex;
