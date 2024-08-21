@@ -143,7 +143,7 @@ if ($quiz === null) {
 <script>
  let attemptCount = 0;
 
-function checkAnswer(button, selectedLockerId, correctLockerId) {
+ function checkAnswer(button, selectedLockerId, correctLockerId) {
     attemptCount++;
     
     if (selectedLockerId === correctLockerId) {
@@ -151,12 +151,17 @@ function checkAnswer(button, selectedLockerId, correctLockerId) {
         alert('Correct!');
         trackAttempts(attemptCount);
         updateScore();
-        // Disable all buttons to prevent further clicking after correct answer
         disableAllButtons();
+
+        // Reload the page to show a new quiz question
+        setTimeout(function() {
+            window.location.reload();
+        }, 500);  // Delay to allow the user to see the "Correct!" message
     } else {
         button.classList.add('wrong');
     }
 }
+
 
 function trackAttempts(attempts) {
     let xhr = new XMLHttpRequest();
