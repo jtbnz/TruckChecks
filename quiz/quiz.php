@@ -36,8 +36,7 @@ function get_quiz_question($db) {
     $sql = "SELECT id, name FROM lockers WHERE id != :locker_id AND truck_id = 
             (SELECT truck_id FROM lockers WHERE id = :locker_id) ORDER BY RAND() LIMIT 2";
     $stmt = $db->prepare($sql);
-    $stmt->bindParam(':locker_id', $item['locker_id']);
-    $stmt->execute();
+    $stmt->execute([':locker_id' => $item['locker_id']]);
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Combine the correct locker with the other options and shuffle them
@@ -50,6 +49,7 @@ function get_quiz_question($db) {
         'options' => $options
     ];
 }
+
 
 // Generate a new quiz question
 $quiz = get_quiz_question($db);
