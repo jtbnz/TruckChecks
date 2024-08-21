@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 session_start();
 
 // Include the database connection
-include 'db.php';
+include '../db.php';
 
 
 $db = get_db_connection();
