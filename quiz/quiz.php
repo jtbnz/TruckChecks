@@ -97,7 +97,7 @@ if ($quiz === null) {
 <head>
     <meta charset="UTF-8">
     <title>Truck Item Quiz</title>
-    <link rel="stylesheet" href="../styles/styles.css?id=<?php  echo $version;  ?> ">
+    
     <style>
         .quiz-container {
             text-align: center;
