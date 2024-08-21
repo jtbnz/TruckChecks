@@ -43,7 +43,7 @@ function get_quiz_question($db) {
     $stmt = $db->prepare($sql);
     
     // Bind the parameter correctly
-    $stmt->bindParam(':locker_id', $item['locker_id'], PDO::PARAM_INT);
+    $stmt->bindValue(':locker_id', $item['locker_id'], PDO::PARAM_INT);
     $stmt->execute();
     
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
