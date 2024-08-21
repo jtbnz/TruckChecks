@@ -187,8 +187,9 @@ if ($quiz === null) {
     </div>
 </div>
 
-<p><a href="index.php" class="button touch-button">Return to Home</a></p>
-
+<div class="button-container" style="margin-top: 20px;">
+    <p><a href="index.php" class="button touch-button">Return to Home</a></p>
+</div>
 <script>
     let attemptCount = 0;
 
