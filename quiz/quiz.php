@@ -201,7 +201,7 @@ if ($quiz === null) {
             disableAllButtons();
             setTimeout(function() {
                 window.location.reload();
-            }, 500);
+            }, 700);
         } else {
             button.classList.add('wrong');
         }
