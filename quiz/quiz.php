@@ -22,7 +22,7 @@ if (!isset($_SESSION['correct_first'])) {
 
 // Function to fetch a random quiz question
 function get_quiz_question($db) {
-    // Get a random item and its locker from the database
+    // Step 1: Fetch a random item and its locker from the database
     $sql = "SELECT i.id as item_id, i.name as item_name, l.id as locker_id, l.name as locker_name
             FROM items i
             JOIN lockers l ON i.locker_id = l.id
@@ -32,20 +32,19 @@ function get_quiz_question($db) {
     $stmt->execute();
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // If no item is found, return null or handle the case as needed
+    // Check if the item was retrieved
     if (!$item) {
-        return null; // or handle the case as needed
+        return null; // Handle no item found case
     }
 
-    // Get 2 other random lockers from the same truck for the options
-    $sql = "SELECT id, name FROM lockers WHERE id != :locker_id AND truck_id = 
-            (SELECT truck_id FROM lockers WHERE id = :locker_id) ORDER BY RAND() LIMIT 2";
+    // Step 2: Fetch 2 other random lockers from the same truck
+    // Simplified: Fetching directly without using nested queries
+    $sql = "SELECT id, name FROM lockers WHERE id != :locker_id AND truck_id = :truck_id ORDER BY RAND() LIMIT 2";
     $stmt = $db->prepare($sql);
-    
-    // Bind the parameter correctly
     $stmt->bindValue(':locker_id', $item['locker_id'], PDO::PARAM_INT);
+    $stmt->bindValue(':truck_id', $item['truck_id'], PDO::PARAM_INT); // Assuming truck_id is fetched from the initial query
     $stmt->execute();
-    
+
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Combine the correct locker with the other options and shuffle them
