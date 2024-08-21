@@ -195,7 +195,7 @@ if ($quiz === null) {
         
         if (selectedLockerId === correctLockerId) {
             button.classList.add('correct');
-            alert('Correct!');
+            // alert('Correct!');
             trackAttempts(attemptCount);
             updateScore();
             disableAllButtons();
