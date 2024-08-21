@@ -273,6 +273,6 @@ if ($selected_truck_id) {
 <?php endif; ?>
 
 <?php include 'templates/footer.php'; ?>
-
+<a href="quiz.html" class="button touch-button">Quiz</a> 
 </body>
 </html>
