@@ -216,7 +216,7 @@ if ($quiz === null) {
     </div>
 
     <div class="score-container" id="score-container">
-        <p>Score:</p>
+        <p><strong>Score: </strong><?php echo $_SESSION['total_correct']; ?></strong></p>
         <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
         <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
         <p>3rd attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
