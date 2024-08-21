@@ -99,6 +99,7 @@ if ($quiz === null) {
 <head>
     <meta charset="UTF-8">
     <title>Truck Item Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../styles/styles.css?id=<?php  echo $version;  ?> ">   
     <style>
 
@@ -141,7 +142,7 @@ if ($quiz === null) {
         }
         .score-container {
             margin-top: 5vh;
-            padding: 3vh;
+            padding: 1vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             display: inline-block;
