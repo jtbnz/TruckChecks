@@ -22,10 +22,11 @@ if (!isset($_SESSION['correct_first'])) {
 
 // Function to fetch a random quiz question
 function get_quiz_question($db) {
-    // Step 1: Fetch a random item, its locker, and the associated truck_id from the database
-    $sql = "SELECT i.id as item_id, i.name as item_name, l.id as locker_id, l.name as locker_name, l.truck_id
+    // Step 1: Fetch a random item, its locker, and the associated truck_id and truck_name from the database
+    $sql = "SELECT i.id as item_id, i.name as item_name, l.id as locker_id, l.name as locker_name, t.name as truck_name, l.truck_id
             FROM items i
             JOIN lockers l ON i.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
             ORDER BY RAND()
             LIMIT 1";
     $stmt = $db->prepare($sql);
@@ -52,10 +53,12 @@ function get_quiz_question($db) {
 
     return [
         'item_name' => $item['item_name'],
+        'truck_name' => $item['truck_name'],
         'correct_locker_id' => $item['locker_id'],
         'options' => $options
     ];
 }
+
 
 
 
@@ -98,7 +101,7 @@ $quiz = get_quiz_question($db);
 
 <div class="quiz-container">
     <div class="quiz-question">
-        Which locker contains the item: <strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
+        On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where is <strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
     </div>
     <div class="quiz-options">
         <?php foreach ($quiz['options'] as $option): ?>
