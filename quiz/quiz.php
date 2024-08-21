@@ -110,7 +110,7 @@ if ($quiz === null) {
         }
 
         .quiz-container {
-            margin-top: 3vh;
+            margin-top: 1vh;
             padding: 0 5vw;
         }
 
