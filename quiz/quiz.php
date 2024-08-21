@@ -1,9 +1,17 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Start the session
 session_start();
 
 // Include the database connection
 include 'db.php';
+
+
+$db = get_db_connection();
+
 
 // Initialize session variables for correct answers if not already set
 if (!isset($_SESSION['correct_first'])) {
