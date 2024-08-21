@@ -155,13 +155,13 @@ if ($quiz === null) {
         /* Larger screens */
         @media (min-width: 768px) {
             .quiz-question {
-                font-size: 5vw; /* Adjust font size for larger screens */
+                font-size: 3vw; /* Adjust font size for larger screens */
             }
             .quiz-options button {
-                font-size: 5vw; /* Adjust font size for larger screens */
+                font-size: 3vw; /* Adjust font size for larger screens */
             }
             .score-container {
-                font-size: 4vw; /* Adjust font size for larger screens */
+                font-size: 2vw; /* Adjust font size for larger screens */
             }
         }
     </style>
