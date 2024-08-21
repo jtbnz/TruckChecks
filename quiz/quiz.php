@@ -104,13 +104,13 @@ if ($quiz === null) {
             margin-top: 50px;
         }
         .quiz-question {
-            font-size: 24px;
+            font-size: 48px;
             margin-bottom: 20px;
         }
         .quiz-options button {
             margin: 10px;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 36px;
             cursor: pointer;
         }
         .quiz-options button.correct {
