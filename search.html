@@ -29,36 +29,42 @@
 <div id="results"></div>
 
 <script>
-    function startRecognition() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+ function startRecognition() {
+    // Initialize the SpeechRecognition object
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false; // Only final results, no interim results
+    recognition.maxAlternatives = 1; // We're only interested in the top result
 
-        recognition.start();
+    recognition.start(); // Start listening
 
-        recognition.onresult = function(event) {
-            const item = event.results[0][0].transcript;
-            document.getElementById('results').innerHTML = `Searching for: ${item}`;
-            searchItem(item);
-        };
+    recognition.onresult = function(event) {
+        const item = event.results[0][0].transcript; // Capture the recognized text
+        document.getElementById('results').innerHTML = `Searching for: ${item}`;
+        searchItem(item);
+    };
 
-        recognition.onerror = function(event) {
-            document.getElementById('results').innerHTML = `Error: ${event.error}`;
-        };
-    }
+    recognition.onspeechend = function() {
+        recognition.stop(); // Stop listening when user stops speaking
+    };
 
-    function searchItem(item) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'search_item.php', true);
-        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        xhr.onload = function() {
-            if (xhr.status === 200) {
-                document.getElementById('results').innerHTML = xhr.responseText;
-            }
-        };
-        xhr.send(`item=${encodeURIComponent(item)}`);
-    }
+    recognition.onerror = function(event) {
+        document.getElementById('results').innerHTML = `Error: ${event.error}`;
+        recognition.stop(); // Ensure we stop listening on error
+    };
+}
+
+function searchItem(item) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'search_item.php', true);
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            document.getElementById('results').innerHTML = xhr.responseText;
+        }
+    };
+    xhr.send(`item=${encodeURIComponent(item)}`);
+}
 </script>
 
 </body>
