@@ -3,8 +3,35 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Start the session
+
 session_start();
+
+// Check if the timestamp is already set
+if (!isset($_SESSION['quiz_start_time'])) {
+    $_SESSION['quiz_start_time'] = time();
+}
+
+// Initialize score session variables if not already set
+if (!isset($_SESSION['correct_first'])) {
+    $_SESSION['correct_first'] = 0;
+    $_SESSION['correct_second'] = 0;
+    $_SESSION['correct_third'] = 0;
+}
+
+// Function to reset the quiz scores and timestamp after 24 hours
+function reset_quiz_scores() {
+    $_SESSION['correct_first'] = 0;
+    $_SESSION['correct_second'] = 0;
+    $_SESSION['correct_third'] = 0;
+    $_SESSION['quiz_start_time'] = time(); // Reset the timestamp
+}
+
+// Check if 24 hours have passed
+if (time() - $_SESSION['quiz_start_time'] > 86400) { // 86400 seconds = 24 hours
+    reset_quiz_scores();
+}
+
+
 
 // Include the database connection
 include '../db.php';
