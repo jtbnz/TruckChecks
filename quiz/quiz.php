@@ -101,17 +101,25 @@ if ($quiz === null) {
     <style>
         .quiz-container {
             text-align: center;
-            margin-top: 50px;
+            margin-top: 5vh;
+            padding: 0 2vw;
         }
         .quiz-question {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 5vw; /* Scales with viewport width */
+            margin-bottom: 5vh;
         }
         .quiz-options button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 36px;
+            margin: 5vh 0;
+            padding: 3vh 0;
+            font-size: 5vw; /* Scales with viewport width */
             cursor: pointer;
+            width: 80%; /* Full width on mobile */
+            max-width: 400px; /* Maximum width for larger screens */
+        }
+        .quiz-options {
+            display: flex;
+            flex-direction: column; /* Stack buttons vertically */
+            align-items: center;
         }
         .quiz-options button.correct {
             background-color: green;
@@ -122,17 +130,33 @@ if ($quiz === null) {
             color: white;
         }
         .score-container {
-            margin-top: 30px;
-            padding: 15px;
+            margin-top: 5vh;
+            padding: 3vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             display: inline-block;
             background-color: #f9f9f9;
+            font-size: 4vw; /* Scales with viewport width */
+            width: 80%; /* Full width on mobile */
+            max-width: 400px; /* Maximum width for larger screens */
+            text-align: left;
+        }
+
+        /* Larger screens */
+        @media (min-width: 768px) {
+            .quiz-question {
+                font-size: 3vw; /* Smaller font on larger screens */
+            }
+            .quiz-options button {
+                font-size: 3vw; /* Smaller font on larger screens */
+            }
+            .score-container {
+                font-size: 2.5vw; /* Smaller font on larger screens */
+            }
         }
     </style>
 </head>
 <body>
-
 <div class="quiz-container">
     <div class="quiz-question">
         On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where is <strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
@@ -153,58 +177,53 @@ if ($quiz === null) {
     </div>
 </div>
 
-
 <script>
- let attemptCount = 0;
+    let attemptCount = 0;
 
- function checkAnswer(button, selectedLockerId, correctLockerId) {
-    attemptCount++;
-    
-    if (selectedLockerId === correctLockerId) {
-        button.classList.add('correct');
-        alert('Correct!');
-        trackAttempts(attemptCount);
-        updateScore();
-        disableAllButtons();
-
-        // Reload the page to show a new quiz question
-        setTimeout(function() {
-            window.location.reload();
-        }, 500);  // Delay to allow the user to see the "Correct!" message
-    } else {
-        button.classList.add('wrong');
-    }
-}
-
-
-function trackAttempts(attempts) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', 'track_attempts.php', true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.send('attempts=' + attempts);
-}
-
-function updateScore() {
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', 'get_score.php', true);
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            let scores = xhr.responseText.split("\n");
-            document.getElementById('score-first').innerText = scores[0].split(": ")[1];
-            document.getElementById('score-second').innerText = scores[1].split(": ")[1];
-            document.getElementById('score-third').innerText = scores[2].split(": ")[1];
+    function checkAnswer(button, selectedLockerId, correctLockerId) {
+        attemptCount++;
+        
+        if (selectedLockerId === correctLockerId) {
+            button.classList.add('correct');
+            alert('Correct!');
+            trackAttempts(attemptCount);
+            updateScore();
+            disableAllButtons();
+            setTimeout(function() {
+                window.location.reload();
+            }, 500);
+        } else {
+            button.classList.add('wrong');
         }
-    };
-    xhr.send();
-}
+    }
 
-function disableAllButtons() {
-    let buttons = document.querySelectorAll('.quiz-options button');
-    buttons.forEach(button => {
-        button.disabled = true; // Disable the button to prevent further clicks
-    });
-}
+    function trackAttempts(attempts) {
+        let xhr = new XMLHttpRequest();
+        xhr.open('POST', 'track_attempts.php', true);
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+        xhr.send('attempts=' + attempts);
+    }
 
+    function updateScore() {
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', 'get_score.php', true);
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                let scores = xhr.responseText.split("\n");
+                document.getElementById('score-first').innerText = scores[0].split(": ")[1];
+                document.getElementById('score-second').innerText = scores[1].split(": ")[1];
+                document.getElementById('score-third').innerText = scores[2].split(": ")[1];
+            }
+        };
+        xhr.send();
+    }
+
+    function disableAllButtons() {
+        let buttons = document.querySelectorAll('.quiz-options button');
+        buttons.forEach(button => {
+            button.disabled = true; // Disable the button to prevent further clicks
+        });
+    }
 </script>
 
 </body>
