@@ -22,7 +22,7 @@ if (!isset($_SESSION['correct_first'])) {
 
 // Function to fetch a random quiz question
 function get_quiz_question($db) {
-    // Get a random item and its lockers from the database
+    // Get a random item and its locker from the database
     $sql = "SELECT i.id as item_id, i.name as item_name, l.id as locker_id, l.name as locker_name
             FROM items i
             JOIN lockers l ON i.locker_id = l.id
@@ -32,9 +32,9 @@ function get_quiz_question($db) {
     $stmt->execute();
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // If no item is found, handle the case (optional, depends on your data structure)
+    // If no item is found, return null or handle the case as needed
     if (!$item) {
-        throw new Exception('No items found.');
+        return null; // or handle the case as needed
     }
 
     // Get 2 other random lockers from the same truck for the options
@@ -42,8 +42,9 @@ function get_quiz_question($db) {
             (SELECT truck_id FROM lockers WHERE id = :locker_id) ORDER BY RAND() LIMIT 2";
     $stmt = $db->prepare($sql);
     
-    // Bind the parameter correctly using an associative array
-    $stmt->execute([':locker_id' => $item['locker_id']]);
+    // Bind the parameter correctly
+    $stmt->bindParam(':locker_id', $item['locker_id'], PDO::PARAM_INT);
+    $stmt->execute();
     
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
