@@ -99,27 +99,35 @@ if ($quiz === null) {
     <title>Truck Item Quiz</title>
     
     <style>
-        .quiz-container {
+
+.quiz-container {
             text-align: center;
             margin-top: 5vh;
             padding: 0 2vw;
         }
         .quiz-question {
-            font-size: 5vw; /* Scales with viewport width */
+            font-size: 7vw; /* Larger font size for mobile */
             margin-bottom: 5vh;
-        }
-        .quiz-options button {
-            margin: 5vh 0;
-            padding: 3vh 0;
-            font-size: 5vw; /* Scales with viewport width */
-            cursor: pointer;
-            width: 80%; /* Full width on mobile */
-            max-width: 400px; /* Maximum width for larger screens */
         }
         .quiz-options {
             display: flex;
             flex-direction: column; /* Stack buttons vertically */
             align-items: center;
+        }
+        .quiz-options button {
+            margin: 2vh 0;
+            padding: 0;
+            font-size: 6vw; /* Larger font size */
+            cursor: pointer;
+            width: 80vw; /* Full width on mobile */
+            height: 80vw; /* Ensures square shape */
+            max-width: 200px; /* Limit width for larger screens */
+            max-height: 200px; /* Limit height for larger screens */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            border-radius: 8px; /* Optional rounded corners */
         }
         .quiz-options button.correct {
             background-color: green;
@@ -136,28 +144,27 @@ if ($quiz === null) {
             border-radius: 8px;
             display: inline-block;
             background-color: #f9f9f9;
-            font-size: 4vw; /* Scales with viewport width */
-            width: 80%; /* Full width on mobile */
-            max-width: 400px; /* Maximum width for larger screens */
+            font-size: 6vw; /* Larger font size for mobile */
+            width: 80vw; /* Full width on mobile */
+            max-width: 400px; /* Limit width for larger screens */
             text-align: left;
         }
 
         /* Larger screens */
         @media (min-width: 768px) {
             .quiz-question {
-                font-size: 3vw; /* Smaller font on larger screens */
+                font-size: 5vw; /* Adjust font size for larger screens */
             }
             .quiz-options button {
-                font-size: 3vw; /* Smaller font on larger screens */
+                font-size: 5vw; /* Adjust font size for larger screens */
             }
             .score-container {
-                font-size: 2.5vw; /* Smaller font on larger screens */
+                font-size: 4vw; /* Adjust font size for larger screens */
             }
         }
     </style>
 </head>
-<body>
-<div class="quiz-container">
+<body><div class="quiz-container">
     <div class="quiz-question">
         On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where is <strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
     </div>
