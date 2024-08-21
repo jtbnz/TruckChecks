@@ -32,15 +32,23 @@ function get_quiz_question($db) {
     $stmt->execute();
     $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // If no item is found, handle the case (optional, depends on your data structure)
+    if (!$item) {
+        throw new Exception('No items found.');
+    }
+
     // Get 2 other random lockers from the same truck for the options
     $sql = "SELECT id, name FROM lockers WHERE id != :locker_id AND truck_id = 
             (SELECT truck_id FROM lockers WHERE id = :locker_id) ORDER BY RAND() LIMIT 2";
     $stmt = $db->prepare($sql);
+    
+    // Bind the parameter correctly using an associative array
     $stmt->execute([':locker_id' => $item['locker_id']]);
+    
     $other_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Combine the correct locker with the other options and shuffle them
-    $options = array_merge([$item], $other_lockers);
+    $options = array_merge([['id' => $item['locker_id'], 'name' => $item['locker_name']]], $other_lockers);
     shuffle($options);
 
     return [
@@ -49,6 +57,7 @@ function get_quiz_question($db) {
         'options' => $options
     ];
 }
+
 
 
 // Generate a new quiz question
