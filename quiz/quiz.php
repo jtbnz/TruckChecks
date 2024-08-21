@@ -166,7 +166,7 @@ if ($quiz === null) {
 </head>
 <body><div class="quiz-container">
     <div class="quiz-question">
-        On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where would you find <strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
+        On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where would you find <br><strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?
     </div>
     <div class="quiz-options">
         <?php foreach ($quiz['options'] as $option): ?>
