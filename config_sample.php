@@ -1,5 +1,6 @@
 <?php
 // rename this file to config.php
+
 /* 
 optional add an .htaccess to further restrict access
 <Files "config.php">
@@ -8,12 +9,12 @@ optional add an .htaccess to further restrict access
 </Files>
  */
 
-define('DB_HOST' ,'localhost');
+define('DB_HOST' , 'localhost');
 define('DB_NAME' , 'your_database_name');
 define('DB_USER' , 'your_username');
-define('DB_PASS','your_password');
+define('DB_PASS' , 'your_password');
 define('PASSWORD', 'YourSecurePassword'); //Used for access to the Admin pages
 
-define('IS_DEMO',false);
+define('IS_DEMO' , false);
 
 ?>

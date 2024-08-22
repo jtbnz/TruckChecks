@@ -1,4 +1,9 @@
 <?php
+if (!file_exists('config.php')) {
+    echo "<h1>Site is not configured, please see documentation on configuration.</h1>";
+    exit;
+}
+
 session_start();
 include 'db.php';
 
