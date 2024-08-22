@@ -119,7 +119,7 @@ This project supports Docker for easy deployment.
 - **styles/**: CSS files for styling the application.
 - **templates/**: HTML templates used throughout the application.
 - **scripts/**: Local scripts used to email the checks automatically with timezone handling
-- **Config Sample File**: Added instructions to copy and configure the `config.php` file from `config_sample.php`.
+- **Config Sample File**: Copy and configure the `config.php` file from `config_sample.php`.
 - **quiz/**: Quiz to locate the correct locker for an item
 
 
