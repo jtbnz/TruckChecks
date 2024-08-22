@@ -63,13 +63,13 @@ Truck Checks is a web application designed to manage and monitor the inventory o
     Open config.php and set your database credentials, admin password, and demo mode (unlikely!)
 
     ```php
-            define('DB_HOST' ,'localhost');
-            define('DB_NAME' , 'your_database_name');
-            define('DB_USER' , 'your_username');
-            define('DB_PASS','your_password');
-            define('PASSWORD', 'YourSecurePassword');
+        define('DB_HOST' ,'localhost');
+        define('DB_NAME' , 'your_database_name');
+        define('DB_USER' , 'your_username');
+        define('DB_PASS','your_password');
+        define('PASSWORD', 'YourSecurePassword');
 
-            define('IS_DEMO',false);    
+        define('IS_DEMO',false);    
     ```
 
 5. **Run the application**:
