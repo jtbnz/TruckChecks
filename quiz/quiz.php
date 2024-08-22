@@ -165,8 +165,8 @@ if ($quiz === null) {
             text-align: left;
         }
         .score-container p {
-            margin-top: 0.5em; /* Reduce top margin */
-            margin-bottom: 0.5em; /* Reduce bottom margin */
+            margin: 0.1em 0;
+            padding: 0;
             font-size: 0.8em; /* Reduce font size */
         }
 
@@ -223,10 +223,10 @@ if ($quiz === null) {
     </div>
 
     <div class="score-container" id="score-container">
-        <p><strong>Score: </strong><span id="total-score"><?php echo ($_SESSION['correct_first'] * 3) + ($_SESSION['correct_second'] * 2) + ($_SESSION['correct_third'] * 1); ?></span></strong></p>
-        <p>1st attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
-        <p>2nd attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
-        <p>3rd attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
+        <p><strong>Todays Score: </strong><span id="total-score"><?php echo ($_SESSION['correct_first'] * 3) + ($_SESSION['correct_second'] * 2) + ($_SESSION['correct_third'] * 1); ?></span></strong></p>
+        <p>1<sup>st</sup> attempt: <span id="score-first"><?php echo $_SESSION['correct_first']; ?></span></p>
+        <p>2<sup>nd</sup> attempt: <span id="score-second"><?php echo $_SESSION['correct_second']; ?></span></p>
+        <p>3<sup>rd</sup> attempt: <span id="score-third"><?php echo $_SESSION['correct_third']; ?></span></p>
     </div>
 </div>
 
