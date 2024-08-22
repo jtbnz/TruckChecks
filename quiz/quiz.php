@@ -130,10 +130,10 @@ if ($quiz === null) {
             padding: 1vh 0;
             font-size: 5vw; /* Scales with viewport width */
             cursor: pointer;
-            width: 40vw; /* Use most of the width on mobile */
-            max-width: 150px; /* Limit the width on larger screens */
-            height: 40vw; /* Square shape on mobile */
-            max-height: 150px; /* Limit the height on larger screens */
+            width: 35vw; /* Use most of the width on mobile */
+            max-width: 130px; /* Limit the width on larger screens */
+            height: 35vw; /* Square shape on mobile */
+            max-height: 130px; /* Limit the height on larger screens */
             border: none;
             border-radius: 10px; /* Optional: Rounded corners */
             display: flex;
