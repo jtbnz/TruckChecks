@@ -13,10 +13,10 @@ function get_db_connection() {
 
     $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=db_host;dbname=db_name;charset=$charset";
+    $dsn = "mysql:host=" .db_host . ";dbname=" . db_name . ";charset=$charset";
 
     echo $dsn;
-    
+
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Fetch results as associative arrays

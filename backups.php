@@ -15,13 +15,14 @@ include 'db.php'; // Include the database connection file
 
 // Paths and filenames
 $backup_dir = 'backups';
+
 //is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Only run the backup creation when the form is submitted
-    $backup_file = $backup_dir . '/' .  . '_' . date('Y-m-d_H-i-s') . '.sql';
-    $zip_file = $backup_dir . '/' .  . '_' . date('Y-m-d_H-i-s') . '.zip';
+    $backup_file = $backup_dir . '/' . db_name . '_' . date('Y-m-d_H-i-s') . '.sql';
+    $zip_file = $backup_dir . '/' . db_name  . '_' . date('Y-m-d_H-i-s') . '.zip';
 
     // Create backups directory if not exists
     if (!file_exists($backup_dir)) {
@@ -29,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Step 1: Dump the database into a SQL file
-    $command = "mysqldump --user=db_user --password=db_pass  > $backup_file";
+    $command = "mysqldump --user=" . db_user . " --password=" . db_pass . "  > $backup_file";
     $output = null;
     $return_var = null;
     exec($command, $output, $return_var);
