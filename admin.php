@@ -5,9 +5,9 @@ include ('db.php');
 
 include 'templates/header.php';
 
-if (isset($_SESSION['is_demo'])) {
+if (isset($_SESSION['IS_DEMO'])) {
     
-    if($_SESSION['is_demo'] === true) {
+    if($_SESSION['IS_DEMO'] === true) {
         echo "<h1>Demo Mode</h2> ";
         echo "<h2>Demo mode adds the background stripes and the word DEMO in the middle of the screen</h2>";
         echo "<h2>There is also the Delete Demo Checks Data button which will reset the checks but not the locker changes</h2>";
@@ -23,7 +23,7 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     exit;
 }
 
-$showButton = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+$showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 
 ?>

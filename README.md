@@ -64,13 +64,13 @@ Truck Checks is a web application designed to manage and monitor the inventory o
       ```
         <?php
 
-            define('db_host' ,'localhost');
-            define('db_name' , 'your_database_name');
-            define('db_user' , 'your_username');
-            define('db_pass','your_password');
+            define('DB_HOST' ,'localhost');
+            define('DB_NAME' , 'your_database_name');
+            define('DB_USER' , 'your_username');
+            define('DB_PASS','your_password');
             define('PASSWORD', 'YourSecurePassword');
 
-            define('is_demo',false);
+            define('IS_DEMO',false);
 
 
         ?>

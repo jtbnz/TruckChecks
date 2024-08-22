@@ -4,7 +4,7 @@ include 'db.php';
 
 
 $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 ?>
 
 <!DOCTYPE html>
@@ -31,7 +31,7 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
         window.onload = displayLastRefreshed;
     </script>
 </head>
-<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 
 <?php

@@ -13,7 +13,7 @@ function get_db_connection() {
 
     $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=" .db_host . ";dbname=" . db_name . ";charset=$charset";
+    $dsn = "mysql:host=" .DB_HOST . ";dbname=" . DB_NAME . ";charset=$charset";
 
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
@@ -22,7 +22,7 @@ function get_db_connection() {
     ];
 
     try {
-        $pdo = new PDO($dsn, db_user, db_pass, $options);
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         return $pdo;
     } catch (PDOException $e) {
         // Log the error message to a file or another logging system
