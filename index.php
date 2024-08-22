@@ -4,7 +4,7 @@ include 'db.php';
 
 
 $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 ?>
 
 <!DOCTYPE html>
@@ -31,7 +31,7 @@ $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
         window.onload = displayLastRefreshed;
     </script>
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 
 <?php
@@ -131,8 +131,9 @@ function get_locker_status($locker_id, $db, $colors) {
 <!-- Admin Button -->
 <div style="text-align: center; margin-top: 40px;">
     <a href="login.php" class="button touch-button">Admin</a>
-    <a href="settings.php" class="button touch-button">Settings</a> 
+    <a href="quiz/quiz.php" class="button touch-button">Quiz</a> 
     <a href="reports.php" class="button touch-button">Reports</a>
+    <a href="settings.php" class="button touch-button">Settings</a> 
 </div>
 
 <!-- Modal -->
@@ -177,7 +178,7 @@ function closeModal() {
 <!-- Footer section -->
 <footer>
 
-    <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
+    <p id="last-refreshed" style="margin-top: 10px;"></p> 
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
     </div>   

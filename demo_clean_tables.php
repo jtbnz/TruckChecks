@@ -1,8 +1,8 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-include('password.php');
+error_reporting(E_ALL); */
+include('config.php');
 
 // Include the database connection
 include 'db.php';
@@ -15,8 +15,8 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     exit;
 }
 
-// Check if the session variable 'is_demo' is set and true
-$showButton = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+// Check if the session variable 'IS_DEMO' is set and true
+$showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 // Handle the delete request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
         }
     </style>
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 <?php if ($showButton): ?>
     <form method="POST" action="">

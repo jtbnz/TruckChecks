@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL); */
 
 include 'db.php'; // Include your database connection
 
@@ -24,7 +24,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 
 
@@ -114,7 +114,7 @@ if (isset($_POST['export_csv'])) {
 
 
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 <h1>Locker Check Reports</h1>
 

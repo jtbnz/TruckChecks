@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL); */
 
 //session_start();
 include 'db.php';
@@ -23,7 +23,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 $db = get_db_connection();
 
@@ -192,7 +192,7 @@ if ($selected_truck_id) {
 
     </script>
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 <h1>Check Locker Items</h1>
 
@@ -272,7 +272,14 @@ if ($selected_truck_id) {
     <p>Please select a truck to view its lockers and items.</p>
 <?php endif; ?>
 
-<?php include 'templates/footer.php'; ?>
-
+<footer>
+    <? $version = $_SESSION['version']; ?>
+    <p><a href="index.php" class="button touch-button">Return to Home</a></p>
+    <p><a href="quiz/quiz.php" class="button touch-button">Locker Quiz</a> </p>
+    <p id="last-refreshed" style="margin-top: 10px;"></p> 
+    <div class="version-number">
+        Version: <?php echo htmlspecialchars($version); ?>
+    </div>   
+</footer>
 </body>
 </html>

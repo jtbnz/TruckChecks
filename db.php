@@ -1,18 +1,20 @@
-
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+/* ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL); */
 
-$_SESSION['is_demo'] = false;
+
+include 'config.php';
+
 function get_db_connection() {
-    $host = 'localhost';
-    $db   = 'database_name';
-    $user = 'database_user';
-    $pass = 'database_password';
+
     $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+    $dsn = "mysql:host=" .DB_HOST . ";dbname=" . DB_NAME . ";charset=$charset";
+
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Fetch results as associative arrays
@@ -20,7 +22,7 @@ function get_db_connection() {
     ];
 
     try {
-        $pdo = new PDO($dsn, $user, $pass, $options);
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         return $pdo;
     } catch (PDOException $e) {
         // Log the error message to a file or another logging system
