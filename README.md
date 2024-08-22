@@ -48,7 +48,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
     If you're using Docker, you can skip this step since dependencies will be handled by Docker.
     The main one you will need is qr-code to generate the qrcode image
 
-        ```
+        ```bash
         composer2 require endroid/qr-code
         ```
         
@@ -61,20 +61,16 @@ Truck Checks is a web application designed to manage and monitor the inventory o
         cp config_sample.php config.php
         ```
     Open config.php and set your database credentials, admin password, and demo mode (unlikely!)
-      ```
-        <?php
 
+    ```php
             define('DB_HOST' ,'localhost');
             define('DB_NAME' , 'your_database_name');
             define('DB_USER' , 'your_username');
             define('DB_PASS','your_password');
             define('PASSWORD', 'YourSecurePassword');
 
-            define('IS_DEMO',false);
-
-
-        ?>
-         ```
+            define('IS_DEMO',false);    
+    ```
 
 5. **Run the application**:
     - Point your web server to the `index.php` file or use Docker to run the application.
