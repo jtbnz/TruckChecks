@@ -154,7 +154,7 @@ if ($quiz === null) {
 
         .score-container {
             margin-top: 2vh;
-            /* padding: 1vh; */
+            padding: 1vh;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             display: inline-block;
@@ -164,6 +164,12 @@ if ($quiz === null) {
             max-width: 300px; /* Limit the width on larger screens */
             text-align: left;
         }
+        .score-container p {
+            margin-top: 0.5em; /* Reduce top margin */
+            margin-bottom: 0.5em; /* Reduce bottom margin */
+            font-size: 0.8em; /* Reduce font size */
+        }
+
 
         /* Adjustments for larger screens */
         @media (min-width: 768px) {
