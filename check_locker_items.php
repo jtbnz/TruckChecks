@@ -23,7 +23,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 $db = get_db_connection();
 
@@ -192,7 +192,7 @@ if ($selected_truck_id) {
 
     </script>
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Check Locker Items</h1>
 

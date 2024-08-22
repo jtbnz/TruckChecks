@@ -4,15 +4,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$_SESSION['is_demo'] = false;
+include 'config.php';
+
 function get_db_connection() {
-    $host = 'localhost';
-    $db   = 'database_name';
-    $user = 'database_user';
-    $pass = 'database_password';
+
     $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+    $dsn = "mysql:host=dbhost;dbname=db_name;charset=$charset";
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Fetch results as associative arrays
@@ -20,7 +18,7 @@ function get_db_connection() {
     ];
 
     try {
-        $pdo = new PDO($dsn, $user, $pass, $options);
+        $pdo = new PDO($dsn, db_user, db_pass, $options);
         return $pdo;
     } catch (PDOException $e) {
         // Log the error message to a file or another logging system

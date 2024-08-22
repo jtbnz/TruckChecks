@@ -49,7 +49,7 @@ if (time() - $_SESSION['quiz_start_time'] > 86400) { // 86400 seconds = 24 hours
     reset_quiz_scores();
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 // Function to fetch a random quiz question
 function get_quiz_question($db) {
@@ -203,7 +203,7 @@ if ($quiz === null) {
     </style>
 
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
     <div class="quiz-container">
     <div class="quiz-question">
         On <strong><?php echo htmlspecialchars($quiz['truck_name']); ?></strong>, where would you find the <br><strong><?php echo htmlspecialchars($quiz['item_name']); ?></strong>?

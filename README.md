@@ -21,6 +21,8 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 - **Demo Mode**: A special mode that allows users to explore the system without affecting real data.
 - **QR Code Generation**: Generate QR codes for easy identification of lockers.
 - **Database Management**: Includes tools for maintaining database backups and cleaning tables.
+- **Interactive Quiz**: Users can participate in a quiz where they guess the location of an item. The quiz tracks the number of attempts and calculates a total score based on the number of correct guesses.
+
 
 ## Installation
 
@@ -39,8 +41,8 @@ Truck Checks is a web application designed to manage and monitor the inventory o
     ```
 
 2. **Set up the database**:
-    - Import the provided SQL file (if any) to set up your database schema.
-    - Update `db.php` with your database connection details.
+    - Import the provided SQL file  to set up your database schema.
+    - Update `config.php` with your database connection details.
 
 3. **Install dependencies**:
     If you're using Docker, you can skip this step since dependencies will be handled by Docker.
@@ -52,9 +54,27 @@ Truck Checks is a web application designed to manage and monitor the inventory o
         
 4. **Configure local files**:
 - **db.php**: update with your username,password,database name - This also has the demo toggle field
-- **password.php**: update with your admin password
-- **backups.php**: update with your username,password,database name
+- **config.php**: Configure Database Credentials
+	Copy the config_sample.php file to config.php.
 
+        ```
+        cp config_sample.php config.php
+        ```
+    Open config.php and set your database credentials, admin password, and demo mode (unlikely!)
+      ```
+        <?php
+
+            define('db_host' ,'localhost');
+            define('db_name' , 'your_database_name');
+            define('db_user' , 'your_username');
+            define('db_pass','your_password');
+            define('PASSWORD', 'YourSecurePassword');
+
+            define('is_demo',false);
+
+
+        ?>
+         ```
 
 5. **Run the application**:
     - Point your web server to the `index.php` file or use Docker to run the application.
@@ -103,6 +123,9 @@ This project supports Docker for easy deployment.
 - **styles/**: CSS files for styling the application.
 - **templates/**: HTML templates used throughout the application.
 - **scripts/**: Local scripts used to email the checks automatically with timezone handling
+- **Config Sample File**: Added instructions to copy and configure the `config.php` file from `config_sample.php`.
+- **quiz/**: Quiz to locate the correct locker for an item
+
 
 ## Contributing
 

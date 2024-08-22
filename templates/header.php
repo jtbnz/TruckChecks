@@ -16,7 +16,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+// is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 ?>
 
@@ -28,4 +28,4 @@ $is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
     <title>Truck Checklist</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">

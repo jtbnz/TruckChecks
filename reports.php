@@ -24,7 +24,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 
 
@@ -114,7 +114,7 @@ if (isset($_POST['export_csv'])) {
 
 
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Locker Check Reports</h1>
 

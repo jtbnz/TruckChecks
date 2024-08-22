@@ -27,7 +27,7 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 // Fetch all trucks and lockers
 $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
@@ -42,7 +42,7 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
     <title>Locker QR Codes</title>
     <link rel="stylesheet" href="styles/qrcodes.css?id=V8"> <!-- Optional: Add your CSS file for styling -->
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Locker QR Codes</h1>
 

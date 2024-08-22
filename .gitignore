@@ -1,0 +1,3 @@
+# Ignore config.php file to protect sensitive credentials
+config.php
+

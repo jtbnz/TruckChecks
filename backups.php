@@ -10,19 +10,18 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
 }
 
 include 'db.php'; // Include the database connection file
-$db   = 'dbname';
-$user = 'username';
-$pass = 'dbpassword';
+
+
 
 // Paths and filenames
 $backup_dir = 'backups';
-$is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
+//is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Only run the backup creation when the form is submitted
-    $backup_file = $backup_dir . '/' . $db . '_' . date('Y-m-d_H-i-s') . '.sql';
-    $zip_file = $backup_dir . '/' . $db . '_' . date('Y-m-d_H-i-s') . '.zip';
+    $backup_file = $backup_dir . '/' .  . '_' . date('Y-m-d_H-i-s') . '.sql';
+    $zip_file = $backup_dir . '/' .  . '_' . date('Y-m-d_H-i-s') . '.zip';
 
     // Create backups directory if not exists
     if (!file_exists($backup_dir)) {
@@ -30,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Step 1: Dump the database into a SQL file
-    $command = "mysqldump --user=$user --password=$pass $db > $backup_file";
+    $command = "mysqldump --user=db_user --password=db_pass  > $backup_file";
     $output = null;
     $return_var = null;
     exec($command, $output, $return_var);
@@ -75,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Backup Database</title>
     <link rel="stylesheet" href="styles/styles.css?id=V7"> <!-- Link to your stylesheet if any -->
 </head>
-<body class="<?php echo $is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
 
 <h1>Backup Database</h1>
 
