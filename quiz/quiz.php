@@ -160,8 +160,8 @@ if ($quiz === null) {
             display: inline-block;
             background-color: #f9f9f9;
             font-size: 5vw; /* Scales with viewport width */
-            width: 80vw; /* Use most of the width on mobile */
-            max-width: 300px; /* Limit the width on larger screens */
+            width: 60vw; /* Use most of the width on mobile */
+            max-width: 200px; /* Limit the width on larger screens */
             text-align: left;
         }
         .score-container p {
