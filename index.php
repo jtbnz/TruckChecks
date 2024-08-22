@@ -178,7 +178,7 @@ function closeModal() {
 <!-- Footer section -->
 <footer>
 
-    <p id="last-refreshed" style="margin-top: 10px;"></p> <!-- Last refreshed time will appear here -->
+    <p id="last-refreshed" style="margin-top: 10px;"></p> 
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
     </div>   
