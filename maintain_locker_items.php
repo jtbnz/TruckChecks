@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-include('password.php');
+include('config.php');
 include 'db.php';
 include 'templates/header.php';
 

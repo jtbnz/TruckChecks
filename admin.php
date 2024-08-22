@@ -1,6 +1,6 @@
 <?php
 
-include('password.php');
+include('config.php');
 include ('db.php');
 
 include 'templates/header.php';
