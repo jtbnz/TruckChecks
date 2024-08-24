@@ -59,6 +59,7 @@ CREATE TABLE locker_item_deletion_log (
     deleted_at DATETIME
 );
 
+
 CREATE TABLE `email_addresses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) NOT NULL,
