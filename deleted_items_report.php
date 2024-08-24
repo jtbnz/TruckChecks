@@ -8,7 +8,7 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     header('Location: login.php');
     exit;
 }
-
+include 'templates/header.php';
 include 'db.php'; // Include the database connection file
 
 $db = get_db_connection();
@@ -127,6 +127,9 @@ $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a href="?page=<?php echo $page + 1; ?>">Next &raquo;</a>
     <?php endif; ?>
 </div>
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Admin Page</a>
 
-</body>
-</html>
+</div>
+
+<?php include 'templates/footer.php'; ?>
