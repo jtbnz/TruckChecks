@@ -35,15 +35,14 @@ $totalPages = ceil($totalRows / $limit);
 echo '<!-- ' . TZ_OFFSET . ' -->'  ;    
 // Fetch the log entries for the current page
 $stmt = $db->prepare("
-    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', ':tz_offset') AS local_time
+    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', 'TZ_OFFSET') AS local_time
     FROM locker_item_deletion_log
     ORDER BY deleted_at DESC
     LIMIT :limit OFFSET :offset
 ");
-echo '<!-- ' . $stmt . ' -->'  ;
+
 $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->bindParam(':tz_offset', TZ_OFFSET, PDO::PARAM_INT);
 $stmt->execute();
 $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
