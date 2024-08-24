@@ -14,7 +14,7 @@ define('DB_NAME' , 'your_database_name');
 define('DB_USER' , 'your_username');
 define('DB_PASS' , 'your_password');
 define('PASSWORD', 'YourSecurePassword'); //Used for access to the Admin pages
-
+define('TZ_OFFSET','+12:00'); //If you need to change timezones
 define('IS_DEMO' , false);
 
 ?>
