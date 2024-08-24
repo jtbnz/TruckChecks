@@ -106,7 +106,7 @@ $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <td><?php echo htmlspecialchars($log['truck_name']); ?></td>
                     <td><?php echo htmlspecialchars($log['locker_name']); ?></td>
                     <td><?php echo htmlspecialchars($log['item_name']); ?></td>
-                    <td><?php echo htmlspecialchars($log['deleted_at']); ?></td>
+                    <td><?php echo htmlspecialchars($log['local_time']); ?></td>
                 </tr>
             <?php endforeach; ?>
         <?php else: ?>
