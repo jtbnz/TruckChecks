@@ -15,7 +15,7 @@ include 'templates/header.php';
 
 $pdo = get_db_connection();
 //is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
-
+$current_directory = dirname($_SERVER['REQUEST_URI']);
 $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
 
 // Fetch the latest check date
