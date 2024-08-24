@@ -34,7 +34,7 @@ $totalPages = ceil($totalRows / $limit);
 
 // Fetch the log entries for the current page
 $stmt = $db->prepare("
-    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at,'+00:00', :tz_offset) as deleted_at
+    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at,'+00:00', ':tz_offset') as deleted_at
     FROM locker_item_deletion_log
     ORDER BY deleted_at DESC
     LIMIT :limit OFFSET :offset
