@@ -55,7 +55,7 @@ $checksStmt->execute();
 $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Query for deleted items in the last 7 days
-$deletedItemsQuery = $db->prepare("
+$deletedItemsQuery = $pdo->prepare("
     SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at
     FROM locker_item_deletion_log
     WHERE deleted_at >= NOW() - INTERVAL 7 DAY
