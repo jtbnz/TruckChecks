@@ -8,6 +8,8 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     header('Location: login.php');
     exit;
 }
+
+include('config.php');
 include 'templates/header.php';
 include 'db.php'; // Include the database connection file
 
