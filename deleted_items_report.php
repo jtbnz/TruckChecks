@@ -40,6 +40,7 @@ $stmt = $db->prepare("
     ORDER BY deleted_at DESC
     LIMIT :limit OFFSET :offset
 ");
+echo '<!-- ' . $stmt . ' -->'  ;
 $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 $stmt->bindParam(':tz_offset', TZ_OFFSET, PDO::PARAM_INT);
