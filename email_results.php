@@ -7,15 +7,7 @@ include('config.php');
 
 
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
-use PHPMailer\PHPMailer\Exception;
 
-// Check if the user is logged in
-if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
-    header('Location: login.php');
-    exit;
-}
 include 'db.php';
 include 'templates/header.php';
 
@@ -62,6 +54,17 @@ $checksStmt = $pdo->prepare($checksQuery);
 $checksStmt->execute();
 $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Query for deleted items in the last 7 days
+$deletedItemsQuery = $db->prepare("
+    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', 'Pacific/Auckland') AS deleted_at
+    FROM locker_item_deletion_log
+    WHERE deleted_at >= NOW() - INTERVAL 7 DAY
+    ORDER BY deleted_at DESC
+");
+$deletedItemsQuery->execute();
+$deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
+
+
 // Fetch email addresses
 $emailQuery = "SELECT email FROM email_addresses";
 $emailStmt = $pdo->prepare($emailQuery);
@@ -75,7 +78,14 @@ foreach ($checks as $check) {
     $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n\n";
 }
 
+$emailContent .= "\n\nThe following items have been deleted in the last 7 days:\n\n";
+foreach ($deletedItems as $deletedItem) {
+    $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n\n";
+}       
+
 echo "Message to send: " . $emailContent ;
+
+
 
 // Send the email if there are email addresses
 if (!empty($emails)) {
