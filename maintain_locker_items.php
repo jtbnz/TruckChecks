@@ -32,6 +32,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
 // Handle deleting an item from a locker
 if (isset($_GET['delete_item_id'])) {
     $item_id = $_GET['delete_item_id'];
+    $stmt = $db->prepare("
+        SELECT t.name AS truck_name, l.name AS locker_name, i.name AS item_name
+        FROM lockers l
+        JOIN trucks t ON l.truck_id = t.id
+        JOIN items i ON l.id = i.locker_id
+        WHERE i.id = :item_id
+    ");
+    $stmt->bindParam(':item_id', $item_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $itemDetails = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($itemDetails) {
+        // Insert into the log table
+        $logStmt = $db->prepare("
+            INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at)
+            VALUES (:truck_name, :locker_name, :item_name, NOW())
+        ");
+        $logStmt->bindParam(':truck_name', $itemDetails['truck_name'], PDO::PARAM_STR);
+        $logStmt->bindParam(':locker_name', $itemDetails['locker_name'], PDO::PARAM_STR);
+        $logStmt->bindParam(':item_name', $itemDetails['item_name'], PDO::PARAM_STR);
+        $logStmt->execute();
+    }
+
+
     $query = $db->prepare('DELETE FROM items WHERE id = :id');
     $query->execute(['id' => $item_id]);
 }

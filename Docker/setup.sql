@@ -7,6 +7,8 @@ DROP TABLE IF EXISTS `items`;
 DROP TABLE IF EXISTS `lockers`;
 DROP TABLE IF EXISTS `trucks`;
 DROP TABLE IF EXISTS `email_addresses`;
+DROP TABLE IF EXISTS `locker_item_deletion_log`;
+
 -- Create the `trucks` table
 CREATE TABLE `trucks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -49,7 +51,13 @@ CREATE TABLE `check_items` (
     FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
 );
 
-
+CREATE TABLE locker_item_deletion_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    truck_name VARCHAR(255),
+    locker_name VARCHAR(255),
+    item_name VARCHAR(255),
+    deleted_at DATETIME
+);
 
 CREATE TABLE `email_addresses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
