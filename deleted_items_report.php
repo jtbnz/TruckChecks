@@ -31,11 +31,10 @@ $totalRows = $totalQuery->fetchColumn();
 
 // Calculate the total number of pages
 $totalPages = ceil($totalRows / $limit);
-
-echo '<!-- ' . TZ_OFFSET . ' -->'  ;    
+ 
 // Fetch the log entries for the current page
 $stmt = $db->prepare("
-    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', 'TZ_OFFSET') AS local_time
+    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS local_time
     FROM locker_item_deletion_log
     ORDER BY deleted_at DESC
     LIMIT :limit OFFSET :offset
