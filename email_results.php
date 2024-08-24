@@ -1,7 +1,7 @@
 <?php 
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);  
+error_reporting(E_ALL);   */
 
 include('config.php');
 
@@ -16,6 +16,7 @@ include 'templates/header.php';
 $pdo = get_db_connection();
 //is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
 
+$current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
 
 // Fetch the latest check date
 $latestCheckQuery = "SELECT DISTINCT DATE(check_date) as the_date FROM checks ORDER BY check_date DESC limit 1";
@@ -83,6 +84,8 @@ foreach ($deletedItems as $deletedItem) {
     $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n\n";
 }       
 
+
+$emailContent .= $current_url ."\n\n";
 echo "Message to send: " . $emailContent ;
 
 
