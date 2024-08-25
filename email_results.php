@@ -104,26 +104,7 @@ if (!empty($emails)) {
     echo "No email addresses to send to.";
 }
 
-// Handling form submissions for managing email addresses
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['add_email'])) {
-        $newEmail = $_POST['email'];
-        $addEmailQuery = "INSERT INTO email_addresses (email) VALUES (?)";
-        $addEmailStmt = $pdo->prepare($addEmailQuery);
-        $addEmailStmt->execute([$newEmail]);
-    } elseif (isset($_POST['delete_email'])) {
-        $emailId = $_POST['email_id'];
-        $deleteEmailQuery = "DELETE FROM email_addresses WHERE id = ?";
-        $deleteEmailStmt = $pdo->prepare($deleteEmailQuery);
-        $deleteEmailStmt->execute([$emailId]);
-    } elseif (isset($_POST['update_email'])) {
-        $emailId = $_POST['email_id'];
-        $updatedEmail = $_POST['email'];
-        $updateEmailQuery = "UPDATE email_addresses SET email = ? WHERE id = ?";
-        $updateEmailStmt = $pdo->prepare($updateEmailQuery);
-        $updateEmailStmt->execute([$updatedEmail, $emailId]);
-    }
-}
+
 
 ?>
 
@@ -134,32 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Manage Email Addresses</title>
 </head>
 <body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
-    <h2>Email Addresses</h2>
-    <form method="post">
-        <label for="email">Add Email:</label>
-        <input type="email" name="email" required>
-        <button type="submit" name="add_email">Add</button>
-    </form>
 
-    <h2>Existing Emails</h2>
-    <ul>
-        <?php
-        $fetchEmailsQuery = "SELECT id, email FROM email_addresses";
-        $fetchEmailsStmt = $pdo->prepare($fetchEmailsQuery);
-        $fetchEmailsStmt->execute();
-        $emailAddresses = $fetchEmailsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($emailAddresses as $emailAddress) {
-            echo "<li>";
-            echo "<form method='post' style='display:inline;'>";
-            echo "<input type='hidden' name='email_id' value='{$emailAddress['id']}'>";
-            echo "<input type='email' name='email' value='{$emailAddress['email']}' required>";
-            echo "<button type='submit' name='update_email'>Update</button>";
-            echo "<button type='submit' name='delete_email'>Delete</button>";
-            echo "</form>";
-            echo "</li>";
-        }
-        ?>
+
     </ul>
     <?php include 'templates/footer.php'; ?>
 </body>

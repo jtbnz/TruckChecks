@@ -42,6 +42,7 @@ $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 <div class="button-container" style="margin-top: 20px;">
     <a href="qr-codes.php" class="button touch-button">Generate QR Codes</a>
     <a href="backups.php" class="button touch-button">Download a backup</a>
+    <a href="email_admin.php" class="button touch-button">Manage Email address to send to</a>
     <a href="email_results.php" class="button touch-button">Email the last check missing items</a>
     <a href="reports.php" class="button touch-button">Reports</a>
     <?php if ($showButton): ?>
