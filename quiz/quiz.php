@@ -161,7 +161,7 @@ if ($quiz === null) {
             background-color: #f9f9f9;
             font-size: 5vw; /* Scales with viewport width */
             width: 40vw; /* Use most of the width on mobile */
-            max-width: 180px; /* Limit the width on larger screens */
+            max-width: 200px; /* Limit the width on larger screens */
             text-align: left;
         }
         .score-container p {
