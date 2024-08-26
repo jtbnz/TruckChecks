@@ -9,7 +9,6 @@ include ('db.php');
 
 
 
-<?php
 // Check if session has not already been started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
