@@ -30,7 +30,7 @@ $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 <h1>Admin Page</h1>
 
-
+<img src="images/scania.jpg" alt="scania" class="truck-image">
 
 <div class="button-container" style="margin-top: 20px;">
     <a href="maintain_trucks.php" class="button touch-button">Maintain Trucks</a>
