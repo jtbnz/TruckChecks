@@ -345,3 +345,10 @@ body.demo-mode::after {
     border: 1px solid #ccc;
     box-sizing: border-box; /* Ensures padding is included in the width */
 }
+
+
+.truck-image {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}

@@ -3,57 +3,7 @@
 include('config.php');
 include ('db.php');
 
-//include 'templates/header.php';
-
-
-
-
-
-// Check if session has not already been started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
-
-
-
-?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Truck Checklist</title>
-    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
-    <style>
-        body::before {
-            content: "";
-            display: block;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 75vw; /* 75% of the viewport width */
-            height: 100vh; /* 100% of the viewport height */
-            background: url(images/scania.png) no-repeat center center fixed; 
-            background-size: cover;
-            z-index: -1;
-            opacity: 0.7; /* 30% greyed out */
-        }
-    </style>
-</head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+include 'templates/header.php';
 
 if (isset($_SESSION['IS_DEMO'])) {
     
