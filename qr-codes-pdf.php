@@ -32,6 +32,7 @@ if (!isset($_SESSION['version'])) {
 }
 
 $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as truck_name,l.truck_id from lockers l JOIN trucks t on l.truck_id= t.id order by t.id')->fetchAll(PDO::FETCH_ASSOC);
+$current_directory = dirname($_SERVER['REQUEST_URI']);
 
 
 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
@@ -65,7 +66,9 @@ foreach ($lockers as $index => $locker) {
     $x = $pdf->getMargins()['left'] + $col * ($qrCodeSize + $gap);
     $y = $pdf->getMargins()['top'] + $row * ($qrCodeSize + $gap);
 
-    $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
+    $locker_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/check_locker_items.php?truck_id=' . $locker['truck_id'] . '&locker_id=' . $locker['locker_id'] ;
+
+    $qrCode = QrCode::create($locker_url)
         ->setSize($qrCodeSizeInPixels)
         ->setMargin(0);
 
