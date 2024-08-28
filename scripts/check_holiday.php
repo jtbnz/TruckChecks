@@ -9,7 +9,9 @@ $data = json_decode($response, true);
 
 if ($data && isset($data['HolidayName'])) {
     $holiday_name = $data['HolidayName'];
-    if (strpos($holiday_name, 'Anniversary Day') !== false && $holiday_name !== 'Auckland Anniversary Day') {
+    if ($holiday_name === 'Not a Public Holiday') {
+        echo "NO_HOLIDAY";
+    } elseif (strpos($holiday_name, 'Anniversary Day') !== false && $holiday_name !== 'Auckland Anniversary Day') {
         // If it's an Anniversary Day but not Auckland's, ignore it
         echo "IGNORE";
     } else {
