@@ -47,12 +47,13 @@ $writer = new PngWriter();
 
 
 
+
 foreach ($lockers as $index => $locker) {
     if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
     }
 
-    $row = floor($index / $labelsPerRow) % $labelsPerColumn;
+    $row = floor(($index % ($labelsPerRow * $labelsPerColumn)) / $labelsPerRow);
     $col = $index % $labelsPerRow;
 
     $x = $pdf->getMargins()['left'] + $col * ($qrCodeSize + $gap);
