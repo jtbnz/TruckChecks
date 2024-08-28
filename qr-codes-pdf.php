@@ -48,13 +48,11 @@ $writer = new PngWriter();
 
 
 foreach ($lockers as $index => $locker) {
-    if ($index % ($labelsPerRow * $labelsPerColumn) == 0) {
-        if ($index != 0) {
-            $pdf->AddPage();
-        }
+    if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
+        $pdf->AddPage();
     }
 
-    $row = floor($index / $labelsPerRow);
+    $row = floor($index / $labelsPerRow) % $labelsPerColumn;
     $col = $index % $labelsPerRow;
 
     $x = $pdf->getMargins()['left'] + $col * ($qrCodeSize + $gap);
@@ -67,10 +65,6 @@ foreach ($lockers as $index => $locker) {
     $pdf->Text($x, $y - 3, 'Label: ' . ($index + 1));
     $pdf->Text($x, $y - 6, $locker['truck_name'] . ' ' . $locker['locker_name']);
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
-
-    if (($index + 1) % ($labelsPerRow * $labelsPerColumn) == 0) {
-        $pdf->AddPage();
-    }
 }
 
 $pdf->Output('qrcodes.pdf', 'I');
