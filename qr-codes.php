@@ -46,9 +46,11 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 
 <h1>Locker QR Codes</h1>
 
-Generate a pdf <a href="qr-codes-pdf.php">here</a> This pdf can be used to print out 45mm labels. <br>
+<div class="center-container">
+You can generate a pdf <a href="qr-codes-pdf.php">here</a> <br>
+This pdf can be used to print out 45mm labels. <br>
  Sized for Avery L7124 Glossy Square Labels. <br>
- 
+</div>
 
 <?php
 $current_directory = dirname($_SERVER['REQUEST_URI']);
