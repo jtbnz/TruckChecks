@@ -3,7 +3,7 @@
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */
 
-include 'db.php'; // Include your database connection
+include 'db.php'; 
 
 $db = get_db_connection();
 

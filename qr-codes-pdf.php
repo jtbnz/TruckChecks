@@ -14,7 +14,9 @@ use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 use TCPDF;
 
-include 'db.php'; // Adjust to your database connection script
+include 'db.php'; 
+$db = get_db_connection();
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
