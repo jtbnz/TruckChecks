@@ -40,6 +40,7 @@ $pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
 
 $qrCodeSize = 45; // in mm
+$qrCodeSizeInPixels = $qrCodeSize * 3.779;
 $gap = 5.08; // in mm
 $labelsPerRow = 4;
 $labelsPerColumn = 5;
@@ -48,6 +49,8 @@ $writer = new PngWriter();
 $pdf->SetAutoPageBreak(false, 26);
 $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 $pdf->AddPage();
+ // 1mm is approximately 3.779 pixels
+
 //echo "New Page<br>";
 
 foreach ($lockers as $index => $locker) {
@@ -63,7 +66,7 @@ foreach ($lockers as $index => $locker) {
     $y = $pdf->getMargins()['top'] + $row * ($qrCodeSize + $gap);
 
     $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
-        ->setSize($qrCodeSize);
+        ->setSize($qrCodeSizeInPixels);
 
     $pdf->SetFont('helvetica', '', 6);
     $pdf->Text($x, $y - 3, 'Label: ' . ($index + 1));
