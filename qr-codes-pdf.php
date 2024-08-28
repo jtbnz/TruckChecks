@@ -66,7 +66,7 @@ foreach ($lockers as $index => $locker) {
     $pdf->Text($x, $y - 3, 'Label: ' . ($index + 1));
     $pdf->Text($x, $y - 6, $locker['truck_name'] . ' ' . $locker['locker_name']);
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
-}}
+}
 
 $pdf->Output('qrcodes.pdf', 'I');
 ?>
