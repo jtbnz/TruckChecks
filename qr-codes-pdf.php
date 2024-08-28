@@ -60,6 +60,8 @@ foreach ($lockers as $index => $locker) {
     $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
         ->setSize($qrCodeSize);
 
+    $pdf->SetFont('helvetica', '', 6);
+    $pdf->Text($x, $y - 3, $locker['truck_name'] . ' ' . $locker['locker_name'] . ' ' . $x . ' ' . $y);
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
 }
 
