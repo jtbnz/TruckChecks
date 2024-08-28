@@ -35,11 +35,11 @@ $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as 
 
 
 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
-
+$pdf->setPrintHeader(false);
 $pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
 
-$qrCodeSize = 50; // in mm
+$qrCodeSize = 45; // in mm
 $qrCodeSizeInPixels = $qrCodeSize * 3.779;  // 1mm is approximately 3.779 pixels
 $gap = 5.08; // in mm
 $labelsPerRow = 4;
