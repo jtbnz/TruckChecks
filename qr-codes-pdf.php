@@ -47,10 +47,12 @@ $writer = new PngWriter();
 
 
 $pdf->AddPage();
+echo "New Page<br>";
 
 foreach ($lockers as $index => $locker) {
     if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
+        echo "New Page<br>";
     }
 
     $row = floor(($index % ($labelsPerRow * $labelsPerColumn)) / $labelsPerRow);
@@ -62,12 +64,12 @@ foreach ($lockers as $index => $locker) {
     $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
         ->setSize($qrCodeSize);
 
-  //  echo "Row: $row, Col: $col, x: $x , y: $y " . $locker['truck_name'] . ' ' . $locker['locker_name'] . "<br>";   
+    echo "Row: $row, Col: $col, x: $x , y: $y " . $locker['truck_name'] . ' ' . $locker['locker_name'] . "<br>";   
     $pdf->SetFont('helvetica', '', 6);
     $pdf->Text($x, $y - 3, 'Label: ' . ($index + 1));
     $pdf->Text($x, $y - 6, $locker['truck_name'] . ' ' . $locker['locker_name']);
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
 }
 
-$pdf->Output('qrcodes.pdf', 'I');
+//$pdf->Output('qrcodes.pdf', 'I');
 ?>
