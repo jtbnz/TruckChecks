@@ -67,7 +67,7 @@ foreach ($lockers as $index => $locker) {
 
     $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
         ->setSize($qrCodeSizeInPixels)
-        ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
+        ->setMargin(0);
 
     $pdf->SetFont('helvetica', '', 6);
     $pdf->Text($x, $y - 6, $locker['truck_name'] . ' ' . $locker['locker_name']);
