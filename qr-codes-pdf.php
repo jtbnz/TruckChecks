@@ -39,7 +39,7 @@ $pdf->setPrintHeader(false);
 $pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
 
-$qrCodeSize = 46; // in mm
+$qrCodeSize = 45; // in mm
 $qrCodeSizeInPixels = $qrCodeSize * 3.779;  // 1mm is approximately 3.779 pixels
 $gap = 5.08; // in mm
 $labelsPerRow = 4;
@@ -66,7 +66,8 @@ foreach ($lockers as $index => $locker) {
     $y = $pdf->getMargins()['top'] + $row * ($qrCodeSize + $gap);
 
     $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
-        ->setSize($qrCodeSizeInPixels);
+        ->setSize($qrCodeSizeInPixels)
+        ->setRoundBlockSizeMode(RoundBlockSizeMode::Margin);
 
     $pdf->SetFont('helvetica', '', 6);
     $pdf->Text($x, $y - 6, $locker['truck_name'] . ' ' . $locker['locker_name']);
