@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 require_once('vendor/autoload.php');
 
 use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Response\QrCodeResponse;
+use Endroid\QrCode\Writer\PngWriter;
 
 
 use TCPDF;
@@ -43,6 +43,8 @@ $gap = 5.08; // in mm
 $labelsPerRow = 4;
 $labelsPerColumn = 5;
 
+$writer = new PngWriter();
+
 foreach ($lockers as $index => $locker) {
     if ($index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
@@ -54,10 +56,10 @@ foreach ($lockers as $index => $locker) {
     $x = $pdf->getMargins()['left'] + $col * ($qrCodeSize + $gap);
     $y = $pdf->getMargins()['top'] + $row * ($qrCodeSize + $gap);
 
-    $qrCode = new QrCode('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id']);
-    $qrCode->setSize($qrCodeSize);
+    $qrCode = QrCode::create('http://example.com/locker/' . $locker['locker_id'] . '/truck/' . $locker['truck_id'])
+        ->setSize($qrCodeSize);
 
-    $pdf->Image('@' . $qrCode->writeString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
+    $pdf->Image('@' . $writer->writeString($qrCode), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
 }
 
 $pdf->Output('qrcodes.pdf', 'I');
