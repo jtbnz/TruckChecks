@@ -44,7 +44,7 @@ $labelsPerRow = 4;
 $labelsPerColumn = 5;
 
 $writer = new PngWriter();
-
+$pdf->SetAutoPageBreak(false, 26);
 
 $pdf->AddPage();
 //echo "New Page<br>";
