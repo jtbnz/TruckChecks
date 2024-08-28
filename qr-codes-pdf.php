@@ -70,7 +70,7 @@ foreach ($lockers as $index => $locker) {
         ->setMargin(0);
 
     $pdf->SetFont('helvetica', '', 6);
-    $pdf->Text($x + 3, $y - 3, $locker['truck_name'] . ' ' . $locker['locker_name']);
+    $pdf->Text($x + 6, $y - 3, $locker['truck_name'] . ' ' . $locker['locker_name'] . '↓');
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
     //echo "Index: $index Row: $row, Col: $col, x: $x , y: $y " . $locker['truck_name'] . ' ' . $locker['locker_name'] . "<br>";   
    
