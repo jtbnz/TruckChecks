@@ -32,6 +32,7 @@ if (!isset($_SESSION['version'])) {
 }
 
 $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as truck_name,l.truck_id from lockers l JOIN trucks t on l.truck_id= t.id order by t.id')->fetchAll(PDO::FETCH_ASSOC);
+define('PDF_IMAGE_SCALE_RATIO', 300/72); 
 
 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
 
@@ -45,7 +46,7 @@ $labelsPerColumn = 5;
 
 $writer = new PngWriter();
 $pdf->SetAutoPageBreak(false, 26);
-
+$pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
 $pdf->AddPage();
 //echo "New Page<br>";
 
