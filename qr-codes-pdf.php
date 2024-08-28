@@ -52,7 +52,7 @@ $pdf->AddPage();
 foreach ($lockers as $index => $locker) {
     if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
-        echo "New Page<br>";
+        //echo "New Page<br>";
     }
 
     $row = floor(($index % ($labelsPerRow * $labelsPerColumn)) / $labelsPerRow);
