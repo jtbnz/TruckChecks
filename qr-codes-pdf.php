@@ -33,7 +33,7 @@ if (!isset($_SESSION['version'])) {
 
 $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as truck_name,l.truck_id from lockers l JOIN trucks t on l.truck_id= t.id order by t.id')->fetchAll(PDO::FETCH_ASSOC);
 
-$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
 
 $pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
@@ -46,7 +46,7 @@ $labelsPerColumn = 5;
 $writer = new PngWriter();
 
 foreach ($lockers as $index => $locker) {
-    if ($index % ($labelsPerRow * $labelsPerColumn) == 0) {
+    if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
     }
 
