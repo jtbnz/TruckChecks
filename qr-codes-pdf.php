@@ -46,8 +46,10 @@ $labelsPerColumn = 5;
 $writer = new PngWriter();
 
 foreach ($lockers as $index => $locker) {
-    if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
-        $pdf->AddPage();
+    if ($index % ($labelsPerRow * $labelsPerColumn) == 0) {
+        if ($index != 0) {
+            $pdf->AddPage();
+        }
     }
 
     $row = floor($index / $labelsPerRow) % $labelsPerColumn;
