@@ -39,7 +39,7 @@ $pdf->setPrintHeader(false);
 $pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
 
-$qrCodeSize = 45; // in mm
+$qrCodeSize = 46; // in mm
 $qrCodeSizeInPixels = $qrCodeSize * 3.779;  // 1mm is approximately 3.779 pixels
 $gap = 5.08; // in mm
 $labelsPerRow = 4;
