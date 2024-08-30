@@ -9,37 +9,32 @@ include 'templates/header.php';
 require_once 'db.php';
 $db = get_db_connection();
 // Query to retrieve all items, including truck name and locker name, sorted by truck name and locker name
-$query = "SELECT items.*, trucks.name AS truck_name, lockers.name AS locker_name
-          FROM items
-          INNER JOIN trucks ON items.truck_id = trucks.id
-          INNER JOIN lockers ON items.locker_id = lockers.id
-          ORDER BY trucks.name, lockers.name";
 
-// Execute the query
-$result = mysqli_query($db, $query);
+$report_query = $db->prepare("
 
-// Check if the query was successful
-if ($result) {
-    // Fetch all rows from the result set
-    $rows = mysqli_fetch_all($result, MYSQLI_ASSOC);
 
-    // Output the list of items
-    foreach ($rows as $row) {
-        echo "Item ID: " . $row['id'] . "\n";
-        echo "Item Name: " . $row['name'] . "\n";
-        echo "Truck Name: " . $row['truck_name'] . "\n";
-        echo "Locker Name: " . $row['locker_name'] . "\n";
-        echo "\n";
-    }
+        SELECT 
+            t.name as truck_name, 
+            l.name as locker_name, 
+            i.name as item_name
 
-    // Free the result set
-    mysqli_free_result($result);
-} else {
-    // Handle the error if the query fails
-    echo "Error: " . mysqli_error($db);
-}
+        FROM items i
+            JOIN lockers l ON i.locker_id = l.id
+            JOIN trucks t ON t.id = l.truck_id
+            ORDER BY t.name, l.name;
+    ");
+    
 
-// Close the database connection
-mysqli_close($db);
+$report_query->execute();
+$report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
 
+echo "<table><tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>";
+ foreach ($report_data as $item): 
+
+        echo "<tr><td>" . htmlspecialchars($item['truck_name']) . "</td>"; 
+        echo "<TD>" . htmlspecialchars($item['locker_name']) . "</td>";
+        echo "<TD>" . htmlspecialchars($item['item_name']) . "</td></tr>"; 
+
+ endforeach; 
+echo "</table>";
 ?>
