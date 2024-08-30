@@ -1,5 +1,10 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
+include('config.php');
+include 'templates/header.php';
 // Include the database connection file
 require_once 'db.php';
 $db = get_db_connection();
