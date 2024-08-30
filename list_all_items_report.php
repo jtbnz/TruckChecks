@@ -28,14 +28,14 @@ $report_query = $db->prepare("
 $report_query->execute();
 $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
 
-echo "<table><tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>";
+echo "<div class='truck-listing'><table><tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>\n";
  foreach ($report_data as $item): 
 
-        echo "<tr><td>" . htmlspecialchars($item['truck_name']) . "</td>"; 
-        echo "<TD>" . htmlspecialchars($item['locker_name']) . "</td>";
-        echo "<TD>" . htmlspecialchars($item['item_name']) . "</td></tr>"; 
+        echo "<tr><td>" . htmlspecialchars($item['truck_name']) . "</td>\n"; 
+        echo "<TD>" . htmlspecialchars($item['locker_name']) . "</td>\n";
+        echo "<TD>" . htmlspecialchars($item['item_name']) . "</td></tr>\n"; 
 
  endforeach; 
-echo "</table>";
+echo "</table></div>\n";
 include 'templates/footer.php';
 ?>
