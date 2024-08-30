@@ -104,7 +104,6 @@ if ($searchstr) {
                     <td><?php echo htmlspecialchars($item['truck_name']); ?></td>
                     <td><?php echo htmlspecialchars($item['locker_name']); ?></td>
                     <td><?php echo htmlspecialchars($item['item_name']); ?></td>
->
                 </tr>
             <?php endforeach; ?>
         <?php else: if ($searchstr) { ?>
