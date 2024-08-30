@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', 1);
+/* ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL); */
 
 
 include('config.php');
@@ -117,8 +117,6 @@ if ($searchstr) {
 
 
 
-
-<?php include 'templates/footer.php'; ?>
 
 <h1>Find an Item</h1>
 
