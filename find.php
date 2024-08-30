@@ -27,9 +27,9 @@ if ($searchstr) {
 
         FROM items i
             JOIN lockers l ON i.locker_id = l.id
-            JOIN trucks t ON =t.id = l.truck_id
-        WHERE i.name LIKE '%:searchstr%'
-        ORDER BY t.name, l.name;
+            JOIN trucks t ON t.id = l.truck_id
+            WHERE i.name LIKE CONCAT('%', :searchstr, '%')
+            ORDER BY t.name, l.name;
     ");
     
 
