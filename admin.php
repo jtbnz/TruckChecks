@@ -35,7 +35,7 @@ $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
     <a href="maintain_trucks.php" class="button touch-button">Maintain Trucks</a>
     <a href="maintain_lockers.php" class="button touch-button">Maintain Lockers</a>
     <a href="maintain_locker_items.php" class="button touch-button">Maintain Locker Items</a>
-    <a href="deleted_items_report.php" class="button touch-button">Deleted Items Report</a>
+    <a href="find.php" class="button touch-button">Find an item</a>
     <a href="reset_locker_check.php" class="button touch-button">Reset Locker Checks</a> 
 </div>
 <div class="button-container" style="margin-top: 20px;">
