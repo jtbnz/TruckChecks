@@ -37,4 +37,5 @@ echo "<table><tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>"
 
  endforeach; 
 echo "</table>";
+include 'templates/footer.php';
 ?>
