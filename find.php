@@ -23,12 +23,11 @@ if ($searchstr) {
         SELECT 
             t.name as truck_name, 
             l.name as locker_name, 
-            i.name as item_name, 
+            i.name as item_name
 
         FROM items i
-
-        JOIN lockers l ON i.locker_id = l.id
-        JOIN trucks t ON =t.id = l.truck_id
+            JOIN lockers l ON i.locker_id = l.id
+            JOIN trucks t ON =t.id = l.truck_id
         WHERE i.name LIKE '%:searchstr%'
         ORDER BY t.name, l.name;
     ");
