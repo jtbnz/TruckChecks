@@ -28,12 +28,12 @@ $report_query = $db->prepare("
 $report_query->execute();
 $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
 
-echo "<div class='truck-listing'><table><tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>\n";
+echo "<div class='truck-listing'>\n<table>\n\t<tr><th>Truck Name</th><th>Locker Name</th><th>Item Name</th></tr>\n";
  foreach ($report_data as $item): 
 
-        echo "<tr><td>" . htmlspecialchars($item['truck_name']) . "</td>\n"; 
-        echo "<TD>" . htmlspecialchars($item['locker_name']) . "</td>\n";
-        echo "<TD>" . htmlspecialchars($item['item_name']) . "</td></tr>\n"; 
+        echo "\t<tr>\n\t\t<td>" . htmlspecialchars($item['truck_name']) . "</td>\n"; 
+        echo "\t\t<TD>" . htmlspecialchars($item['locker_name']) . "</td>\n";
+        echo "\t\t<TD>" . htmlspecialchars($item['item_name']) . "</td>\n\t</tr>\n"; 
 
  endforeach; 
 echo "</table></div>\n";
