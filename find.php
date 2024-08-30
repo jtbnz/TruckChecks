@@ -86,7 +86,7 @@ if ($searchstr) {
 </head>
 <body>
 
-<h1 Items Report</h1>
+
 
 <table>
     <thead>
@@ -107,10 +107,11 @@ if ($searchstr) {
 >
                 </tr>
             <?php endforeach; ?>
-        <?php else: ?>
+        <?php else: if ($searchstr) { ?>
             <tr>
                 <td colspan="4">Nothing found.</td>
             </tr>
+        <?php } ?>
         <?php endif; ?>
     </tbody>
 </table>
