@@ -23,7 +23,7 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
         // Automatically refresh the page using the refresh interval in config.php
         setTimeout(function(){
             window.location.reload(1);
-        }, <?php echo REFRESH_PAGE; ?>); 
+        }, <?php echo REFRESH; ?>); 
 
         // Function to display the last refreshed time in local browser time zone
         function displayLastRefreshed() {
