@@ -50,7 +50,6 @@ h2 {
 }
 
 
-/* styles.css */
 
 body.demo-mode {
     background-color: white; /* Fallback for older browsers */
@@ -99,6 +98,7 @@ body.demo-mode::after {
     display: flex;
     justify-content: center;
     align-items: center;
+    text-align: center;
 }
 
 .msg-msg {
