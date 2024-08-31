@@ -17,5 +17,7 @@ define('PASSWORD' , 'YourSecurePassword'); //Used for access to the Admin pages
 define('TZ_OFFSET','+12:00'); //If you need to change timezones
 define('IS_DEMO'  , false);
 define('REFRESH'  , 30000); // 30000 = 30 seconds this is how often the main page will auto refresh
+define('DEBUG'    , false); // Set to true to enable debugging
+
 
 ?>

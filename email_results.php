@@ -1,7 +1,8 @@
 <?php 
-/* ini_set('display_errors', 1);
+
+ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);   */
+error_reporting(E_ALL); 
 
 include('config.php');
 
@@ -75,14 +76,27 @@ $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 // Prepare email content
 $emailContent = "Latest Missing Items Report\n\n These are the lockers that have missing items recorded in the last 7 days:\n\n";
 $emailContent .= "The last check was recorded was {$latestCheckDate}\n\n";
-foreach ($checks as $check) {
-    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n\n";
+
+if (!empty($checks)) {
+    foreach ($checks as $check) {
+        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n";
+    } 
+} else {
+        $emailContent .= "No missing items found in the last 7 days\n";
 }
 
-$emailContent .= "\n\nThe following items have been deleted in the last 7 days:\n\n";
-foreach ($deletedItems as $deletedItem) {
-    $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n\n";
-}       
+
+
+
+$emailContent .= "\nThe following items have been deleted in the last 7 days:\n";
+if (!empty($deletedItems)) {
+    foreach ($deletedItems as $deletedItem) {
+        $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n";
+    }       
+} else {
+    $emailContent .= "No items have been deleted in the last 7 days\n";
+}
+   
 
 
 $emailContent .= $current_url ."\n\n";
