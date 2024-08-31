@@ -152,11 +152,7 @@ function get_locker_status($locker_id, $db, $colors) {
         <p>Checked By: <span id="checkedBy">N/A</span></p>
         <p>Missing Items: <span id="missingItems">None</span></p>
         <button class="button touch-button" onclick="openUrl(document.getElementById('lockerUrl').innerText)">Check Locker</button>
-        <a href="" id="lockerUrl"></a>
-        <!-- <p>Locker URL: <span id="lockerUrl">N/A</span></p> -->
-        <!-- <a href="" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName">< /span> Locker 1</a>
-        <a href="#" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName"></span> Locker 2</a> -->
-        <button class="button touch-button" onclick="closeModal()">Close</button>
+        <!-- <button class="button touch-button" onclick="closeModal()">Close</button> -->
     </div>
 </div>
 
@@ -183,8 +179,10 @@ function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems, locker
         document.getElementById('missingItems').innerText = 'None';
     }
 
-    document.getElementById('lockerInfoModal').style.display = 'block';
     document.getElementById('lockerUrl').innerHTML = `<a href="${lockerUrl}" target="_blank">${lockerUrl}</a>`;
+
+    document.getElementById('lockerInfoModal').style.display = 'block';
+
 
 }
 
