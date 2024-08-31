@@ -20,10 +20,10 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
     <title>Truck Checks</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <script>
-        // Automatically refresh the page every 30 seconds
+        // Automatically refresh the page using the refresh interval in config.php
         setTimeout(function(){
             window.location.reload(1);
-        }, 30000); // 30 seconds
+        }, <?php echo $REFRESH_INTERVAL; ?>); 
 
         // Function to display the last refreshed time in local browser time zone
         function displayLastRefreshed() {
@@ -159,7 +159,6 @@ function get_locker_status($locker_id, $db, $colors) {
         <button class="button touch-button" onclick="closeModal()">Close</button>
     </div>
 </div>
-
 <script>
 
 function openUrl(url) {
