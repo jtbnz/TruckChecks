@@ -151,8 +151,8 @@ function get_locker_status($locker_id, $db, $colors) {
         <p>Last Checked: <span id="lastChecked">N/A</span></p>
         <p>Checked By: <span id="checkedBy">N/A</span></p>
         <p>Missing Items: <span id="missingItems">None</span></p>
-
-        <a href="" id="lockerUrl"> Check <span id=lockerName>NA</span> Locker</a>
+        <button class="button touch-button" onclick="openUrl(document.getElementById('lockerUrl').innerText)">Check Locker</button>
+        <a href="" id="lockerUrl"></a>
         <!-- <p>Locker URL: <span id="lockerUrl">N/A</span></p> -->
         <!-- <a href="" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName">< /span> Locker 1</a>
         <a href="#" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName"></span> Locker 2</a> -->
@@ -162,6 +162,9 @@ function get_locker_status($locker_id, $db, $colors) {
 
 <script>
 
+function openUrl(url) {
+    window.open(url, '_blank');
+}
 
 function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems, lockerUrl) {
     document.getElementById('lockerName').innerText = lockerName;
