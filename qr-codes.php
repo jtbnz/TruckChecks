@@ -82,7 +82,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
                     <a href="<?= $locker_url ?>" target="_blank">
                         <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for <?= htmlspecialchars($locker['name']) ?>">
                     </a>
-                    <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p>
+                    <!-- <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p> -->
                 </div>
 
 
@@ -121,7 +121,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
                     <a href="<?= $locker_url ?>" target="_blank">
                         <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for <?= htmlspecialchars($locker['name']) ?>">
                     </a>
-                    <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p>
+                    <!-- <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p> -->
                 </div>
             <?php endforeach; ?>
         </div>
