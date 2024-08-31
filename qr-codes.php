@@ -42,6 +42,7 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
     <title>Locker QR Codes</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <link rel="stylesheet" href="styles/qrcodes.css?id=<?php  echo $version;  ?> "> 
+    
 
 </head>
 <body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
@@ -50,10 +51,11 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 <div class="button-container" style="margin-top: 20px;">
     <a href="qr-codes-pdf.php" class="button touch-button">A4 PDF of QR Codes</a>
 </div>
-
-<div class="quiz-question">
+<div class="msg-container">
+<div class="msg-msg">
     This pdf can be used to print out 45mm labels. <br>
     Sized for Avery L7124 Glossy Square Labels. <br>
+</div>
 </div>
 
 <?php

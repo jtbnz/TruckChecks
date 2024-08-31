@@ -92,3 +92,13 @@ body.demo-mode::after {
     font-size: 12px;
     color: #888;
 }
+
+.msg-container {
+    margin-top: 1vh;
+    padding: 0 5vw;
+}
+
+.msg-msg {
+    font-size: 5vw; /* Scales with viewport width */
+    margin-bottom: 2vh;
+}
