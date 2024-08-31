@@ -40,8 +40,9 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Locker QR Codes</title>
-    <link rel="stylesheet" href="styles/qrcodes.css?id=<?php  echo $version;  ?> "> 
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
+    <link rel="stylesheet" href="styles/qrcodes.css?id=<?php  echo $version;  ?> "> 
+
 </head>
 <body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
