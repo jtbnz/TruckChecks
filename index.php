@@ -157,19 +157,7 @@ function get_locker_status($locker_id, $db, $colors) {
 </div>
 
 <script>
-function openLockerCheck(lockerName) {
-    // Query the lockers table to get the id of the locker
-    $query = $db->prepare('SELECT id FROM lockers WHERE name = :lockerName');
-    $query->execute(['lockerName' => $lockerName]);
-    $locker = $query->fetch(PDO::FETCH_ASSOC);
 
-    if ($locker) {
-        // Open a new window with the URL containing the locker id
-        window.open('check_locker_items.php?locker_id=' + $locker['id']);
-    } else {
-        console.log('Locker not found');
-    }
-}
 
 function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems) {
     document.getElementById('lockerName').innerText = lockerName;
