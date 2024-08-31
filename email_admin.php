@@ -3,6 +3,10 @@ if (DEBUG) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
 }
 
 include('config.php');
@@ -138,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta charset="UTF-8">
     <title>Manage Email Addresses</title>
 </head>
-<body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
     <h2>Email Addresses</h2>
     <form method="post">
         <label for="email">Add Email:</label>
