@@ -152,9 +152,9 @@ function get_locker_status($locker_id, $db, $colors) {
         <p>Checked By: <span id="checkedBy">N/A</span></p>
         <p>Missing Items: <span id="missingItems">None</span></p>
         <!-- <p>Locker URL: <span id="lockerUrl">N/A</span></p> -->
-        <a href="" id="lockerUrl" target="_blank">Check <span id="lockerName"> Locker</a>
+        <a href="" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName"> Locker 1</a>
+        <a href="#" id="lockerUrl" target="_blank" class="button touch-button">Check <span id="lockerName"> Locker 2</a>
         <button class="button touch-button" onclick="closeModal()">Close</button>
-
     </div>
 </div>
 
