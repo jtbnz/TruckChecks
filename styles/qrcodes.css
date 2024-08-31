@@ -96,9 +96,13 @@ body.demo-mode::after {
 .msg-container {
     margin-top: 1vh;
     padding: 0 5vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .msg-msg {
     font-size: 5vw; /* Scales with viewport width */
     margin-bottom: 2vh;
+    text-align: center;
 }
