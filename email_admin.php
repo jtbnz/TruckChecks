@@ -77,16 +77,28 @@ $emailStmt->execute();
 $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Prepare email content
-$emailContent = "Latest Missing Items Repor<BR><BR>These are the lockers that have missing items recorded in the last 7 days:<br>";
+$emailContent = "Latest Missing Items Report<BR><BR>These are the lockers that have missing items recorded in the last 7 days:<br>";
 $emailContent .= "The last check was recorded was {$latestCheckDate}<br>";
-foreach ($checks as $check) {
-    $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
+
+if (!empty($checks)) {
+    foreach ($checks as $check) {
+        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
+    } 
+} else {
+        $emailContent .= "No missing items found in the last 7 days<br>";
 }
 
+
+
+
 $emailContent .= "<br>The following items have been deleted in the last 7 days:<br>";
-foreach ($deletedItems as $deletedItem) {
-    $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}<br>";
-}       
+if (!empty($deletedItems)) {
+    foreach ($deletedItems as $deletedItem) {
+        $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}<br>";
+    }       
+} else {
+    $emailContent .= "No items have been deleted in the last 7 days<br>";
+}
 
 
 $emailContent .= $current_url ."<br>";
