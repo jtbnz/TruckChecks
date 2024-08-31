@@ -1,4 +1,5 @@
 <?php 
+include('config.php');
 if (DEBUG) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
@@ -9,9 +10,6 @@ if (DEBUG) {
     ini_set('display_startup_errors', 0);
     error_reporting(0);
 }
-
-include('config.php');
-
 
 
 
