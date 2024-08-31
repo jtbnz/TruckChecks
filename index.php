@@ -117,7 +117,7 @@ function get_locker_status($locker_id, $db, $colors) {
                     $missing_items = $locker_status['missing_items'];
                     ?>
                     <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
-                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, <?= $locker_url ?>)">
+                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
                         
                         <?= htmlspecialchars($locker['name']) ?>
                         
@@ -180,7 +180,7 @@ function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems, locker
 
     document.getElementById('lockerInfoModal').style.display = 'block';
     document.getElementById('lockerUrl').innerHTML = `<a href="${lockerUrl}" target="_blank">${lockerUrl}</a>`;
-    
+
 }
 
 function closeModal() {
