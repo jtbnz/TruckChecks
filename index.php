@@ -150,6 +150,8 @@ function get_locker_status($locker_id, $db, $colors) {
         <p>Last Checked: <span id="lastChecked">N/A</span></p>
         <p>Checked By: <span id="checkedBy">N/A</span></p>
         <p>Missing Items: <span id="missingItems">None</span></p>
+        <button class="button touch-button" onclick="closeModal()">Close</button>
+        <button class="button touch-button" onclick="window.location.href='check_locker_items.php?locker_id=' + lockerId">Check Locker</button>
     </div>
 </div>
 
