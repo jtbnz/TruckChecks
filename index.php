@@ -109,6 +109,7 @@ function get_locker_status($locker_id, $db, $colors) {
                 <?php foreach ($lockers as $locker): ?>
                     <?php
                     $locker_status = get_locker_status($locker['id'], $db, $colors);
+                    $locker_url = 'check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
                     $background_color = $locker_status['status'];
                     $text_color = 'white';
                     $last_checked = $locker_status['check'] ? $locker_status['check']['check_date'] : 'Never';
@@ -116,7 +117,7 @@ function get_locker_status($locker_id, $db, $colors) {
                     $missing_items = $locker_status['missing_items'];
                     ?>
                     <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
-                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>)">
+                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, <?= $locker_url ?>)">
                         
                         <?= htmlspecialchars($locker['name']) ?>
                         
@@ -150,6 +151,7 @@ function get_locker_status($locker_id, $db, $colors) {
         <p>Last Checked: <span id="lastChecked">N/A</span></p>
         <p>Checked By: <span id="checkedBy">N/A</span></p>
         <p>Missing Items: <span id="missingItems">None</span></p>
+        <p>Locker URL: <span id="lockerUrl">N/A</a></p>
         <button class="button touch-button" onclick="openLockerCheck('<?= htmlspecialchars($locker['name']) ?>')">Check Locker</button>
         <button class="button touch-button" onclick="closeModal()">Close</button>
 
@@ -159,7 +161,7 @@ function get_locker_status($locker_id, $db, $colors) {
 <script>
 
 
-function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems) {
+function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems, lockerUrl) {
     document.getElementById('lockerName').innerText = lockerName;
 
     if (lastChecked !== 'Never') {
@@ -177,6 +179,8 @@ function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems) {
     }
 
     document.getElementById('lockerInfoModal').style.display = 'block';
+    document.getElementById('lockerUrl').innerHTML = `<a href="${lockerUrl}" target="_blank">${lockerUrl}</a>`;
+    
 }
 
 function closeModal() {
