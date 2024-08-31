@@ -45,11 +45,13 @@ $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 <body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
 <h1>Locker QR Codes</h1>
+<div class="button-container" style="margin-top: 20px;">
+    <a href="qr-codes-pdf.php" class="button touch-button">A4 PDF of QR Codes</a>
+</div>
 
-<div class="center-container">
-<a href="qr-codes-pdf.php" class="button touch-button">A4 PDF of QR Codes</a><br>
-This pdf can be used to print out 45mm labels. <br>
-Sized for Avery L7124 Glossy Square Labels. <br>
+<div class="quiz-question">
+    This pdf can be used to print out 45mm labels. <br>
+    Sized for Avery L7124 Glossy Square Labels. <br>
 </div>
 
 <?php
@@ -64,7 +66,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
                     ->encoding(new Encoding('UTF-8'))
                     ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
                     ->size(300)
-                    ->margin(10)
+                    ->margin(0)
                     ->build();
 
                 // Get the QR code as a Base64-encoded string
@@ -103,7 +105,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
                     ->encoding(new Encoding('UTF-8'))
                     ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
                     ->size(300)
-                    ->margin(10)
+                    ->margin(0)
                     ->build();
 
                 // Get the QR code as a Base64-encoded string
