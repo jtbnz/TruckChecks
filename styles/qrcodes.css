@@ -102,7 +102,7 @@ body.demo-mode::after {
 }
 
 .msg-msg {
-    font-size: 5vw; /* Scales with viewport width */
+    font-size: 2vw; /* Scales with viewport width */
     margin-bottom: 2vh;
     text-align: center;
 }
