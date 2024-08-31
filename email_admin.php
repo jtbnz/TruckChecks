@@ -1,7 +1,7 @@
 <?php 
-/* ini_set('display_errors', 1);
+ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);   */
+error_reporting(E_ALL);   
 
 include('config.php');
 
@@ -77,7 +77,7 @@ $emailStmt->execute();
 $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 
 // Prepare email content
-$emailContent = "Latest Missing Items Report<BR><BR>These are the lockers that have missing items recorded in the last 7 days:<br>";
+$emailContent = "Latest Missing Items Report<BR><BR>These are the lockers that have missing items recorded:<br>";
 $emailContent .= "The last check was recorded was {$latestCheckDate}<br>";
 
 if (!empty($checks)) {
