@@ -101,8 +101,12 @@ if ($selected_truck_id) {
         // Fetch items for the selected locker
         if ($RANDORDER) {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND(id)');
+            echo "<!-- Random order -->";
+            echo "<!-- " . $query   . " -->";
         } else {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY id');
+            echo "<!-- Not Random order -->";
+            echo "<!-- " . $query   . " -->";
         }
         $query->execute(['locker_id' => $selected_locker_id]);
         $items = $query->fetchAll(PDO::FETCH_ASSOC);
