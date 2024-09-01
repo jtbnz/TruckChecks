@@ -100,7 +100,7 @@ if ($selected_truck_id) {
 
         // Fetch items for the selected locker
         if ($RANDORDER) {
-            $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND()');
+            $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND(id)');
         } else {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY id');
         }
