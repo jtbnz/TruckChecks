@@ -94,9 +94,16 @@ if ($selected_truck_id) {
 
     $selected_locker_id = isset($_GET['locker_id']) ? $_GET['locker_id'] : null;
 
+    
+
     if ($selected_locker_id) {
+
         // Fetch items for the selected locker
-        $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id');
+        if ($RANDORDER) {
+            $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND()');
+        } else {
+            $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY id');
+        }
         $query->execute(['locker_id' => $selected_locker_id]);
         $items = $query->fetchAll(PDO::FETCH_ASSOC);
 
