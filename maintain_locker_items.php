@@ -152,10 +152,11 @@ if ($selected_truck_id) {
                     </div>
                     <div class="button-container">
                         <button class="button touch-button"  name="edit_item" type="submit">Edit</button>
-                    </div>
+                    
                     </form>
                         <a href="?delete_item_id=<?= $item['id'] ?>&locker_id=<?= $selected_locker_id ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
                     </li>
+                    </div>
                 <?php endforeach; ?>
             </ul>
         <?php else: ?>
