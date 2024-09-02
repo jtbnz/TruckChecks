@@ -59,12 +59,14 @@ $_SESSION['version'] = $version;
     <a href="qr-codes.php" class="button touch-button">Generate QR Codes</a>
 </div>
 <div class="button-container" style="margin-top: 20px;">
-    <a href="backups.php" class="button touch-button">Download a backup</a>
     <a href="email_admin.php" class="button touch-button">Manage Email address to send to</a>
     <a href="email_results.php" class="button touch-button">Email the last check missing items</a>
 </div>
-    <div class="button-container" style="margin-top: 20px;">    
+<div class="button-container" style="margin-top: 20px;">    
     <a href="reports.php" class="button touch-button">Reports</a>
+    <a href="backups.php" class="button touch-button">Download a backup</a>
+</div>
+    <div class="button-container" style="margin-top: 20px;">     
     <?php if ($showButton): ?>
         <a href="demo_clean_tables.php" class="button touch-button">Delete Demo Checks Data</a>
     <?php endif; ?>

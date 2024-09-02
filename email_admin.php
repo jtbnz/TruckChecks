@@ -102,7 +102,7 @@ if (!empty($deletedItems)) {
         $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}<br>";
     }       
 } else {
-    $emailContent .= "No items have been deleted in the last 7 days<br>";
+    $emailContent .= "<i>&nbsp;&nbsp;No items have been deleted in the last 7 days</i><br>";
 }
 
 
