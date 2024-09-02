@@ -60,6 +60,6 @@ foreach ($lockers as $index => $locker) {
     //echo "Index: $index Row: $row, Col: $col, x: $x , y: $y " . $locker['truck_name'] . ' ' . $locker['locker_name'] . "<br>";   
    
 }
-
+ob_end_clean();
 $pdf->Output('qrcodes.pdf', 'I');
 ?>
