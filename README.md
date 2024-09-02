@@ -50,6 +50,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 
     ```bash
     composer2 require endroid/qr-code
+    composer2 require tecnickcom/tcpdf
     ```
         
 4. **Configure local files**:

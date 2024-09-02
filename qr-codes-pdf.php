@@ -11,21 +11,6 @@ include 'db.php';
 $db = get_db_connection();
 
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
 
 $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as truck_name,l.truck_id from lockers l JOIN trucks t on l.truck_id= t.id order by t.id')->fetchAll(PDO::FETCH_ASSOC);
 $current_directory = dirname($_SERVER['REQUEST_URI']);
