@@ -90,7 +90,7 @@ if (!empty($checks)) {
         $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
     } 
 } else {
-        $emailContent .= "No missing items found in the last 7 days<br>";
+        $emailContent .= "<i>&nbsp;&nbsp;No missing items found in the last 7 days</i><br>";
 }
 
 
@@ -161,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo "<li>";
             echo "<form method='post' style='display:inline;'>";
             echo "<input type='hidden' name='email_id' value='{$emailAddress['id']}'>";
-            echo "<input type='email' name='email' value='{$emailAddress['email']}' required>";
+            echo "<input type='email' name='email' value='{$emailAddress['email']}' required style='width: 300px;'>";
             echo "<button type='submit' name='update_email'>Update</button>";
             echo "<button type='submit' name='delete_email'>Delete</button>";
             echo "</form>";
