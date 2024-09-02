@@ -26,15 +26,7 @@ if (!isset($_SESSION['version'])) {
 // Read the cookie value
 $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
 
-if ($colorBlindMode) {
-    $colours = [
-        'green' => '#0072b2',
-    ];
-} else {
-    $colours = [
-        'green' => '#28a745',
-    ];
-}
+
 
 //IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
@@ -205,10 +197,20 @@ if ($selected_truck_id) {
             const checkbox = card.querySelector('.hidden-checkbox');
             if (checkbox.checked) {
                 checkbox.checked = false;
-                card.classList.remove('checked');
+                <?php if ($colorBlindMode): ?>
+                    card.classList.remove('checkedCB');
+                <?php else: ?>
+                    card.classList.remove('checked');
+                <?php endif; ?>
+
             } else {
                 checkbox.checked = true;
-                card.classList.add('checked');
+                <?php if ($colorBlindMode): ?>
+                    card.classList.add('checkedCB');
+                <?php else: ?>
+                    card.classList.add('checked');
+                <?php endif; ?>
+                
             }
         }
 

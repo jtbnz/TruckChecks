@@ -47,6 +47,11 @@ h2, h3 {
     color: white;
     border-color: #28a745;
 }
+.item-card.checkedCB {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
 
 .hidden-checkbox {
     display: none;
