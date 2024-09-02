@@ -27,3 +27,5 @@ include 'templates/header.php';
     <a href="find.php" class="button touch-button">Find an Item</a>
 
 </div>
+
+<?php include 'templates/footer.php'; ?>
