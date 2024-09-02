@@ -3,9 +3,9 @@
 include('config.php');
 include 'templates/header.php';
 
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $_SESSION['color_blind_mode'] = isset($_POST['color_blind_mode']) ? true : false;
+    $colorBlindMode = isset($_POST['color_blind_mode']) ? true : false;
+    setcookie('color_blind_mode', $colorBlindMode, time() + (86400 * 180), '/'); // Set the cookie for 180 days
 }
 
 

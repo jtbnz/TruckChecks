@@ -43,35 +43,36 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
 ;
 //include 'templates/header.php';
 
+// Read the cookie value
+$colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
 
-
-// Default colors
-$colors = [
-    'green' => '#28a745',
-    'orange' => '#ff8800',
-    'red' => '#dc3545',
-];
-
-// Check if the color blindness-friendly option is enabled
-if (isset($_SESSION['color_blind_mode']) && $_SESSION['color_blind_mode']) {
-    $colors = [
+if ($colorBlindMode) {
+    $colours = [
         'green' => '#0072b2',
         'orange' => '#e69f00',
         'red' => '#d55e00',
     ];
+} else {
+    $colours = [
+        'green' => '#28a745',
+        'orange' => '#ff8800',
+        'red' => '#dc3545',
+    ];
 }
+
+
 
 $db = get_db_connection();
 $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 
-function get_locker_status($locker_id, $db, $colors) {
+function get_locker_status($locker_id, $db, $colours) {
     // Fetch the most recent check for the locker
     $query = $db->prepare('SELECT * FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1');
     $query->execute(['locker_id' => $locker_id]);
     $check = $query->fetch(PDO::FETCH_ASSOC);
 
     if (!$check) {
-        return ['status' => $colors['red'], 'check' => null, 'missing_items' => []];
+        return ['status' => $colours['red'], 'check' => null, 'missing_items' => []];
     }
 
     // Check if the locker was checked in the last 7 days
@@ -83,11 +84,11 @@ function get_locker_status($locker_id, $db, $colors) {
     $missing_items = $query->fetchAll(PDO::FETCH_COLUMN);
 
     if ($recent_check && empty($missing_items)) {
-        return ['status' => $colors['green'], 'check' => $check, 'missing_items' => []];
+        return ['status' => $colours['green'], 'check' => $check, 'missing_items' => []];
     } elseif ($recent_check && !empty($missing_items)) {
-        return ['status' => $colors['orange'], 'check' => $check, 'missing_items' => $missing_items];
+        return ['status' => $colours['orange'], 'check' => $check, 'missing_items' => $missing_items];
     } else {
-        return ['status' => $colors['red'], 'check' => $check, 'missing_items' => $missing_items];
+        return ['status' => $colours['red'], 'check' => $check, 'missing_items' => $missing_items];
     }
 }
 ?>
@@ -108,7 +109,7 @@ function get_locker_status($locker_id, $db, $colors) {
             <div class="locker-grid">
                 <?php foreach ($lockers as $locker): ?>
                     <?php
-                    $locker_status = get_locker_status($locker['id'], $db, $colors);
+                    $locker_status = get_locker_status($locker['id'], $db, $colours);
                     $locker_url = 'check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
                     $background_color = $locker_status['status'];
                     $text_color = 'white';

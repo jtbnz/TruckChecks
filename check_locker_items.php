@@ -23,6 +23,19 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
+// Read the cookie value
+$colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
+
+if ($colorBlindMode) {
+    $colours = [
+        'green' => '#0072b2',
+    ];
+} else {
+    $colours = [
+        'green' => '#28a745',
+    ];
+}
+
 //IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 $db = get_db_connection();
