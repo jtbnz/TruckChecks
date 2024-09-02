@@ -10,7 +10,7 @@ use TCPDF;
 include 'db.php'; 
 $db = get_db_connection();
 
-
+ob_end_clean();
 
 $lockers = $db->query('select l.name as locker_name,l.id as locker_id,t.name as truck_name,l.truck_id from lockers l JOIN trucks t on l.truck_id= t.id order by t.id')->fetchAll(PDO::FETCH_ASSOC);
 $current_directory = dirname($_SERVER['REQUEST_URI']);
@@ -60,6 +60,6 @@ foreach ($lockers as $index => $locker) {
     //echo "Index: $index Row: $row, Col: $col, x: $x , y: $y " . $locker['truck_name'] . ' ' . $locker['locker_name'] . "<br>";   
    
 }
-ob_end_clean();
+
 $pdf->Output('qrcodes.pdf', 'I');
 ?>
