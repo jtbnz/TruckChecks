@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <h2><input type="checkbox" name="color_blind_mode" <?= isset($_SESSION['color_blind_mode']) && $_SESSION['color_blind_mode'] ? 'checked' : '' ?>>
         Enable Color Blindness-Friendly Mode
     </label></h2>
-    <button type="submit" class="button touch-button">Save</button>
+    <p> <button type="submit" class="button touch-button">Save</button></p>
 </form>
 
 </div>
