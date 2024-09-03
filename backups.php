@@ -43,8 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if the command was successful
     if ($return_var !== 0) {
-        die("Failed to execute mysqldump: " . implode("\n", $output));
         echo "<!-- $command -->";
+        die("Failed to execute mysqldump: " . implode("\n", $output));
+
     }
 
     // Step 2: Create a zip file containing the SQL dump
