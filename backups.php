@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Step 1: Dump the database into a SQL file
 
     $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . "  > $backup_file";
-    echo "<!-- $command -->";
+
     $output = null;
     $return_var = null;
     exec($command, $output, $return_var);
@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if the command was successful
     if ($return_var !== 0) {
         die("Failed to execute mysqldump: " . implode("\n", $output));
+        echo "<!-- $command -->";
     }
 
     // Step 2: Create a zip file containing the SQL dump
