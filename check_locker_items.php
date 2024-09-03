@@ -59,13 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     $checked_by = $_POST['checked_by'];
     $checked_items = isset($_POST['checked_items']) ? $_POST['checked_items'] : [];
 
+    setcookie('prevName', $checked_by, time() + (86400 * 120), "/"); 
+
     // Insert a new check record
-    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id, CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
+    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
     $check_query->execute([
         'locker_id' => $locker_id,
         'checked_by' => $checked_by
     ]);
 
+    
     // Get the ID of the newly inserted check
     $check_id = $db->lastInsertId();
 
@@ -284,7 +287,7 @@ if ($selected_truck_id) {
                         <?php endforeach; ?>
                     </div>
                     <label for="checked_by">Checked by:</label>
-                    <input type="text" name="checked_by" id="checked_by" required value="">
+                    <input type="text" name="checked_by" id="checked_by" required value="<?= isset($_COOKIE['prevName']) ? htmlspecialchars($_COOKIE['prevName']) : '' ?>">
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
             </div>

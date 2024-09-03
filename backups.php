@@ -1,4 +1,8 @@
 <?php
+/* ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL); */
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -8,7 +12,7 @@ if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
     header('Location: login.php');
     exit;
 }
-
+include 'config.php';
 include 'db.php'; // Include the database connection file
 
 
@@ -16,7 +20,7 @@ include 'db.php'; // Include the database connection file
 // Paths and filenames
 $backup_dir = 'backups';
 
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -30,14 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Step 1: Dump the database into a SQL file
-    $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . "  > $backup_file";
+
+    $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . " " . DB_NAME . " > $backup_file";
+
     $output = null;
     $return_var = null;
     exec($command, $output, $return_var);
 
     // Check if the command was successful
     if ($return_var !== 0) {
+        /* echo "<!-- $command -->"; */
         die("Failed to execute mysqldump: " . implode("\n", $output));
+
     }
 
     // Step 2: Create a zip file containing the SQL dump
