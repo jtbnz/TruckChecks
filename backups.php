@@ -20,7 +20,7 @@ include 'db.php'; // Include the database connection file
 // Paths and filenames
 $backup_dir = 'backups';
 
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
