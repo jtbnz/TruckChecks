@@ -2,6 +2,7 @@
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -33,7 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Step 1: Dump the database into a SQL file
+
     $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . "  > $backup_file";
+    echo "<!-- $command -->";
     $output = null;
     $return_var = null;
     exec($command, $output, $return_var);
