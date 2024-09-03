@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Step 1: Dump the database into a SQL file
 
-    $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . "  > $backup_file";
+    $command = "mysqldump --user=" . DB_USER . " --password=" . DB_PASS . " " . DB_NAME . " > $backup_file";
 
     $output = null;
     $return_var = null;
