@@ -10,7 +10,7 @@ $db = get_db_connection();
 include 'templates/header.php';
 
 // Check if the user is logged in
-if (!isset($_COOKIE['logged_in']) || $_COOKIE['logged_in'] != 'true') {
+if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
     header('Location: login.php');
     exit;
 }

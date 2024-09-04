@@ -20,7 +20,7 @@ if (!isset($_SESSION['version'])) {
 
 
 // Check if the user is already logged in
-if (isset($_COOKIE['logged_in']) && $_COOKIE['logged_in'] == 'true') {
+if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
     header('Location: admin.php');
     exit;
 }
