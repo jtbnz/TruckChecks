@@ -256,7 +256,7 @@ if ($selected_truck_id) {
 
         <?php if ($selected_locker_id): ?>
             <div>
-                <h3>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h3>
+                <h2>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h2>
                 <div class="center-container">
                     <span class='days-since-check'>
                         <?= htmlspecialchars($days_since_last_check_text) ?> 
