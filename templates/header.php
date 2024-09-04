@@ -25,6 +25,7 @@ if (!isset($_SESSION['version'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Check lockers for missing items">
     <title>Truck Checklist</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
 </head>
