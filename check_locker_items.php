@@ -176,6 +176,7 @@ if ($selected_truck_id) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Check lockers for missing items">
     <title>Check Locker Items</title>
     <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php  echo $version;  ?> ">
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
@@ -256,7 +257,7 @@ if ($selected_truck_id) {
 
         <?php if ($selected_locker_id): ?>
             <div>
-                <h3>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h3>
+                <h2>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h2>
                 <div class="center-container">
                     <span class='days-since-check'>
                         <?= htmlspecialchars($days_since_last_check_text) ?> 

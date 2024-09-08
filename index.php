@@ -17,6 +17,7 @@ $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)')
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Overview of current locker Status Check">
     <title>Truck Checks</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <script>
