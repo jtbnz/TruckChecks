@@ -147,6 +147,7 @@ if ($selected_truck_id) {
             $last_notes = $last_note_result['note'];
         }        
 
+        echo "<!-- LAST_NOTES:" . $last_notes . " -->";
         // Fetch last check date and checked_by
         $last_check_query = $db->prepare('SELECT check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1');
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
