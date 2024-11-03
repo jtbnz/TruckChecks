@@ -148,7 +148,7 @@ if ($selected_truck_id) {
         }        
 
         echo "\n<!-- LAST_NOTES:" . $last_notes . " -->";
-        echo "\n<!-- last query:" . $last_check_query . " -->";
+       
         echo "\n<!-- last result:" .  $last_note_result . " -->";
 
         // Fetch last check date and checked_by
