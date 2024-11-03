@@ -73,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     // Get the ID of the newly inserted check
     $check_id = $db->lastInsertId();
 
-    // Insert the note into the check_notes table
-    if (!empty($notes)) {
-        $note_query = $db->prepare("INSERT INTO check_notes (check_id, note) VALUES (:check_id, :note)");
-        $note_query->execute(['check_id' => $check_id, 'note' => $notes]);
-    }
+    // Insert the note into the check_notes table removed the empty check so that it can be deleted
+    //if (!empty($notes)) {
+    $note_query = $db->prepare("INSERT INTO check_notes (check_id, note) VALUES (:check_id, :note)");
+    $note_query->execute(['check_id' => $check_id, 'note' => $notes]);
+    //}
 
     // Insert check items (whether present or not)
     $items_query = $db->prepare('SELECT id FROM items WHERE locker_id = :locker_id');
