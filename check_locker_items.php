@@ -311,12 +311,12 @@ if ($selected_truck_id) {
                         <?php endforeach; ?>
                     </div>
                     <label for="checked_by">Checked by:</label>
-
+                    <input type="text" name="checked_by" id="checked_by" required value="<?= isset($_COOKIE['prevName']) ? htmlspecialchars($_COOKIE['prevName']) : '' ?>">
+                    
                         <!-- New notes input field -->
-                    <label for="notes">Notes:</label>
+                    <label for="notes">Any notes for this check?</label>
                     <textarea id="notes" name="notes"><?php echo htmlspecialchars($last_notes); ?></textarea>
   
-                    <input type="text" name="checked_by" id="checked_by" required value="<?= isset($_COOKIE['prevName']) ? htmlspecialchars($_COOKIE['prevName']) : '' ?>">
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
             </div>
