@@ -141,11 +141,9 @@ if ($selected_truck_id) {
             LIMIT 1
         ");
         $last_check_query->execute(['locker_id' => $locker_id]);
-        $last_note_result = $last_check_query->fetch(PDO::FETCH_ASSOC);
+        $last_notes = $last_check_query->fetchColumn();
         
-        if ($last_note_result) {
-            $last_notes = $last_note_result['note'];
-        }        
+     
 
         echo "\n<!-- LAST_NOTES:" . $last_notes . " -->";
        
