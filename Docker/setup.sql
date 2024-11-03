@@ -51,6 +51,14 @@ CREATE TABLE `check_items` (
     FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
 );
 
+-- Create the `check_notes` table
+CREATE TABLE `check_notes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `check_id` INT NOT NULL,
+    `note` TEXT NOT NULL,
+    FOREIGN KEY (`check_id`) REFERENCES `checks`(`id`) ON DELETE CASCADE
+);
+
 CREATE TABLE locker_item_deletion_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     truck_name VARCHAR(255),
