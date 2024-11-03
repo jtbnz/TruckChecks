@@ -140,7 +140,7 @@ if ($selected_truck_id) {
             ORDER BY c.check_date DESC
             LIMIT 1
         ");
-        $last_check_query->execute(['locker_id' => $locker_id]);
+        $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_notes = $last_check_query->fetchColumn();
         
      
