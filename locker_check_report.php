@@ -55,7 +55,8 @@ if ($selected_date) {
             l.name as locker_name, 
             i.name as item_name, 
             ci.is_present as checked, 
-            c.check_date,
+            CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
+            cn.note as notes,
             c.checked_by,
             c.id as check_id
         FROM checks c
@@ -64,6 +65,7 @@ if ($selected_date) {
         JOIN lockers l ON c.locker_id = l.id
         JOIN trucks t ON l.truck_id = t.id
         JOIN items i ON ci.item_id = i.id
+        JOIN check_notes cn on ci.check_id = cn.check_id
         ORDER BY t.name, l.name;
     ");
     
@@ -92,12 +94,19 @@ function countItemsChecked($truck_name, $report_data) {
     return $count;
 }
 
+// Function to convert UTC to NZST
+function convertToNZST($utcDate) {
+    $date = new DateTime($utcDate, new DateTimeZone('UTC'));
+    $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
+    return $date->format('Y-m-d H:i:s');
+}
+
 // Handle CSV export
 if (isset($_POST['export_csv'])) {
     header('Content-Type: text/csv');
     header('Content-Disposition: attachment;filename=report_' . $selected_date . '.csv');
     $output = fopen('php://output', 'w');
-    fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date', 'Checked By']);
+    fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date', 'Notes', 'Checked By']);
     foreach ($report_data as $row) {
         fputcsv($output, $row);
     }
@@ -124,9 +133,10 @@ if (isset($_POST['export_csv'])) {
     <select name="check_date" id="check_date" required>
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
-            <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($date['last_checked']) ?>
-            </option>
+
+        <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars(convertToNZST($date['last_checked'])) ?>
+        </option>
         <?php endforeach; ?>
     </select>
     <button type="submit">View Report</button>
