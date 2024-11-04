@@ -35,30 +35,32 @@ $latestCheckDate = $latestCheckStmt->fetch(PDO::FETCH_ASSOC)['the_date'];
 
 // Fetch the latest check data
 $checksQuery = "WITH LatestChecks AS (
-                    SELECT 
-                        locker_id, 
-                        MAX(id) AS latest_check_id
-                    FROM checks
-                    WHERE check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
-                    GROUP BY locker_id
+            SELECT 
+                locker_id, 
+                MAX(id) AS latest_check_id
+            FROM checks
+            WHERE check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+            GROUP BY locker_id
 
-                )
-                SELECT 
-                    t.name as truck_name, 
-                    l.name as locker_name, 
-                    i.name as item_name, 
-                    ci.is_present as checked, 
-                    CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
-                    c.checked_by,
-                    c.id as check_id
-                FROM checks c
-                JOIN LatestChecks lc ON c.id = lc.latest_check_id
-                JOIN check_items ci ON c.id = ci.check_id
-                JOIN lockers l ON c.locker_id = l.id
-                JOIN trucks t ON l.truck_id = t.id
-                JOIN items i ON ci.item_id = i.id
-                WHERE ci.is_present = 0
-                ORDER BY t.name, l.name;";
+        )
+        SELECT 
+            t.name as truck_name, 
+            l.name as locker_name, 
+            i.name as item_name, 
+            ci.is_present as checked, 
+            CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
+            cn.note,
+            c.checked_by,
+            c.id as check_id
+        FROM checks c
+        JOIN LatestChecks lc ON c.id = lc.latest_check_id
+        JOIN check_items ci ON c.id = ci.check_id
+        JOIN lockers l ON c.locker_id = l.id
+        JOIN trucks t ON l.truck_id = t.id
+        JOIN items i ON ci.item_id = i.id
+        join check_notes cn on c.id = cn.check_id
+        WHERE ci.is_present = 0
+        ORDER BY t.name, l.name;";
                 
 $checksStmt = $pdo->prepare($checksQuery);
 $checksStmt->execute();

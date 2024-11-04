@@ -41,6 +41,7 @@ $checksQuery = "WITH LatestChecks AS (
                     i.name as item_name, 
                     ci.is_present as checked, 
                     CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
+                    cn.note,
                     c.checked_by,
                     c.id as check_id
                 FROM checks c
@@ -49,6 +50,7 @@ $checksQuery = "WITH LatestChecks AS (
                 JOIN lockers l ON c.locker_id = l.id
                 JOIN trucks t ON l.truck_id = t.id
                 JOIN items i ON ci.item_id = i.id
+                join check_notes cn on c.id = cn.check_id
                 WHERE ci.is_present = 0
                 ORDER BY t.name, l.name;";
                 
