@@ -155,7 +155,8 @@ if (isset($_POST['export_csv'])) {
                     <strong><?= htmlspecialchars($item['item_name']) ?></strong> 
                     in Locker <strong><?= htmlspecialchars($item['locker_name']) ?></strong> 
                     on Truck <strong><?= htmlspecialchars($item['truck_name']) ?></strong>
-                    Checked by <?= htmlspecialchars($item['checked_by']) ?>
+                    . Notes: <?= htmlspecialchars($item['notes']) ?>.
+                    <br>Checked by <?= htmlspecialchars($item['checked_by']) ?>
                 </li>
             <?php endforeach; ?>
         </ul>
