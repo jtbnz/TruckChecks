@@ -92,6 +92,14 @@ function get_locker_status($locker_id, $db, $colours) {
         return ['status' => $colours['red'], 'check' => $check, 'missing_items' => $missing_items];
     }
 }
+
+// Function to convert UTC to NZST
+function convertToNZST($utcDate) {
+    $date = new DateTime($utcDate, new DateTimeZone('UTC'));
+    $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
+    return $date->format('Y-m-d H:i:s');
+}
+
 ?>
 
 <?php foreach ($trucks as $truck): ?>
@@ -119,7 +127,7 @@ function get_locker_status($locker_id, $db, $colours) {
                     $missing_items = $locker_status['missing_items'];
                     ?>
                     <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
-                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
+                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= convertToNZST($last_checked) ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
                         
                         <?= htmlspecialchars($locker['name']) ?>
                         
@@ -166,6 +174,7 @@ function get_locker_status($locker_id, $db, $colours) {
 function openUrl(url) {
     window.open(url, '_blank');
 }
+
 
 function showLockerInfo(lockerName, lastChecked, checkedBy, missingItems, lockerUrl) {
     document.getElementById('lockerName').innerText = lockerName;
