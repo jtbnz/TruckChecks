@@ -152,7 +152,7 @@ if ($selected_truck_id) {
         $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_check = $last_check_query->fetch(PDO::FETCH_ASSOC);
-        $last_check_border = '<div class="item-grid" style="border: 2px solid #000; padding: 10px;">';
+        $last_check_border = '<div class="item-grid" style="border: 2px solid #000; padding: 10px; border-radius: 10px;">';
         if ($last_check) {
             $last_check_date = new DateTime($last_check['check_date']);
             date_default_timezone_set('Pacific/Auckland');
@@ -170,7 +170,7 @@ if ($selected_truck_id) {
             if ($days_since_last_check == 0) {
                 $days_since_last_check_text = "<span style='color: green;'>Locker has been checked in the last 24hours " . htmlspecialchars($last_check['checked_by']) . "</span>";
                 $last_check_text = "";
-                $last_check_border = '<div class="item-grid" style="border: 2px solid green; padding: 10px; background-color: green;">';
+                $last_check_border = '<div class="item-grid" style="border: 2px solid green; padding: 10px; background-color: green; border-radius: 10px;">';
             } else {
                 $days_since_last_check_text = "Days since last check: " . $days_since_last_check  ;
                 $last_check_text = " (" . htmlspecialchars($last_check['checked_by']) . ")";
