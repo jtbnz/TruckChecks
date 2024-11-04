@@ -168,7 +168,7 @@ if ($selected_truck_id) {
 
 
             if ($days_since_last_check == 0) {
-                $days_since_last_check_text = "<span style='color: green;'>Locker has been checked today by " . htmlspecialchars($last_check['checked_by']) . "</span>";
+                $days_since_last_check_text = "<span style='color: green;'>Locker has been checked in the last 24hours " . htmlspecialchars($last_check['checked_by']) . "</span>";
                 $last_check_text = "";
                 $last_check_border = '<div class="item-grid" style="border: 2px solid green; padding: 10px; background-color: green;">';
             } else {
