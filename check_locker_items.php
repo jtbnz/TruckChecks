@@ -283,7 +283,7 @@ if ($selected_truck_id) {
                 <div class="center-container">
                     <span class='days-since-check'>
                         <?= htmlspecialchars($days_since_last_check_text) ?> 
-                        <?= htmlspecialchars($last_check_text) ?>
+                        <?= $last_check_text ?>
                     </span>
                 </div>
 
