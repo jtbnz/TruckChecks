@@ -130,8 +130,10 @@ This project supports Docker for easy deployment.
 
 ## Things to Do
 
+
     1. clear out timezone and only store in UTC and convert on retreival
     2. Add in a comments on a truck check and make this functionality a setting that can be turned on and off
+
     
 
 ## Contributing

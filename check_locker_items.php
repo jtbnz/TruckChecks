@@ -152,7 +152,7 @@ if ($selected_truck_id) {
         $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_check = $last_check_query->fetch(PDO::FETCH_ASSOC);
-
+        $last_check_border = '<div class="item-grid" style="border: 2px solid #000; padding: 10px;">';
         if ($last_check) {
             $last_check_date = new DateTime($last_check['check_date']);
             date_default_timezone_set('Pacific/Auckland');
@@ -168,8 +168,9 @@ if ($selected_truck_id) {
 
 
             if ($days_since_last_check == 0) {
-                $days_since_last_check_text = "Locker has been checked today by " . htmlspecialchars($last_check['checked_by']);
+                $days_since_last_check_text = "<span style='color: green;'>Locker has been checked today by " . htmlspecialchars($last_check['checked_by']) . "</span>";
                 $last_check_text = "";
+                $last_check_border = '<div class="item-grid" style="border: 2px solid green; padding: 10px; background-color: green;">';
             } else {
                 $days_since_last_check_text = "Days since last check: " . $days_since_last_check  ;
                 $last_check_text = " (" . htmlspecialchars($last_check['checked_by']) . ")";
@@ -282,7 +283,7 @@ if ($selected_truck_id) {
                 <h2>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h2>
                 <div class="center-container">
                     <span class='days-since-check'>
-                        <?= htmlspecialchars($days_since_last_check_text) ?> 
+                        <?= $days_since_last_check_text ?> 
                         <?= htmlspecialchars($last_check_text) ?>
                     </span>
                 </div>
@@ -300,7 +301,7 @@ if ($selected_truck_id) {
 
                 <form method="POST">
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
-                    <div class="item-grid">
+                    <?= $last_check_border ?>
                         <?php foreach ($items as $item):                         
                             $split_name = process_words($item['name']);  ?>
                             <div class="item-card" onclick="toggleCheck(this)">
