@@ -48,7 +48,7 @@ $checksQuery = "WITH LatestChecks AS (
                     l.name as locker_name, 
                     i.name as item_name, 
                     ci.is_present as checked, 
-                    CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+                    CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
                     c.checked_by,
                     c.id as check_id
                 FROM checks c
