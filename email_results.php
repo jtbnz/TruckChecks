@@ -20,7 +20,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
 $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
 
 // Fetch the latest check date
-$latestCheckQuery = "SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date FROM checks ORDER BY check_date DESC limit 1";
+$latestCheckQuery = "SELECT DISTINCT DATE(CONVERT_TZ(check_date, '+00:00', '+12:00')) as the_date FROM checks ORDER BY check_date DESC limit 1";
 $latestCheckStmt = $pdo->prepare($latestCheckQuery);
 $latestCheckStmt->execute();
 $latestCheckDate = $latestCheckStmt->fetch(PDO::FETCH_ASSOC)['the_date'];
