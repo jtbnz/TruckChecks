@@ -152,7 +152,7 @@ if ($selected_truck_id) {
         $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_check = $last_check_query->fetch(PDO::FETCH_ASSOC);
-        $last_check_border = '<div class="item-grid" style="border: 2px solid #000; padding: 10px;">';
+        $last_check_border = '<div class="item-grid" style="border: 2px solid lightgrey; padding: 10px;">';
         if ($last_check) {
             $last_check_date = new DateTime($last_check['check_date']);
             date_default_timezone_set('Pacific/Auckland');
