@@ -89,7 +89,7 @@ $emailContent .= "The last check was recorded was {$latestCheckDate}<br>";
 
 if (!empty($checks)) {
     foreach ($checks as $check) {
-        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
+        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']}    Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
     } 
 } else {
         $emailContent .= "<i>&nbsp;&nbsp;No missing items found in the last 7 days</i><br>";
