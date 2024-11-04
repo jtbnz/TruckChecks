@@ -128,6 +128,11 @@ This project supports Docker for easy deployment.
 - **Config Sample File**: Copy and configure the `config.php` file from `config_sample.php`.
 - **quiz/**: Quiz to locate the correct locker for an item
 
+## Things to Do
+
+    1. DONE: clear out timezone and only store in UTC and convert on retreival
+    2. DONE: Add in a comments on a truck check and make this functionality a setting that can be turned on and off
+    
 
 ## Contributing
 

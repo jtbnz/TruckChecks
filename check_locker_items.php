@@ -300,7 +300,7 @@ if ($selected_truck_id) {
 
                 <form method="POST">
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
-                    <div class="item-grid">
+                    <div class="item-grid" style="border: 2px solid #000; padding: 10px;">
                         <?php foreach ($items as $item):                         
                             $split_name = process_words($item['name']);  ?>
                             <div class="item-card" onclick="toggleCheck(this)">
