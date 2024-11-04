@@ -168,7 +168,7 @@ if ($selected_truck_id) {
 
 
             if ($days_since_last_check == 0) {
-                $days_since_last_check_text = "<span style='color: green;'>Locker has been checked today by " . htmlspecialchars($last_check['checked_by'] . "</span>");
+                $days_since_last_check_text = "<span style='color: green;'>Locker has been checked today by " . htmlspecialchars($last_check['checked_by']) . "</span>";
                 $last_check_text = "";
             } else {
                 $days_since_last_check_text = "Days since last check: " . $days_since_last_check  ;
@@ -282,8 +282,8 @@ if ($selected_truck_id) {
                 <h2>Locker: <?= htmlspecialchars($lockers[array_search($selected_locker_id, array_column($lockers, 'id'))]['name']) ?></h2>
                 <div class="center-container">
                     <span class='days-since-check'>
-                        <?= htmlspecialchars($days_since_last_check_text) ?> 
-                        <?= $last_check_text ?>
+                        <?= $days_since_last_check_text ?> 
+                        <?= htmlspecialchars($last_check_text) ?>
                     </span>
                 </div>
 
