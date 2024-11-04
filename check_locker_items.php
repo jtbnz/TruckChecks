@@ -160,6 +160,9 @@ if ($selected_truck_id) {
             $current_datetime2 = date('Y-m-d H:i:s');
            
             $interval = $today->diff($last_check_date);
+            echo "\n<!-- Interval " . $interval->format('%R%a days') . " -->";
+            echo "\n<!-- Today " . $today->format('Y-m-d H:i:s') . " -->";
+            echo "\n<!-- last check " . $last_check_date->format('Y-m-d H:i:s') . " -->";
             $days_since_last_check = $interval->days;
            
             // Check if there is a time difference, and round up if there is any non-zero time difference
