@@ -50,7 +50,7 @@ $checksQuery = "WITH LatestChecks AS (
                 JOIN lockers l ON c.locker_id = l.id
                 JOIN trucks t ON l.truck_id = t.id
                 JOIN items i ON ci.item_id = i.id
-                join check_notes cn on c.id = cn.check_id
+                JOIN check_notes cn on ci.check_id = cn.check_id
                 WHERE ci.is_present = 0
                 ORDER BY t.name, l.name;";
                 
