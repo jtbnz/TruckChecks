@@ -49,7 +49,7 @@ $checksQuery = "WITH LatestChecks AS (
             i.name as item_name, 
             ci.is_present as checked, 
             CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
-            cn.note,
+            cn.note as notes,
             c.checked_by,
             c.id as check_id
         FROM checks c
@@ -89,7 +89,7 @@ $emailContent .= "The last check was recorded was {$latestCheckDate}<br>";
 
 if (!empty($checks)) {
     foreach ($checks as $check) {
-        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']}    Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
+        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']},    Checked by {$check['checked_by']}, at {$check['check_date']}<br>";
     } 
 } else {
         $emailContent .= "<i>&nbsp;&nbsp;No missing items found in the last 7 days</i><br>";
