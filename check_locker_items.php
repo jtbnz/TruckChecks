@@ -1,7 +1,5 @@
 <?php
-/* ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL); */
+
 
 //session_start();
 include 'db.php';
@@ -57,12 +55,15 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     $locker_id = $_POST['locker_id'];
     $checked_by = $_POST['checked_by'];
+    $notes = $_POST['notes']; // Get the notes input
     $checked_items = isset($_POST['checked_items']) ? $_POST['checked_items'] : [];
 
     setcookie('prevName', $checked_by, time() + (86400 * 120), "/"); 
 
     // Insert a new check record
-    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
+    // take out the timezone conversion
+    // $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
+    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,NOW(), :checked_by, 0 )");
     $check_query->execute([
         'locker_id' => $locker_id,
         'checked_by' => $checked_by
@@ -71,6 +72,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     
     // Get the ID of the newly inserted check
     $check_id = $db->lastInsertId();
+
+    // Insert the note into the check_notes table removed the empty check so that it can be deleted
+    //if (!empty($notes)) {
+    $note_query = $db->prepare("INSERT INTO check_notes (check_id, note) VALUES (:check_id, :note)");
+    $note_query->execute(['check_id' => $check_id, 'note' => $notes]);
+    //}
 
     // Insert check items (whether present or not)
     $items_query = $db->prepare('SELECT id FROM items WHERE locker_id = :locker_id');
@@ -124,8 +131,25 @@ if ($selected_truck_id) {
         $locker_query->execute(['locker_id' => $selected_locker_id]);
         $locker_notes = $locker_query->fetchColumn();
 
+        $last_notes = '';
+        $last_check_query = $db->prepare("
+            SELECT cn.note 
+            FROM check_notes cn
+            JOIN checks c ON cn.check_id = c.id
+            WHERE c.locker_id = :locker_id
+            ORDER BY c.check_date DESC
+            LIMIT 1
+        ");
+        $last_check_query->execute(['locker_id' => $selected_locker_id]);
+        $last_notes = $last_check_query->fetchColumn();
+        
+     
+
+
         // Fetch last check date and checked_by
-        $last_check_query = $db->prepare('SELECT check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1');
+       // $last_check_query = $db->prepare('SELECT check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1');
+       
+        $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_check = $last_check_query->fetch(PDO::FETCH_ASSOC);
 
@@ -136,12 +160,10 @@ if ($selected_truck_id) {
             $current_datetime2 = date('Y-m-d H:i:s');
            
             $interval = $today->diff($last_check_date);
+            echo "\n<!-- Interval " . $interval->format('%R%a days') . " -->";
+            echo "\n<!-- Today " . $today->format('Y-m-d H:i:s') . " -->";
+            echo "\n<!-- last check " . $last_check_date->format('Y-m-d H:i:s') . " -->";
             $days_since_last_check = $interval->days;
-           
-            // Check if there is a time difference, and round up if there is any non-zero time difference
-            if ($interval->h > 0 || $interval->i > 0 || $interval->s > 0) {
-                $days_since_last_check += 1;
-            }
 
 
 
@@ -289,6 +311,11 @@ if ($selected_truck_id) {
                     </div>
                     <label for="checked_by">Checked by:</label>
                     <input type="text" name="checked_by" id="checked_by" required value="<?= isset($_COOKIE['prevName']) ? htmlspecialchars($_COOKIE['prevName']) : '' ?>">
+                    
+                        <!-- New notes input field -->
+                    <label for="notes">Any notes for this check?</label>
+                    <textarea id="notes" name="notes"><?php echo htmlspecialchars($last_notes); ?></textarea>
+  
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
             </div>

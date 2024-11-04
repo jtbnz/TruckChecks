@@ -20,7 +20,7 @@ $current_directory = dirname($_SERVER['REQUEST_URI']);
 $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
 
 // Fetch the latest check date
-$latestCheckQuery = "SELECT DISTINCT DATE(check_date) as the_date FROM checks ORDER BY check_date DESC limit 1";
+$latestCheckQuery = "SELECT DISTINCT DATE(CONVERT_TZ(check_date, '+00:00', '+12:00')) as the_date FROM checks ORDER BY check_date DESC limit 1";
 $latestCheckStmt = $pdo->prepare($latestCheckQuery);
 $latestCheckStmt->execute();
 $latestCheckDate = $latestCheckStmt->fetch(PDO::FETCH_ASSOC)['the_date'];
@@ -40,7 +40,8 @@ $checksQuery = "WITH LatestChecks AS (
                     l.name as locker_name, 
                     i.name as item_name, 
                     ci.is_present as checked, 
-                    c.check_date,
+                    CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
+                    cn.note as notes,
                     c.checked_by,
                     c.id as check_id
                 FROM checks c
@@ -49,6 +50,7 @@ $checksQuery = "WITH LatestChecks AS (
                 JOIN lockers l ON c.locker_id = l.id
                 JOIN trucks t ON l.truck_id = t.id
                 JOIN items i ON ci.item_id = i.id
+                JOIN check_notes cn on ci.check_id = cn.check_id
                 WHERE ci.is_present = 0
                 ORDER BY t.name, l.name;";
                 
@@ -79,7 +81,7 @@ $emailContent .= "The last check was recorded was {$latestCheckDate}\n\n";
 
 if (!empty($checks)) {
     foreach ($checks as $check) {
-        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n";
+        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']},  Checked by {$check['checked_by']}, at {$check['check_date']}\n";
     } 
 } else {
         $emailContent .= "No missing items found in the last 7 days\n";
