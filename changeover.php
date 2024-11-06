@@ -127,6 +127,8 @@
             echo "\t<td><input type='checkbox'></td>\n";
             echo "\t<td><input type='checkbox'></td>\n";
             
+            echo "$locker_count\n";
+            echo "$trCount\n";
             if ($locker_count == 2) {
                 echo "</tr>\n";
                 $locker_count = 1;
