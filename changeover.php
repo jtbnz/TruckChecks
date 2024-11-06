@@ -117,11 +117,19 @@
                     if ($row['locker_name'] <> $prev) {
                         echo '<tr style="background-color: lightgrey;">' . "\n";
                         $prev = $row['locker_name'];
+                        echo "<!-- change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
+                        echo "<!-- ". $prev . " -->\n";
                     } else {
+                     
                         echo "<tr>\n";
+                        echo "<!-- dont change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
+                        echo "<!-- ". $prev . " -->\n";
                     }
                 
                 } else {
+                    echo "<!-- really dont change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
+                    echo "<!-- ". $prev . " -->\n";
+
                     echo "<tr>\n";
                 }
             }
