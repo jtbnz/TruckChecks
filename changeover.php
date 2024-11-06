@@ -120,8 +120,9 @@
                 } else {
                     $cellbgcolour = "#f0f0f0";
                 }
-                if ($locker_count == 1 && $locker_total > 2) {
-                    echo "<td></td><td></td><td></td><td></td></TR>\n";           
+                if ($locker_count == 2 && $locker_total > 2) {
+                    echo "<td></td><td></td><td></td><td></td></TR>\n";     
+                    $locker_count == 1;     
                 }
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
