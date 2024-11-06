@@ -134,6 +134,10 @@
                 $trCount++;
                 
             }
+            echo "<!-- Locker Count: " . $locker_count . " -->\n";
+            echo "<!-- Locker Change Count: " . $locker_change_count . " -->\n";
+            echo "<!-- TR Count: " . $trCount . " -->\n";
+
             $locker_count++;
         }
         echo "</table>";
