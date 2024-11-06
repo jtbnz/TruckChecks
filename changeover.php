@@ -104,6 +104,7 @@
         $locker_count = 1;
         $cellbgcolour = "#f0f0f0";
         $locker_total = 0;
+        $prev_locker = "";
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
@@ -125,7 +126,7 @@
                 if ($trCount % 2 == 0) {
                         echo '<tr>' . "\n";          
                 } else {
-                    echo "<tr>\n";
+                    // echo "<tr>\n";
                 }
             }
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
