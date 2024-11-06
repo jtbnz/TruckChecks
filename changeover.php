@@ -107,27 +107,26 @@
         echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th></tr>";
 
         foreach ($results as $row) {
-            if ($current_locker != $row['locker_name']) {
-                if ($current_locker != '') {
-                    echo "</table>";
-                    $locker_count++;
-                    if ($locker_count % 2 == 0) {
-                        echo "<tr></tr>";
-                    }
-                    echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
-                }
-                $current_locker = $row['locker_name'];
-                echo "<tr><td colspan='4'><strong>Locker: " . htmlspecialchars($current_locker) . "</strong></td></tr>";
+
+
+
+            if ($locker_count == 1) {
+                echo "<tr>";
             }
-            echo "<tr>";
+
+
             echo "<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>";
             echo "<td>" . htmlspecialchars($row['item_name']) . "</td>";
             echo "<td><input type='checkbox'></td>";
             echo "<td><input type='checkbox'></td>";
-            echo "</tr>";
-        }
-        if ($current_locker != '') {
-            echo "</table>";
+            
+            if ($locker_count == 2) {
+                echo "</tr>";
+                $locker_count = 1;
+            } else {
+                $locker_count++;
+            }
+
         }
         echo "</table>";
 
