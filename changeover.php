@@ -125,6 +125,7 @@
                     echo "<td></td><td></td><td></td><td></td></TR>\n";     
                     $locker_count = 1;     
                 }
+                echo "<tr><td colspan='4'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
