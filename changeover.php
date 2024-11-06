@@ -103,6 +103,7 @@
         $trCount = 1;
         $locker_count = 1;
         $cellbgcolour = "#f0f0f0";
+        $locker_total = 0;
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
@@ -110,7 +111,15 @@
 
         foreach ($results as $row) {
 
-
+            if ($prev_locker != $row['locker_name']) {
+                $locker_total++;
+                $prev_locker = $row['locker_name'];
+                if ($locker_count % 3 == 0) {
+                   $cellbgcolour = "#ffffff";
+                } else {
+                    $cellbgcolour = "#f0f0f0";
+                }
+            }
 
             if ($locker_count == 1) {
                 if ($trCount % 2 == 0) {
@@ -119,17 +128,19 @@
                     echo "<tr>\n";
                 }
             }
-            echo '\t<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
-            echo '\t<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
-            echo '\t<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
-            echo '\t<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
    
             if ($locker_count == 2) {
                 echo "</tr>\n";
-                $locker_count = 0;
+                $locker_count = 1;
                 $trCount++;
                 
             }
+
+
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             $locker_count++;
         }
