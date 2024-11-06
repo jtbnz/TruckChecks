@@ -133,9 +133,9 @@
                 echo "</tr>\n";
                 $locker_count = 1;
                 $trCount++;
-                $locker_count++;
+                
             }
-
+            $locker_count++;
         }
         echo "</table>";
 
