@@ -131,7 +131,7 @@
             echo "$trCount\n";
             if ($locker_count == 2) {
                 echo "</tr>\n";
-                $locker_count = 1;
+                $locker_count = 0;
                 $trCount++;
                 
             }
