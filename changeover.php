@@ -101,7 +101,7 @@
         $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
         $current_locker = '';
-        $locker_count = 0;
+        $locker_count = 1;
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th></tr>";
