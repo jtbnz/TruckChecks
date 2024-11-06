@@ -108,7 +108,7 @@
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>\n";
         
-        echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><TR>\n";
+        echo "<tr><th>Item</th><th>Relief</th><th>" .$truck['name'] . "</th><th>Item</th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
 
         foreach ($results as $row) {
 
