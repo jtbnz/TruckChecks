@@ -106,9 +106,9 @@
         $locker_total = 0;
         $prev_locker = "";
 
-        echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
+        echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>\n";
         
-        echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th>";
+        echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><TR>\n";
 
         foreach ($results as $row) {
 
