@@ -102,6 +102,7 @@
 
         $trCount = 1;
         $locker_count = 1;
+        $prev = '';
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
@@ -113,9 +114,13 @@
 
             if ($locker_count == 1) {
                 if ($trCount % 2 == 0) {
-                echo '<tr style="background-color: lightgrey;">\n';
-
-
+                    if ($row['locker_name'] == $prev) {
+                        echo '<tr style="background-color: lightgrey;">' . "\n";
+                        $prev = $row['locker_name'];
+                    } else {
+                        echo "<tr>\n";
+                    }
+                echo '<tr style="background-color: lightgrey;">' . "\n";
                 } else {
                     echo "<tr>\n";
                 }
