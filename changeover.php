@@ -262,7 +262,9 @@ if ($selected_truck_id) {
     </select>
 </form>
 
-<?php if ($selected_truck_id): 
+<?php
+
+if ($selected_truck_id) {
 
     $truck_id = $selected_truck_id; 
 
@@ -286,26 +288,41 @@ if ($selected_truck_id) {
     $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
     $current_locker = '';
+    $locker_count = 0;
+
+    echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
+    echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th></tr>";
+
     foreach ($results as $row) {
         if ($current_locker != $row['locker_name']) {
             if ($current_locker != '') {
-                echo "</ul>";
+                echo "</table>";
+                $locker_count++;
+                if ($locker_count % 2 == 0) {
+                    echo "<tr></tr>";
+                }
+                echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
             }
             $current_locker = $row['locker_name'];
-            echo "<h2>Locker: " . htmlspecialchars($current_locker) . "</h2>";
-            echo "<ul>";
+            echo "<tr><td colspan='4'><strong>Locker: " . htmlspecialchars($current_locker) . "</strong></td></tr>";
         }
-        echo "<li>" . htmlspecialchars($row['item_name']) . "</li>";
+        echo "<tr>";
+        echo "<td>" . htmlspecialchars($row['locker_name']) . "</td>";
+        echo "<td>" . htmlspecialchars($row['item_name']) . "</td>";
+        echo "<td><input type='checkbox'></td>";
+        echo "<td><input type='checkbox'></td>";
+        echo "</tr>";
     }
     if ($current_locker != '') {
-        echo "</ul>";
+        echo "</table>";
     }
-    ?>
+    echo "</table>";
 
-
-<?php else: ?>
-    <p>Please select a truck to view its lockers and items.</p>
-<?php endif; ?>
+    echo '<p><a href="changeover_pdf.php?truck_id=<?= $truck_id ?>" class="button touch-button">Generate PDF</a></p>';
+} else {
+    echo "<p>Please select a truck to view its lockers and items.</p>";
+}
+?>
 
 <footer>
     <? $version = $_SESSION['version']; ?>
