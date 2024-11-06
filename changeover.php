@@ -122,7 +122,7 @@
                 }
 
                 if ($locker_count == 2 && $locker_total > 1) {
-                    echo "<td></td><td></td><td></td><td></td></TR>\n";     
+                    echo "<td></td><td></td><td></td><td></td></TR>\n<TR>\n";     
                     $locker_count == 1;     
                 }
             }
