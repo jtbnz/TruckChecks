@@ -120,16 +120,14 @@
                 } else {
                     $cellbgcolour = "#f0f0f0";
                 }
-                if ($locker_count == 1 && $locker_total > 1) {
+                if ($locker_count == 1 && $locker_total > 2) {
                     echo "<td></td><td></td><td></td><td></td></TR>\n";           
                 }
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
-            echo "<!-- Cell BG Colour: " . $cellbgcolour . " -->\n";
-            echo "<!-- Prev Locker: " . $prev_locker . " -->\n";
-            echo "<!-- Locker Name: " . $row['locker_name'] . " -->\n";
-            
+
+
             if ($locker_count == 1) {
                         echo '<tr>' . "\n";          
                 
