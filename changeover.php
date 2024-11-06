@@ -55,7 +55,7 @@
 
 </head>
 <body>
-<table>
+<table  style='width: 100%;'>
     <TR>
         <TD style='width: 25%;' >
             <h1>Truck Change Over</h1>
