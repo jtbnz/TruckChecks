@@ -123,7 +123,7 @@
 
                 if ($locker_count == 2 && $locker_total > 1) {
                     echo "<td></td><td></td><td></td><td></td></TR>\n<TR>\n";     
-                    $locker_count == 1;     
+                    $locker_count == 0;     
                 }
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
