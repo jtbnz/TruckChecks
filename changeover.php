@@ -115,7 +115,7 @@
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
                 $prev_locker = $row['locker_name'];
-                if ($locker_count % 3 == 0) {
+                if ($locker_total % 3 == 0) {
                    $cellbgcolour = "#ffffff";
                 } else {
                     $cellbgcolour = "#f0f0f0";
