@@ -114,7 +114,7 @@
 
             if ($locker_count == 1) {
                 if ($trCount % 2 == 0) {
-                    if ($row['locker_name'] == $prev) {
+                    if ($row['locker_name'] <> $prev) {
                         echo '<tr style="background-color: lightgrey;">' . "\n";
                         $prev = $row['locker_name'];
                     } else {
