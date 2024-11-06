@@ -120,7 +120,7 @@
                 echo "<tr><td colspan='4'><strong>Locker: " . htmlspecialchars($current_locker) . "</strong></td></tr>";
             }
             echo "<tr>";
-            echo "<td>" . htmlspecialchars($row['locker_name']) . "</td>";
+            echo "<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>";
             echo "<td>" . htmlspecialchars($row['item_name']) . "</td>";
             echo "<td><input type='checkbox'></td>";
             echo "<td><input type='checkbox'></td>";
