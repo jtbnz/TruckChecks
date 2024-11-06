@@ -44,6 +44,10 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     return implode(' ', $words);
 }
 
+
+$db = get_db_connection();
+
+
 // Fetch the last swap notes for the locker
 $locker_id = $_GET['locker_id'] ?? 1; // Replace with actual locker ID
 $last_notes = '';
