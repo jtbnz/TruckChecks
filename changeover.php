@@ -103,8 +103,6 @@
         $trCount = 1;
         $locker_count = 1;
 
-        $previous_locker_name = '';
-        $locker_change_count = 0;
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
@@ -112,17 +110,15 @@
 
         foreach ($results as $row) {
 
-            if ($row['locker_name'] !== $previous_locker_name) {
-                $locker_change_count++;
-                $previous_locker_name = $row['locker_name'];
-            }
 
-            if ($locker_change_count % 3 == 1) {
-                echo '<tr style="background-color: lightgrey;">' . "\n";
-            } else {
-                echo "<tr>\n";
-            }
 
+            if ($locker_count == 1) {
+                if ($trCount % 2 == 0) {
+                        echo '<tr style="background-color: lightgrey;">' . "\n";          
+                } else {
+                    echo "<tr>\n";
+                }
+            }
             echo "\t<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
             echo "\t<td>" . htmlspecialchars($row['item_name']) . "</td>\n";
             echo "\t<td><center><input type='checkbox'></center></td>\n";
@@ -134,10 +130,6 @@
                 $trCount++;
                 
             }
-            echo "<!-- Locker Count: " . $locker_count . " -->\n";
-            echo "<!-- Locker Change Count: " . $locker_change_count . " -->\n";
-            echo "<!-- TR Count: " . $trCount . " -->\n";
-
             $locker_count++;
         }
         echo "</table>";
