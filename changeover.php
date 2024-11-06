@@ -113,21 +113,24 @@
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
-                
-                if ($locker_total % 2 == 0) {
-                   $cellbgcolour = "#ffffff";
-                } else {
-                    $cellbgcolour = "#f0f0f0";
-                }
-
+  
                 if ($locker_count == 2 && $locker_total > 1) {
-                    echo "<td></td><td></td></TR>\n";     
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "</TR>\n";     
                     $locker_count = 1;     
                 }
-                // echo "<tr><td colspan='6'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
+
                 echo '<tr style="background-color: #A9A9A9">' . "\n";
                 echo "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
-
+                
+                
+                if ($locker_total % 2 == 0) {
+                    $cellbgcolour = "#ffffff";
+                 } else {
+                     $cellbgcolour = "#f0f0f0";
+                 }
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
