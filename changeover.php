@@ -122,10 +122,10 @@
                 }
 
                 if ($locker_count == 2 && $locker_total > 1) {
-                    echo "<td></td><td></td><td></td><td></td></TR>\n";     
+                    echo "<td></td><td></td></TR>\n";     
                     $locker_count = 1;     
                 }
-                echo "<tr><td colspan='4'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
+                echo "<tr><td colspan='6'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
@@ -136,7 +136,7 @@
                         echo '<tr>' . "\n";          
                 
             }
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
+            // echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
