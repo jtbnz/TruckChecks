@@ -77,6 +77,39 @@ CREATE TABLE `email_addresses` (
 ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`;
 
 
+
+CREATE TABLE `swap_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `swap_id` int(11) DEFAULT NULL,
+  `item_id` int(11) DEFAULT NULL,
+  `is_present` tinyint(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `swap_id` (`swap_id`),
+  KEY `item_id` (`item_id`)
+);
+
+
+CREATE TABLE `swap` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `locker_id` int(11) DEFAULT NULL,
+  `swapped_by` varchar(255) DEFAULT NULL,
+  `ignore_check` tinyint(1) NOT NULL DEFAULT 0,
+  `swap_date` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `locker_id` (`locker_id`)
+);
+
+ CREATE TABLE `swap_notes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `swap_id` int(11) NOT NULL,
+  `note` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `swap_id` (`swap_id`)
+) 
+;
+
+
+
 -- Insert sample data into `trucks` table
 INSERT INTO `trucks` (`name`) VALUES 
 ('Truck 1'),
