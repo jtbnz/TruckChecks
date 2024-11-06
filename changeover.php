@@ -140,6 +140,7 @@
 
 
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
+            echo "<!-- Lockertotal: " . $locker_total . " -->\n";
             $locker_count++;
         }
         echo "</table>";
