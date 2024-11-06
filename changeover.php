@@ -22,7 +22,7 @@
 
     $db = get_db_connection();
 
-
+ob_end_clean();
 
 
     // Fetch all trucks

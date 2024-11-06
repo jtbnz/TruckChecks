@@ -20,6 +20,8 @@ if (!isset($_SESSION['version'])) {
 
 $db = get_db_connection();
 
+ob_end_clean();
+
 // Fetch all trucks
 $trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 
