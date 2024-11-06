@@ -120,7 +120,7 @@
                     } else {
                         echo "<tr>\n";
                     }
-                echo '<tr style="background-color: lightgrey;">' . "\n";
+                
                 } else {
                     echo "<tr>\n";
                 }
