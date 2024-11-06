@@ -74,8 +74,8 @@
             </form>
         </TD>
         <TD style='width: 5%;' ></TD>
-        <TD style='width: 70%;' >
-            <h2>Notes:</h2><hr>
+        <TD style='width: 70%;border=1;' >
+            <h2>Notes:</h2>
             <p>1. Officer keys.</p>
             <p>2. Station Remotes - keys.</p>
         </TD>
