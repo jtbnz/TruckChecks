@@ -73,7 +73,8 @@
                 </select>
             </form>
         </TD>
-        <TD style='width: 75%;' >
+        <TD style='width: 5%;' ></TD>
+        <TD style='width: 70%;' >
             <h2>Notes:</h2><hr>
             <p>1. Officer keys.</p>
             <p>2. Station Remotes - keys.</p>
