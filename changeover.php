@@ -55,11 +55,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Check lockers for missing items">
     <title>Check Locker Items</title>
-    <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php  echo $version;  ?> ">
-    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
+
 
 </head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+<body>
 
 <h1>Truck Change Over</h1>
 
