@@ -141,6 +141,8 @@
 
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
+            echo "<!-- Cell BG Colour: " . $cellbgcolour . " -->\n";
+            echo "<!-- Prev Locker: " . $prev_locker . " -->\n";
             $locker_count++;
         }
         echo "</table>";
