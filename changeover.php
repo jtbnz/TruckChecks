@@ -124,11 +124,10 @@
 
             echo "\t<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
             echo "\t<td>" . htmlspecialchars($row['item_name']) . "</td>\n";
-            echo "\t<td><input type='checkbox'></td>\n";
-            echo "\t<td><input type='checkbox'></td>\n";
+            echo "\t<td><center><input type='checkbox'></center></td>\n";
+            echo "\t<td><center><input type='checkbox'></center></td>\n";
             
-            echo "$locker_count\n";
-            echo "$trCount\n";
+
             if ($locker_count == 2) {
                 echo "</tr>\n";
                 $locker_count = 0;
