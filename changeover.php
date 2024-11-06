@@ -113,24 +113,24 @@
 
             if ($locker_count == 1) {
                 if ($trCount % 2 == 0) {
-                echo '<tr style="background-color: lightgrey;">';
-                $trCount++;
+                echo '<tr style="background-color: lightgrey;">\n';
+
 
                 } else {
-                    echo "<tr>";
+                    echo "<tr>\n";
                 }
             }
 
 
-            echo "<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>";
-            echo "<td>" . htmlspecialchars($row['item_name']) . "</td>";
-            echo "<td><input type='checkbox'></td>";
-            echo "<td><input type='checkbox'></td>";
+            echo "\t<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
+            echo "\t<td>" . htmlspecialchars($row['item_name']) . "</td>\n";
+            echo "\t<td><input type='checkbox'></td>\n";
+            echo "\t<td><input type='checkbox'></td>\n";
             
             if ($locker_count == 2) {
-                echo "</tr>";
+                echo "</tr>\n";
                 $locker_count = 1;
-            } else {
+                $trCount++;
                 $locker_count++;
             }
 
