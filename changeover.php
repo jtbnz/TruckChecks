@@ -128,8 +128,8 @@
             }
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour .  "><center><input type='checkbox'></center></td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
+            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
    
             if ($locker_count == 2) {
                 echo "</tr>\n";
