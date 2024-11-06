@@ -121,7 +121,7 @@
                     $cellbgcolour = "#f0f0f0";
                 }
                 if ($locker_count == 1 && $locker_total > 1) {
-                    echo "<td></td><td></td><td></td><td></td><TR>\n";           
+                    echo "<td></td><td></td><td></td><td></td></TR>\n";           
                 }
             }
 
