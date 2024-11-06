@@ -108,17 +108,23 @@
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
-        echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th></tr>";
+        echo "<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th>";
 
         foreach ($results as $row) {
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
                 $prev_locker = $row['locker_name'];
-                if ($locker_total % 3 == 0) {
+                if ($locker_total % 2 == 0) {
                    $cellbgcolour = "#ffffff";
                 } else {
                     $cellbgcolour = "#f0f0f0";
+                }
+                if ($locker_count == 1) {
+                    echo "<td></td><td></td><td></td><td></td></tr>\n";
+                    $locker_count = 0;
+    
+                    
                 }
             }
 
