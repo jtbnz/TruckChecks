@@ -114,7 +114,7 @@
             if ($locker_count == 1) {
                 if ($trcount % 2 == 0) {
                 echo '<tr style="background-color: lightgrey;">';
-                trCount++;
+                $trCount++;
 
                 } else {
                     echo "<tr>";
