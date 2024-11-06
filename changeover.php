@@ -114,16 +114,13 @@
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
-                $prev_locker = $row['locker_name'];
+                
                 if ($locker_total % 2 == 0) {
                    $cellbgcolour = "#ffffff";
                 } else {
                     $cellbgcolour = "#f0f0f0";
                 }
-                if ($locker_count == 2 && $locker_total > 2) {
-                    echo "<td></td><td></td><td></td><td></td></TR>\n";     
-                    $locker_count == 1;     
-                }
+
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
@@ -138,14 +135,20 @@
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
    
-            if ($locker_count == 2) {
-                echo "</tr>\n";
-                $locker_count = 0;
+            if ($prev_locker != $row['locker_name']) {
+                if ($locker_count == 2 && $locker_total > 1) {
+                    echo "<td></td><td></td><td></td><td></td></TR>\n";     
+                    $locker_count == 0;     
+                }
+            } else {
+                if ($locker_count == 2) {
+                    echo "</tr>\n";
+                    $locker_count = 0;
 
-                
+                    
+                }
             }
-
-
+            $prev_locker = $row['locker_name'];
 
             $locker_count++;
         }
