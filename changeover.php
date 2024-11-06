@@ -108,8 +108,7 @@
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>\n";
         
-        echo "<tr><th>Item</th><th>Relief</th><th>" .$truck['name'] . "</th><th>Item</th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
-
+        
         foreach ($results as $row) {
 
             if ($prev_locker != $row['locker_name']) {
@@ -125,7 +124,9 @@
                     echo "<td></td><td></td></TR>\n";     
                     $locker_count = 1;     
                 }
-                echo "<tr><td colspan='6'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
+                // echo "<tr><td colspan='6'><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong></td></tr>\n";
+                echo "<tr><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong><th>Relief</th><th>" .$truck['name'] . "</th><strong>Locker: " . htmlspecialchars($row['locker_name']) . "</strong><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
+
             }
             echo "<!-- Locker Count: " . $locker_count . " -->\n";
             echo "<!-- Lockertotal: " . $locker_total . " -->\n";
