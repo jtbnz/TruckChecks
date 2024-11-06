@@ -100,7 +100,7 @@
         $query->execute(['truck_id' => $truck_id]);
         $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-        $trCount = 1;
+
         $locker_count = 1;
         $cellbgcolour = "#f0f0f0";
         $locker_total = 0;
@@ -123,11 +123,8 @@
             }
 
             if ($locker_count == 1) {
-                if ($trCount % 2 == 0) {
                         echo '<tr>' . "\n";          
-                } else {
-                    // echo "<tr>\n";
-                }
+                
             }
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
@@ -136,8 +133,8 @@
    
             if ($locker_count == 2) {
                 echo "</tr>\n";
-                $locker_count = 1;
-                $trCount++;
+                $locker_count = 0;
+
                 
             }
 
