@@ -102,7 +102,7 @@
 
         $trCount = 1;
         $locker_count = 1;
-        $prev = '';
+
 
         echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
@@ -116,31 +116,24 @@
                 if ($trCount % 2 == 0) {
                     if ($row['locker_name'] <> $prev) {
                         echo '<tr style="background-color: lightgrey;">' . "\n";
-                        $prev = $row['locker_name'];
-                        echo "<!-- change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
-                        echo "<!-- ". $prev . " -->\n";
+
                     } else {
                      
                         echo "<tr>\n";
-                        echo "<!-- dont change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
-                        echo "<!-- ". $prev . " -->\n";
+
                     }
                 
                 } else {
-                    echo "<!-- really dont change Locker: " . htmlspecialchars($row['locker_name']) . " -->\n";
-                    echo "<!-- ". $prev . " -->\n";
+
 
                     echo "<tr>\n";
                 }
             }
-
-
             echo "\t<td>" . htmlspecialchars($row['locker_name']) . $locker_count . "</td>\n";
             echo "\t<td>" . htmlspecialchars($row['item_name']) . "</td>\n";
             echo "\t<td><center><input type='checkbox'></center></td>\n";
             echo "\t<td><center><input type='checkbox'></center></td>\n";
-            
-
+   
             if ($locker_count == 2) {
                 echo "</tr>\n";
                 $locker_count = 0;
