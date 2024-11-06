@@ -1,8 +1,4 @@
 <?php
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-    echo "Debug mode is on";
 
     include 'db.php';
 
@@ -59,21 +55,32 @@
 
 </head>
 <body>
+<table>
+    <TR>
+        <TD style='width: 25%;' >
+            <h1>Truck Change Over</h1>
 
-<h1>Truck Change Over</h1>
+            <!-- Truck Selection Form -->
+            <form method="GET">
+                <label for="truck_id">Select a Truck:</label>
+                <select name="truck_id" id="truck_id" onchange="this.form.submit()">
+                    <option value="">-- Select Truck --</option>
+                    <?php foreach ($trucks as $truck): ?>
+                        <option value="<?= $truck['id'] ?>" <?= $selected_truck_id == $truck['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($truck['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+        </TD>
+        <TD style='width: 75%;' >
+            <h2>Notes:</h2><hr>
+            <p>1. Officer keys.</p>
+            <p>2. Station Remotes - keys.</p>
+        </TD>
+    </TR>
+</table>
 
-<!-- Truck Selection Form -->
-<form method="GET">
-    <label for="truck_id">Select a Truck:</label>
-    <select name="truck_id" id="truck_id" onchange="this.form.submit()">
-        <option value="">-- Select Truck --</option>
-        <?php foreach ($trucks as $truck): ?>
-            <option value="<?= $truck['id'] ?>" <?= $selected_truck_id == $truck['id'] ? 'selected' : '' ?>>
-                <?= htmlspecialchars($truck['name']) ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</form>
 
 <?php
 
@@ -158,6 +165,7 @@
 
             $locker_count++;
         }
+
         echo "</table>";
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
