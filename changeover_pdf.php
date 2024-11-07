@@ -115,16 +115,16 @@ $html = '';
                     $html = '';
                 }
                 $html .=  '<tr>' ;
-                $html .=  "<th>";
+                $html .=  "<td>";
                 $html .= $row['locker_name'];
-                $html .= "</th>";
-                $html .= "<th>Relief</th><th>"; 
+                $html .= "</td>";
+                $html .= "<td>Relief</td><td>"; 
                 $html .= $truck['name'] ;
-                $html .=  "</th><th><strong>";
+                $html .=  "</td><td><strong>";
                 $html .= htmlspecialchars($row['locker_name']);
-                $html .= "</strong></th><th>Relief</th><th>";
+                $html .= "</strong></td><td>Relief</td><td>";
                 $html .= $truck['name'] ;
-                $html .=  "</th><TR>";
+                $html .=  "</td><TR>";
                 $pdf->writeHTML($html, true, false, true, false, '');
                 $html = '';
                 
