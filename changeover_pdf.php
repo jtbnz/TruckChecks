@@ -95,7 +95,7 @@ $html = '';
         $prev_locker = "";
 
         $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
-
+        $html .=  "<tbody>";
         $html .=  '<tr></td>WTF</td></tr>' ;
         
         
@@ -111,7 +111,6 @@ $html = '';
                     $html .=  "</TR>";     
                     $locker_count = 1;     
                 }
-                $html .=  '<tr></td>BEFORE NEXT ROW</td></tr>' ;
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  "<th>" . htmlspecialchars($row['locker_name']) . "</th>";
                 $html .= "<th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
@@ -149,7 +148,7 @@ $html = '';
             $locker_count++;
         }
 
-        $html .=  "</table>";
+        $html .=  "<tbody></table>";
 
 } else {
     $html .= '<p>Please select a truck to view its lockers and items.</p>';
@@ -159,7 +158,7 @@ $html = '';
 $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-//$pdf->Output('truck_changeover.pdf', 'I');
+$pdf->Output('truck_changeover.pdf', 'I');
 
 echo "<!-- " . $html . " -->";
 ?>
