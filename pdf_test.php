@@ -185,82 +185,82 @@ $tbl = <<<EOD
 	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><TR>
 <tr>
 	<td style="background-color: #f0f0f0">Antibacterial wipes</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Blanket</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #f0f0f0">ECO Board</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Flare Torches X4</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #f0f0f0">Gloves - XXL - XL - L - M - S</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Masks</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #f0f0f0">Nominal Role Tally</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Officers Radio</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #f0f0f0">OIC Jerkin</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Radios X4</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #f0f0f0">Safety Jerkins X4</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">TIC</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr style="background-color: #A9A9A9">
 	<th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><TR>
 <tr>
 	<td style="background-color: #ffffff">Basket Strainer</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 	<td style="background-color: #ffffff">Ground Monitor</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #ffffff">Hall Runner</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 	<td style="background-color: #ffffff">Heights Kit</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #ffffff">Shovel X2</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 	<td style="background-color: #ffffff">Squeegee X2</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 </tr>
 <tr>
 	<td style="background-color: #ffffff">Suction Line</td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
-	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
+	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
 	<td style="background-color: #ffffff"></td>
 	<td style="background-color: #ffffff"></td>
 	<td style="background-color: #ffffff"></td>
@@ -269,11 +269,11 @@ $tbl = <<<EOD
 	<th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><TR>
 <tr>
 	<td style="background-color: #f0f0f0">Absorbent Bucket</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 	<td style="background-color: #f0f0f0">Absorbent Kit</td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
-	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
+	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 </table>
 EOD;
