@@ -111,7 +111,8 @@ $html = '';
                 }
 
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
-                $html .=  "<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
+                $html .=  "<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th>";
+                $html .= "<th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
                 
                 
                 if ($locker_total % 2 == 0) {

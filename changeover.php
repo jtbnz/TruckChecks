@@ -140,8 +140,7 @@
                      $cellbgcolour = "#f0f0f0";
                  }
             }
-            echo "<!-- Locker Count: " . $locker_count . " -->\n";
-            echo "<!-- Lockertotal: " . $locker_total . " -->\n";
+
 
 
 
