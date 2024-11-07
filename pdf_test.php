@@ -181,7 +181,7 @@ $pdf->writeHTML($tbl, true, false, false, false, '');
 // Table with rowspans and THEAD
 $tbl = <<<EOD
 <table border='1' cellpadding='5' cellspacing='0' >
-<tr style="background-color: #A9A9A9">
+<tr>
 	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><TR>
 <tr>
 	<td style="background-color: #f0f0f0">Antibacterial wipes</td>
