@@ -167,7 +167,7 @@ $html = '';
 }
 
 // Output the HTML content
-$pdf->writeHTMLCell(0, 0, '', '', $html, 0, 1, 0, true, '', true);
+$pdf->writeHTML($html, true, false, false, false, '');
 
 
 // Close and output PDF document
