@@ -116,7 +116,7 @@ $html = '';
                 }
                 $html .=  '<tr>' ;
                 $html .=  "<td>";
-                // $html .= $row['locker_name'];
+                $html .= $row['locker_name'];
                 $html .= "</td>";
                 $html .= "<td>Relief</td><td>"; 
                 $html .= $truck['name'] ;
