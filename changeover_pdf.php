@@ -132,8 +132,8 @@ $html = '';
             }
             // $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
    
 
             if ($locker_count == 2) {
@@ -160,5 +160,5 @@ $pdf->writeHTML($html, true, false, true, false, '');
 // Close and output PDF document
 $pdf->Output('truck_changeover.pdf', 'I');
 
-echo "<!-- " . $html . " -->";
+
 ?>
