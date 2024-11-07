@@ -1,24 +1,8 @@
 <?php
 require_once('vendor/autoload.php');
-require_once('db.php');
 use TCPDF;
 
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
+include 'db.php'; 
 
 $db = get_db_connection();
 
