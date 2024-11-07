@@ -23,18 +23,15 @@ if ($selected_truck_id) {
     $selected_locker_id = isset($_GET['locker_id']) ? $_GET['locker_id'] : null;
 }
 
-// Create new PDF document
-$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
 
 // Set document information
-$pdf->SetCreator(PDF_CREATOR);
-$pdf->SetAuthor('Your Name');
-$pdf->SetTitle('Truck Change Over');
-$pdf->SetSubject('Truck Change Over');
-$pdf->SetKeywords('TCPDF, PDF, example, test, guide');
+$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
+$pdf->setPrintHeader(false);
+$pdf->SetMargins(7.375, 26, 7.375);
+$pdf->SetAutoPageBreak(TRUE, 26);
 
-// Set default header data
-$pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, PDF_HEADER_TITLE, PDF_HEADER_STRING);
+
 
 // Set header and footer fonts
 $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
