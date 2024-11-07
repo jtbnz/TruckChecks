@@ -1,6 +1,8 @@
 <?php
 require_once('vendor/autoload.php');
 require_once('db.php');
+use TCPDF;
+
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -128,8 +130,8 @@ if ($selected_truck_id) {
 }
 
 // Output the HTML content
-//$pdf->writeHTML($html, true, false, true, false, '');
+$pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
-//$pdf->Output('truck_changeover.pdf', 'I');
+$pdf->Output('truck_changeover.pdf', 'I');
 ?>
