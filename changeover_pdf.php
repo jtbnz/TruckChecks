@@ -95,6 +95,8 @@ $html = '';
         $prev_locker = "";
 
         $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
+
+        $html .=  '<tr></td>WTF</td></tr>' ;
         
         
         foreach ($results as $row) {
@@ -111,9 +113,9 @@ $html = '';
                 }
 
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
-                 $html .= "<th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
-                 $html .=  "<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th>";
-               
+                $html .=  "<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th>";
+                $html .= "<th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
+                
                 
                 if ($locker_total % 2 == 0) {
                     $cellbgcolour = "#ffffff";
