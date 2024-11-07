@@ -182,7 +182,8 @@ $pdf->writeHTML($tbl, true, false, false, false, '');
 $tbl = <<<EOD
 <table border="1" cellpadding="5" cellspacing="0" >
 <tr>
-	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th>
+</tr>
 <tr>
 	<td style="background-color: #f0f0f0">Antibacterial wipes</td>
 	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
@@ -232,7 +233,8 @@ $tbl = <<<EOD
 	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
 </tr>
 <tr style="background-color: #A9A9A9">
-	<th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+	<th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th>
+</tr>
 <tr>
 	<td style="background-color: #ffffff">Basket Strainer</td>
 	<td style="background-color: #ffffff"><center><input type="checkbox"></center></td>
@@ -266,7 +268,8 @@ $tbl = <<<EOD
 	<td style="background-color: #ffffff"></td>
 </TR>
 <tr style="background-color: #A9A9A9">
-	<th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+	<th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th>
+</tr>
 <tr>
 	<td style="background-color: #f0f0f0">Absorbent Bucket</td>
 	<td style="background-color: #f0f0f0"><center><input type="checkbox"></center></td>
