@@ -180,7 +180,7 @@ $pdf->writeHTML($tbl, true, false, false, false, '');
 
 // Table with rowspans and THEAD
 $tbl = <<<EOD
-<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>
+<table border='1' cellpadding='5' cellspacing='0' >
 <tr style="background-color: #A9A9A9">
 	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><TR>
 <tr>
