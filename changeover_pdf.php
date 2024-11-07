@@ -63,49 +63,92 @@ $pdf->Cell(0, 10, 'Truck Change Over', 0, 1, 'C');
 // Fetch and display data
 $html = '<h2>Truck Change Over</h2>';
 
-if ($selected_truck_id) {
-    $html .= '<h3>Truck: ' . htmlspecialchars($trucks[array_search($selected_truck_id, array_column($trucks, 'id'))]['name']) . '</h3>';
-    $html .= '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
-    $html .= '<tr><th>Locker</th><th>Item</th><th>Relief</th><th>Stays</th></tr>';
 
-    $query = $db->prepare("
-        SELECT 
-            t.name AS truck_name,
-            l.name AS locker_name,
-            i.name AS item_name
-        FROM 
-            trucks t
-        JOIN 
-            lockers l ON t.id = l.truck_id
-        JOIN 
-            items i ON l.id = i.locker_id
-        WHERE 
-            t.id = :truck_id
-        ORDER BY 
-            l.name, i.name
-    ");
-    $query->execute(['truck_id' => $selected_truck_id]);
-    $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    $current_locker = '';
-    foreach ($results as $row) {
-        if ($current_locker != $row['locker_name']) {
-            if ($current_locker != '') {
-                $html .= '</table>';
+    if ($selected_truck_id) {
+
+        $truck_id = $selected_truck_id; 
+
+        $query = $db->prepare("
+            SELECT 
+                t.name AS truck_name,
+                l.name AS locker_name,
+                i.name AS item_name
+            FROM 
+                trucks t
+            JOIN 
+                lockers l ON t.id = l.truck_id
+            JOIN 
+                items i ON l.id = i.locker_id
+            WHERE 
+                t.id = :truck_id
+            ORDER BY 
+                l.name, i.name
+        ");
+        $query->execute(['truck_id' => $truck_id]);
+        $results = $query->fetchAll(PDO::FETCH_ASSOC);
+
+
+        $locker_count = 1;
+        $cellbgcolour = "#f0f0f0";
+        $locker_total = 0;
+        $prev_locker = "";
+
+        $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>\n";
+        
+        
+        foreach ($results as $row) {
+
+            if ($prev_locker != $row['locker_name']) {
+                $locker_total++;
+  
+                if ($locker_count == 2 && $locker_total > 1) {
+                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    $html .=  "</TR>\n";     
+                    $locker_count = 1;     
+                }
+
+                $html .=  '<tr style="background-color: #A9A9A9">' . "\n";
+                $html .=  "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
+                
+                
+                if ($locker_total % 2 == 0) {
+                    $cellbgcolour = "#ffffff";
+                 } else {
+                     $cellbgcolour = "#f0f0f0";
+                 }
             }
-            $current_locker = $row['locker_name'];
-            $html .= '<tr><td colspan="4"><strong>Locker: ' . htmlspecialchars($current_locker) . '</strong></td></tr>';
+            $html .=  "<!-- Locker Count: " . $locker_count . " -->\n";
+            $html .=  "<!-- Lockertotal: " . $locker_total . " -->\n";
+
+
+
+            if ($locker_count == 1) {
+                        $html .=  '<tr>' . "\n";          
+                
+            }
+            // $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
+            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
+            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
+            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
+   
+
+            if ($locker_count == 2) {
+                $html .=  "</tr>\n";
+                $locker_count = 0;
+
+                
+            }
+            
+            $prev_locker = $row['locker_name'];
+
+            $locker_count++;
         }
-        $html .= '<tr>';
-        $html .= '<td>' . htmlspecialchars($row['locker_name']) . '</td>';
-        $html .= '<td>' . htmlspecialchars($row['item_name']) . '</td>';
-        $html .= '<td><input type="checkbox" disabled></td>';
-        $html .= '<td><input type="checkbox" disabled></td>';
-        $html .= '</tr>';
-    }
-    if ($current_locker != '') {
-        $html .= '</table>';
-    }
+
+        $html .=  "</table>";
+
 } else {
     $html .= '<p>Please select a truck to view its lockers and items.</p>';
 }
