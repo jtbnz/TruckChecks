@@ -114,7 +114,7 @@ $html = '';
                     $pdf->writeHTML($html, true, false, true, false, '');
                     $html = '';
                 }
-                $html .=  '<tr">' ;
+                $html .=  '<tr>' ;
                 $html .=  "<th>";
                 $html .= $row['locker_name'];
                 $html .= "</th>";
