@@ -123,7 +123,8 @@ $html = '';
                 $html .= "</strong></th><th>Relief</th><th>";
                 $html .= $truck['name'] ;
                 $html .=  "</th><TR>";
-                
+                $pdf->writeHTML($html, true, false, true, false, '');
+                $html = '';
                 
                 if ($locker_total % 2 == 0) {
                     $cellbgcolour = "#ffffff";
