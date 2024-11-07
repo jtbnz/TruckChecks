@@ -114,7 +114,7 @@ $html = '';
                     $pdf->writeHTML($html, true, false, true, false, '');
                     $html = '';
                 }
-                $html .=  '<tr style="background-color: #A9A9A9">' ;
+                $html .=  '<tr">' ;
                 $html .=  "<th>";
                 $html .= $row['locker_name'];
                 $html .= "</th>";
