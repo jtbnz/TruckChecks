@@ -97,7 +97,7 @@ $html = '';
         $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         $html .=  "<tbody>";
         
-        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->writeHTMLCell($html, true, false, true, false, '');
         $html = '';
         
         foreach ($results as $row) {
@@ -111,7 +111,7 @@ $html = '';
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=  "</TR>";     
                     $locker_count = 1;     
-                    $pdf->writeHTML($html, true, false, true, false, '');
+                    $pdf->writeHTMLCell($html, true, false, true, false, '');
                     $html = '';
                 }
                 $html .=  '<tr>' ;
@@ -126,7 +126,7 @@ $html = '';
                 $html .= $truck['name'] ;
                 $html .=  "</td><TR>";
                 $html=utf8_encode($html);
-                $pdf->writeHTML($html, true, false, true, false, '');
+                $pdf->writeHTMLCell($html, true, false, true, false, '');
                 $html = '';
                 
                 if ($locker_total % 2 == 0) {
@@ -141,7 +141,7 @@ $html = '';
 
             if ($locker_count == 1) {
                         $html .=  '<tr>';    
-                        $pdf->writeHTML($html, true, false, true, false, '');
+                        $pdf->writeHTMLCell($html, true, false, true, false, '');
                         $html = '';      
                 
             }
@@ -149,13 +149,13 @@ $html = '';
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $pdf->writeHTML($html, true, false, true, false, '');
+            $pdf->writeHTMLCell($html, true, false, true, false, '');
             $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
                 $locker_count = 0;
-                $pdf->writeHTML($html, true, false, true, false, '');
+                $pdf->writeHTMLCell($html, true, false, true, false, '');
                 $html = '';
                 
             }
@@ -163,12 +163,12 @@ $html = '';
             $prev_locker = $row['locker_name'];
 
             $locker_count++;
-            $pdf->writeHTML($html, true, false, true, false, '');
+            $pdf->writeHTMLCell($html, true, false, true, false, '');
             $html = '';
         }
 
         $html .=  "<tbody></table>";
-        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->writeHTMLCell($html, true, false, true, false, '');
         $html = '';
 
 } else {
