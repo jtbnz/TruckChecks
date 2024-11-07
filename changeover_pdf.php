@@ -96,7 +96,7 @@ $html = '';
 
         $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         $html .=  "<tbody>";
-        $html .=  '<tr></td>WTF</td></tr>' ;
+        
         
         
         foreach ($results as $row) {
@@ -112,8 +112,16 @@ $html = '';
                     $locker_count = 1;     
                 }
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
-                $html .=  "<th>" . htmlspecialchars($row['locker_name']) . "</th>";
-                $html .= "<th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
+                $html .=  "<th>";
+                $html .= htmlspecialchars($row['locker_name']);
+                $html .= "</th>";
+                $html .= "<th>Relief</th><th>"; 
+                $html .= $truck['name'] ;
+                $html .=  "</th><th><strong>";
+                $html .= htmlspecialchars($row['locker_name']);
+                $html .= "</strong></th><th>Relief</th><th>";
+                $html .= $truck['name'] ;
+                $html .=  "</th><TR>";
                 
                 
                 if ($locker_total % 2 == 0) {
