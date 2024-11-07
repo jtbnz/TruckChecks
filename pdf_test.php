@@ -180,63 +180,401 @@ $pdf->writeHTML($tbl, true, false, false, false, '');
 
 // Table with rowspans and THEAD
 $tbl = <<<EOD
-<table border="1" cellpadding="2" cellspacing="2">
-<thead>
- <tr style="background-color:#FFFF00;color:#0000FF;">
-  <td width="30" align="center"><b>A</b></td>
-  <td width="140" align="center"><b>XXXX</b></td>
-  <td width="140" align="center"><b>XXXX</b></td>
-  <td width="80" align="center"> <b>XXXX</b></td>
-  <td width="80" align="center"><b>XXXX</b></td>
-  <td width="45" align="center"><b>XXXX</b></td>
- </tr>
- <tr style="background-color:#FF0000;color:#FFFF00;">
-  <td width="30" align="center"><b>B</b></td>
-  <td width="140" align="center"><b>XXXX</b></td>
-  <td width="140" align="center"><b>XXXX</b></td>
-  <td width="80" align="center"> <b>XXXX</b></td>
-  <td width="80" align="center"><b>XXXX</b></td>
-  <td width="45" align="center"><b>XXXX</b></td>
- </tr>
-</thead>
- <tr>
-  <td width="30" align="center">1.</td>
-  <td width="140" rowspan="6">XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX</td>
-  <td width="140">XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td width="80">XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
- <tr>
-  <td width="30" align="center" rowspan="3">2.</td>
-  <td width="140" rowspan="3">XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
- <tr>
-  <td width="80">XXXX<br />XXXX<br />XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
- <tr>
-  <td width="80" rowspan="2" >RRRRRR<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
- <tr>
-  <td width="30" align="center">3.</td>
-  <td width="140">XXXX1<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
- <tr>
-  <td width="30" align="center">4.</td>
-  <td width="140">XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td width="80">XXXX<br />XXXX</td>
-  <td align="center" width="45">XXXX<br />XXXX</td>
- </tr>
+<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Cab</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #f0f0f0">Antibacterial wipes</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Blanket</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">ECO Board</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Flare Torches X4</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Gloves - XXL - XL - L - M - S</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Masks</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Nominal Role Tally</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Officers Radio</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">OIC Jerkin</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Radios X4</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Safety Jerkins X4</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">TIC</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Coffin</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #ffffff">Basket Strainer</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Ground Monitor</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Hall Runner</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Heights Kit</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Shovel X2</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Squeegee X2</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Suction Line</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Front</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #f0f0f0">Absorbent Bucket</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Absorbent Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Angle Grinder Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Broom</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Check Defib battery level </td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Defib</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Drinking Water</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">First Aid Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Flake and Branch</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Long Preventer</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Ring Cutter Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Screwdriver Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Standpipe Key and Bar</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Tool Bag</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Water Dragon</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"></td>
+	<td style="background-color: #f0f0f0"></td>
+	<td style="background-color: #f0f0f0"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Nearside Middle</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Middle</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #ffffff">Bolt Cutters</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Crowbar</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Decon Pack X2</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Decon Wash Kit</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Deko Wipes</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">ECO Pack</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Hammer</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Hooligan Tool</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">HotZone - Restricted - Do Not Enter Tapes</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Paper Overalls</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Riser Pack X2</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Safety Officer Pack</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Sledge Hammer</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Nearside Rear</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Nearside Rear</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #f0f0f0">Cutoff Saw</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Empty Top Shelf</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">PPV </td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Water safety Kit</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Wildfire Helmets</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"></td>
+	<td style="background-color: #f0f0f0"></td>
+	<td style="background-color: #f0f0f0"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Offside Front</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Offside Front</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #ffffff">Battery Light</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Flake and Branch</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Forestry Pack</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Fuel</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Portable Pump</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Offside Middle</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Offside Middle</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #f0f0f0">2X Water Dragon Hose</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">45mm Coil X2</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">4x70mm Coil</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Salvage sheets</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Offside Rear</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Offside Rear</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #ffffff">2 Stroke Fuel</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">2 Stroke Oil</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">B type ejector pump</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Branch</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Chain Lube</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Chainsaw</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Chaps</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Check Oil and Fuel Levels</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Collecting Breech</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Controlled Dividing Breech</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Dividing Breech</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Female to Female Coupling</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Forestry Dividing Breech</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Forestry Spanners</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Forestry to Instantaneous Adapter</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Forestry to screw type adapters</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Helmet</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">High Pressure Spanners</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Male to Male Coupling</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff">Suction Spanners</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #ffffff">Water Curtain</td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"><center><input type='checkbox'></center></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+	<td style="background-color: #ffffff"></td>
+</TR>
+<tr style="background-color: #A9A9A9">
+	<th><strong>Rear</strong></th><th>Relief</th><th>5529-DEV</th><th><strong>Rear</strong></th><th>Relief</th><th>5529-DEV</th><TR>
+<tr>
+	<td style="background-color: #f0f0f0">90MM Flake</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">CO2 Extinguisher</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Cones X6</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Dry Powder Extinguisher</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
+<tr>
+	<td style="background-color: #f0f0f0">Little Giant Ladder</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0">Standpipe Key and Bar</td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+	<td style="background-color: #f0f0f0"><center><input type='checkbox'></center></td>
+</tr>
 </table>
 EOD;
 
