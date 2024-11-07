@@ -113,7 +113,7 @@ $html = '';
                 }
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  "<th>";
-                $html .= htmlspecialchars($row['locker_name']);
+                $html .= $row['locker_name'];
                 $html .= "</th>";
                 $html .= "<th>Relief</th><th>"; 
                 $html .= $truck['name'] ;
