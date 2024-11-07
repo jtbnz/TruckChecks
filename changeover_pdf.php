@@ -61,7 +61,7 @@ $pdf->SetFont('helvetica', '', 12);
 $pdf->Cell(0, 10, 'Truck Change Over', 0, 1, 'C');
 
 // Fetch and display data
-$html = '<h2>Truck Change Over</h2>';
+$html = '';
 
 
 
