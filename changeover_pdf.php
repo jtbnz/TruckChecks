@@ -160,4 +160,6 @@ $pdf->writeHTML($html, true, false, true, false, '');
 
 // Close and output PDF document
 $pdf->Output('truck_changeover.pdf', 'I');
+
+echo "<!-- " . $html . " -->";
 ?>
