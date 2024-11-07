@@ -122,7 +122,7 @@ $html = '';
                 $html .= $row['locker_name'];
                 $html .= "</strong></td><td>Relief</td><td>";
                 $html .= $truck['name'] ;
-                $html .=  "</td><TR>";
+                $html .=  "</td></tr>";
 
                 
                 if ($locker_total % 2 == 0) {
