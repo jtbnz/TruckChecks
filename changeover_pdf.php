@@ -125,6 +125,7 @@ $html = '';
                 $html .= "</strong></td><td>Relief</td><td>";
                 $html .= $truck['name'] ;
                 $html .=  "</td><TR>";
+                $html=utf8_encode($html);
                 $pdf->writeHTML($html, true, false, true, false, '');
                 $html = '';
                 
