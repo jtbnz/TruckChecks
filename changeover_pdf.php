@@ -111,6 +111,8 @@ $html = '';
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=  "</TR>";     
                     $locker_count = 1;     
+                    $pdf->writeHTML($html, true, false, true, false, '');
+                    $html = '';
                 }
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  "<th>";
@@ -137,19 +139,23 @@ $html = '';
 
 
             if ($locker_count == 1) {
-                        $html .=  '<tr>';          
+                        $html .=  '<tr>';    
+                        $pdf->writeHTML($html, true, false, true, false, '');
+                        $html = '';      
                 
             }
             
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-   
+            $pdf->writeHTML($html, true, false, true, false, '');
+            $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
                 $locker_count = 0;
-
+                $pdf->writeHTML($html, true, false, true, false, '');
+                $html = '';
                 
             }
             
@@ -161,6 +167,8 @@ $html = '';
         }
 
         $html .=  "<tbody></table>";
+        $pdf->writeHTML($html, true, false, true, false, '');
+        $html = '';
 
 } else {
     $html .= '<p>Please select a truck to view its lockers and items.</p>';
