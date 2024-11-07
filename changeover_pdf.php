@@ -94,7 +94,7 @@ $html = '<h2>Truck Change Over</h2>';
         $locker_total = 0;
         $prev_locker = "";
 
-        $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>\n";
+        $html .=  "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
         
         foreach ($results as $row) {
@@ -103,15 +103,15 @@ $html = '<h2>Truck Change Over</h2>';
                 $locker_total++;
   
                 if ($locker_count == 2 && $locker_total > 1) {
-                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    $html .=  "</TR>\n";     
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=  "</TR>";     
                     $locker_count = 1;     
                 }
 
-                $html .=  '<tr style="background-color: #A9A9A9">' . "\n";
-                $html .=  "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
+                $html .=  '<tr style="background-color: #A9A9A9">' ;
+                $html .=  "<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>";
                 
                 
                 if ($locker_total % 2 == 0) {
@@ -120,23 +120,22 @@ $html = '<h2>Truck Change Over</h2>';
                      $cellbgcolour = "#f0f0f0";
                  }
             }
-            $html .=  "<!-- Locker Count: " . $locker_count . " -->\n";
-            $html .=  "<!-- Lockertotal: " . $locker_total . " -->\n";
+
 
 
 
             if ($locker_count == 1) {
-                        $html .=  '<tr>' . "\n";          
+                        $html .=  '<tr>';          
                 
             }
             // $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
-            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
-            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
-            $html .=  "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>";
    
 
             if ($locker_count == 2) {
-                $html .=  "</tr>\n";
+                $html .=  "</tr>";
                 $locker_count = 0;
 
                 
