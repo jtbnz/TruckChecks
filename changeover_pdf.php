@@ -129,7 +129,7 @@ $html = '';
                 $rowcount++;
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
-                $html .= $rowcount . $row['locker_name'];
+                $html .= $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
@@ -155,7 +155,7 @@ $html = '';
                         $html .=  '<tr>'; 
                         $rowcount++;
             }
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' .$rowcount . htmlspecialchars($row['item_name']) . "</td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
 
@@ -166,7 +166,11 @@ $html = '';
                 $locker_count = 0;
             }
  
+            if ($rowcount == 30) {
 
+                $html .=  '<tr></tr><tr></tr>';
+
+            }
             $prev_locker = $row['locker_name'];
             $locker_count++;
         }
