@@ -127,6 +127,19 @@ $html = '';
                     $locker_count = 1;     
                 }
                 $rowcount++;
+
+                // chuck in a couple of blank rows
+                if ($rowcount > 30)  {
+
+                    $html .=   '<tr><td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td></tr>";
+                    $rowcount = 1;
+                }
+
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
                 $html .= $row['locker_name'];
@@ -164,17 +177,7 @@ $html = '';
                 $html .=  "</tr>";
                 
                 $locker_count = 0;
-                // chuck in a couple of blank rows
-                if ($rowcount == 31)  {
 
-                    $html .=   '<tr><td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td></tr>";
-                    $rowcount = 1;
-                }
             }
 
 
