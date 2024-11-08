@@ -168,8 +168,8 @@ $html = '';
  
             if ($rowcount > 26) {
                 $html .=  "</tbody></table>";
-                $pdf->writeHTML($html, true, false, false, false, '');
-                $pdf->AddPage();
+                //$pdf->writeHTML($html, true, false, false, false, '');
+                //$pdf->AddPage();
                 $html = '';
                 $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
                 $html .=  "<tbody>";
