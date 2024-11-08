@@ -108,7 +108,7 @@ $html = '';
         $locker_total = 0;
         $prev_locker = "";
         $rowcount = 1;
-        $pagecount = 1;
+        $pagecount =1;
         $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
         $html .=  "<tbody>";
         
@@ -170,7 +170,7 @@ $html = '';
                 $html .=  "</tbody></table>";
                 //$pdf->writeHTML($html, true, false, false, false, '');
                 //$pdf->AddPage();
-                $html = '';
+               // $html = '';
                 $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
                 $html .=  "<tbody>";
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
