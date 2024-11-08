@@ -202,12 +202,11 @@ $html = '';
 }
 
 // Output the HTML content
-//$pdf->writeHTML($html, true, false, false, false, '');
+$pdf->writeHTML($html, true, false, false, false, '');
 
-echo $html;
 
 // Close and output PDF document
-//$pdf->Output('truck_changeover.pdf', 'I');
+$pdf->Output('truck_changeover.pdf', 'I');
 
 
 ?>
