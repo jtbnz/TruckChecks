@@ -107,7 +107,7 @@ $html = '';
         $cellbgcolour = "#f0f0f0";
         $locker_total = 0;
         $prev_locker = "";
-        $rowcount = 1;
+        $rowcount = 0;
         $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
         $html .=  "<tbody>";
         
@@ -117,19 +117,18 @@ $html = '';
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
-
+                $rowcount++;
                 if ($locker_count == 2 && $locker_total > 1) {
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=  "</tr>";    
-                    
+                    $html .=  "</tr>";     
                     $locker_count = 1;     
                 }
-                $rowcount++;
+
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
-                $html .=  $row['locker_name'];
+                $html .= $rowcount . $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
@@ -143,7 +142,7 @@ $html = '';
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td></tr>';
-
+                $rowcount++;
                 
                 if ($locker_total % 2 == 0) {
                     $cellbgcolour = "#ffffff";
@@ -153,7 +152,6 @@ $html = '';
             }
             if ($locker_count == 1) {
                         $html .=  '<tr>'; 
-                        $rowcount++;
             }
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' .$rowcount . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
@@ -162,8 +160,8 @@ $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
-
-                $locker_count = 1;
+                
+                $locker_count = 0;
             }
  
             if ($rowcount > 26) {
@@ -190,7 +188,7 @@ $html = '';
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td></tr>';
-                $rowcount=1;
+                $rowcount=0;
             }
 
             $prev_locker = $row['locker_name'];
