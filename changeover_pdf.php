@@ -97,7 +97,7 @@ $html = '';
             WHERE 
                 t.id = :truck_id
             ORDER BY 
-                l.name desc, i.name
+                l.name, i.name
         ");
         $query->execute(['truck_id' => $truck_id]);
         $results = $query->fetchAll(PDO::FETCH_ASSOC);
