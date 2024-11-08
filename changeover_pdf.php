@@ -107,7 +107,7 @@ $html = '';
         $cellbgcolour = "#f0f0f0";
         $locker_total = 0;
         $prev_locker = "";
-
+        $rowcount = 0;
         $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
         $html .=  "<tbody>";
         
@@ -155,9 +155,31 @@ $html = '';
 
 
             if ($locker_count == 1) {
-                        $html .=  '<tr>';    
-      
-                
+                        $html .=  '<tr>'; 
+                        $rowcount++;   
+            }
+
+            if ($rowcount > 26) {
+                $pdf->AddPage();
+                $pdf->writeHTML($html, true, false, false, false, '');
+                $html = '';
+                $html .=  '<tr style="background-color: #A9A9A9">' ;
+                $html .=  '<td style="width:30%">';
+                $html .= $row['locker_name'];
+                $html .= "</td>";
+                $html .=  '<td style="width:10%">';
+                $html .= "Relief</td>";
+                $html .=  '<td style="width:10%">';
+                $html .= $row['truck_name'] ;
+                $html .=  '</td><td style="width:30%">';
+                $html .= $row['locker_name'];
+                $html .= "</td>";
+                $html .=  '<td style="width:10%">';
+                $html .= "Relief</td>";
+                $html .=  '<td style="width:10%">';
+                $html .= $row['truck_name'] ;
+                $html .=  '</td></tr>';
+                $rowcount=0;
             }
             
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
