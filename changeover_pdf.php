@@ -34,14 +34,14 @@ $pdf->SetAutoPageBreak(TRUE, 26);
 
 
 // Set header and footer fonts
-$pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
-$pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+//$pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+//$pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
 
 // Set default monospaced font
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
 // Set margins
-$pdf->SetMargins(10,10,10,true);
+$pdf->SetMargins(2,2,2,true);
 //$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
 //$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
 
