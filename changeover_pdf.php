@@ -186,7 +186,13 @@ $html = '';
         }
 
         
-
+        if ($locker_count == 2 && $locker_total > 1) {
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=  "</tr>";     
+            $locker_count = 1;     
+        }
 
         $html .=  "</tbody></table>";
 
