@@ -165,16 +165,7 @@ $html = '';
                 
                 $locker_count = 0;
                 // chuck in a couple of blank rows
-                if ($rowcount = 30) {
 
-                    $html .=   '<tr><td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td></tr>";
-    
-                }
             }
 
 
