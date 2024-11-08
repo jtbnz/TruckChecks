@@ -166,7 +166,7 @@ $html = '';
                 $locker_count = 0;
             }
  
-            if ($rowcount > 30) {
+            if ($rowcount > 31) {
                 //$html .=  "</tbody></table>";
                 //$pdf->writeHTML($html, true, false, false, false, '');
                 //$pdf->AddPage();
