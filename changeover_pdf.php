@@ -28,7 +28,7 @@ if ($selected_truck_id) {
 // Set document information
 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, 'A4', true, 'UTF-8', false);
 $pdf->setPrintHeader(false);
-$pdf->SetMargins(7.375, 26, 7.375);
+//$pdf->SetMargins(7.375, 26, 7.375);
 $pdf->SetAutoPageBreak(TRUE, 26);
 
 
