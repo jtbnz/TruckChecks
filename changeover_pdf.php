@@ -117,7 +117,7 @@ $html = '';
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
-  
+                $rowcount++;
                 if ($locker_count == 2 && $locker_total > 1) {
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
@@ -126,6 +126,7 @@ $html = '';
                     $locker_count = 1;     
 
                 }
+
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
                 $html .= $row['locker_name'];
@@ -160,7 +161,7 @@ $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
-                $rowcount++;
+                
                 $locker_count = 0;
             }
  
