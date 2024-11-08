@@ -122,7 +122,8 @@ $html = '';
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-                    $html .=  "</tr>";     
+                    $html .=  "</tr>";    
+                    $rowcount++;
                     $locker_count = 1;     
                 }
 
