@@ -57,8 +57,6 @@ $pdf->AddPage();
 // Set font
 $pdf->SetFont('helvetica', '', 12);
 
-// Title
-$pdf->Cell(0, 10, 'Truck Change Over', 0, 1, 'C');
 
 // Fetch and display data
 $html = '';
@@ -67,7 +65,7 @@ $html = '';
 
     if ($selected_truck_id) {
 
-        $html .= '<table  style="width: 100%;">';
+        $html .= '<table style="width: 100%;">';
         $html .= '    <TR>';
         $html .= '        <TD style="width: 25%;" >';
         $html .= '            <h1>Truck Change Over</h1>';
