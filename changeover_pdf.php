@@ -185,6 +185,21 @@ $html = '';
             $locker_count++;
         }
 
+        if ($locker_count == 1) {
+            $html .=  '<tr>'; 
+            $rowcount++;
+        }
+        $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
+        $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+        $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+
+
+if ($locker_count == 2) {
+    $html .=  "</tr>";
+    
+    $locker_count = 0;
+
+
         $html .=  "</tbody></table>";
 
 
