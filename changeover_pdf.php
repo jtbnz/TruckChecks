@@ -166,24 +166,6 @@ $html = '';
                 $locker_count = 0;
             }
  
-            if ($rowcount > 31) {
-                //$html .=  "</tbody></table>";
-                //$pdf->writeHTML($html, true, false, false, false, '');
-                //$pdf->AddPage();
-               // $html = '';
-               // $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
-                //$html .=  "<tbody>";
-                $html .=  '<tr style="background-color: #A9A9A9"><td style="width:30%">';
-                $html .= $row['locker_name'];
-                $html .= '</td><td style="width:10%">Relief</td><td style="width:10%">';
-                $html .= $row['truck_name'] ;
-                $html .=  '</td><td style="width:30%">';
-                $html .= $row['locker_name'];
-                $html .= '</td><td style="width:10%">Relief</td><td style="width:10%">';
-                $html .= $row['truck_name'] ;
-                $html .=  '</td></tr>';
-                $rowcount=1;
-            }
 
             $prev_locker = $row['locker_name'];
             $locker_count++;
