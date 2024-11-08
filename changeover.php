@@ -166,6 +166,13 @@
             $locker_count++;
         }
 
+        if ($locker_count == 2 && $locker_total > 1) {
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=  "</tr>";     
+            $locker_count = 1;     
+        }
         echo "</table>";
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';

@@ -169,8 +169,8 @@ $html = '';
                         $rowcount++;
             }
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="text-align: center; background-color: ' . $cellbgcolour . '"' . "> </td>";
+            $html .=   '<td style="text-align: center; background-color: ' . $cellbgcolour . '"' . "> </td>";
 
 
             if ($locker_count == 2) {
