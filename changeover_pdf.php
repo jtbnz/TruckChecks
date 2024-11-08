@@ -156,7 +156,7 @@ $html = '';
 
             if ($locker_count == 1) {
                         $html .=  '<tr>'; 
-                        $rowcount++;   
+
             }
 
 
@@ -168,6 +168,7 @@ $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
+                $rowcount++;
                 $locker_count = 0;
 
                 
