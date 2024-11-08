@@ -67,6 +67,22 @@ $html = '';
 
     if ($selected_truck_id) {
 
+        $html .= '<table  style="width: 100%;">';
+        $html .= '    <TR>';
+        $html .= '        <TD style="width: 25%;" >';
+        $html .= '            <h1>Truck Change Over</h1>';
+        $html .= '            Date:________________';
+        $html .= '        </TD>';
+        $html .= '        <TD style="width: 5%;" ></TD>';
+        $html .= '        <TD style="width: 70%;border=1;" >';
+        $html .= '            <h2>Notes:</h2>';
+        $html .= '            <p>1. Officer keys.</p>';
+        $html .= '            <p>2. Station Remotes - keys.</p>';
+        $html .= '        </TD>';
+        $html .= '    </TR>';
+        $html .= '</table>';
+
+
         $truck_id = $selected_truck_id; 
 
         $query = $db->prepare("
@@ -117,14 +133,14 @@ $html = '';
                 $html .= $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
-                $html .= "Relief</td>:";
+                $html .= "Relief</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td><td style="width:30%">';
                 $html .= $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
-                $html .= "Relief</td>:";
+                $html .= "Relief</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td></tr>';
