@@ -112,17 +112,22 @@ $html = '';
                     $locker_count = 1;     
 
                 }
-                $html .=  '<tr>' ;
-                $html .=  "<td>";
+                $html .=  '<tr style="background-color: #A9A9A9">' ;
+                $html .=  '<td style="width:30%">';
                 $html .= $row['locker_name'];
                 $html .= "</td>";
-                $html .= "<td>Relief</td><td>"; 
+                $html .=  '<td style="width:10%">';
+                $html .= "Relief</td>:";
+                $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
-                $html .=  "</td><td>";
+                $html .=  '</td><td style="width:30%">';
                 $html .= $row['locker_name'];
-                $html .= "</td><td>Relief</td><td>";
+                $html .= "</td>";
+                $html .=  '<td style="width:10%">';
+                $html .= "Relief</td>:";
+                $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
-                $html .=  "</td></tr>";
+                $html .=  '</td></tr>';
 
                 
                 if ($locker_total % 2 == 0) {
