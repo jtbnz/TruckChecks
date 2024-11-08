@@ -166,13 +166,13 @@ $html = '';
                 $locker_count = 0;
             }
  
-            if ($rowcount > 26) {
-                $html .=  "</tbody></table>";
+            if ($rowcount > 30) {
+                //$html .=  "</tbody></table>";
                 //$pdf->writeHTML($html, true, false, false, false, '');
                 //$pdf->AddPage();
                // $html = '';
-                $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
-                $html .=  "<tbody>";
+               // $html .=  '<table border="1" cellpadding="5" cellspacing="0" style="width: 100%;">';
+                //$html .=  "<tbody>";
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">NEW ';
                 $html .= $rowcount;
