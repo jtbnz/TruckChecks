@@ -41,7 +41,7 @@ $pdf->SetAutoPageBreak(TRUE, 26);
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
 // Set margins
-$pdf->SetMargins(2,2,2,true);
+$pdf->SetMargins(5,5,5,true);
 //$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
 //$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
 
@@ -183,6 +183,15 @@ $html = '';
 
             $prev_locker = $row['locker_name'];
             $locker_count++;
+        }
+
+        
+        if ($locker_count == 2 && $locker_total > 1) {
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=  "</tr>";     
+            $locker_count = 1;     
         }
 
         $html .=  "</tbody></table>";
