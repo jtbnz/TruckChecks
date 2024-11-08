@@ -203,7 +203,7 @@ $html = '';
 
         }
 
-        $html .=  "<tbody></table>";
+        $html .=  "</tbody></table>";
 
 
 } else {
