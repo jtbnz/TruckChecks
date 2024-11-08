@@ -41,7 +41,7 @@ $pdf->SetAutoPageBreak(TRUE, 26);
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
 // Set margins
-$pdf->SetMargins(2,2,2,true);
+$pdf->SetMargins(5,5,5,true);
 //$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
 //$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
 
@@ -193,11 +193,12 @@ $html = '';
 }
 
 // Output the HTML content
-$pdf->writeHTML($html, true, false, false, false, '');
+//$pdf->writeHTML($html, true, false, false, false, '');
 
+echo $html;
 
 // Close and output PDF document
-$pdf->Output('truck_changeover.pdf', 'I');
+//$pdf->Output('truck_changeover.pdf', 'I');
 
 
 ?>
