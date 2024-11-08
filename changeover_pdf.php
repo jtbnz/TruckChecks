@@ -159,8 +159,22 @@ $html = '';
                         $rowcount++;   
             }
 
+
+            
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+
+
+            if ($locker_count == 2) {
+                $html .=  "</tr>";
+                $locker_count = 0;
+
+                
+            }
+ 
             if ($rowcount > 26) {
-                $html .=  "</tr></tbody></table>";
+                $html .=  "</tbody></table>";
                 $pdf->writeHTML($html, true, false, false, false, '');
                 $pdf->AddPage();
                 $html = '';
@@ -184,19 +198,7 @@ $html = '';
                 $html .=  '</td></tr>';
                 $rowcount=0;
             }
-            
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
 
-
-            if ($locker_count == 2) {
-                $html .=  "</tr>";
-                $locker_count = 0;
-
-                
-            }
-            
             $prev_locker = $row['locker_name'];
 
             $locker_count++;
