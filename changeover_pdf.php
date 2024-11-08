@@ -123,7 +123,7 @@ $html = '';
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=  "</tr>";    
-                    $rowcount++;
+                    
                     $locker_count = 1;     
                 }
                 $rowcount++;
@@ -153,6 +153,7 @@ $html = '';
             }
             if ($locker_count == 1) {
                         $html .=  '<tr>'; 
+                        $rowcount++;
             }
             $html .=   '<td style="background-color: ' . $cellbgcolour . '">' .$rowcount . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
@@ -161,7 +162,7 @@ $html = '';
 
             if ($locker_count == 2) {
                 $html .=  "</tr>";
-                $rowcount++;
+
                 $locker_count = 1;
             }
  
@@ -189,7 +190,7 @@ $html = '';
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td></tr>';
-                $rowcount=0;
+                $rowcount=1;
             }
 
             $prev_locker = $row['locker_name'];
