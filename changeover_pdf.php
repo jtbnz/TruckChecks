@@ -165,7 +165,16 @@ $html = '';
                 
                 $locker_count = 0;
                 // chuck in a couple of blank rows
+                if ($rowcount == 31)  {
 
+                    $html .=   '<tr><td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
+                    $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td></tr>";
+                    $rowcount = 1;
+                }
             }
 
 
