@@ -153,7 +153,7 @@ $html = '';
             if ($locker_count == 1) {
                         $html .=  '<tr>'; 
             }
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>";
+            $html .=   '<td style="background-color: ' . $cellbgcolour . '">' .$rowcount . htmlspecialchars($row['item_name']) . "</td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
             $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
 
