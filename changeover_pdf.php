@@ -142,19 +142,19 @@ $html = '';
 
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
-                $html .= $row['locker_name'];
+                $html .= htmlspecialchars($row['locker_name']);
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
                 $html .=  '<td style="width:10%">';
-                $html .= $row['truck_name'] ;
+                $html .= htmlspecialchars($row['truck_name']) ;
                 $html .=  '</td><td style="width:30%">';
-                $html .= $row['locker_name'];
+                $html .= htmlspecialchars($row['locker_name']);
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
                 $html .=  '<td style="width:10%">';
-                $html .= $row['truck_name'] ;
+                $html .= htmlspecialchars($row['truck_name']) ;
                 $html .=  '</td></tr>';
 
                 
