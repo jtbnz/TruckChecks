@@ -129,7 +129,7 @@ $html = '';
                 $rowcount++;
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
-                $html .= $rowcount . $row['locker_name'];
+                $html .=  $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
