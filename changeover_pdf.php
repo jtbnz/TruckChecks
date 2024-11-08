@@ -160,7 +160,7 @@ $html = '';
             }
 
             if ($rowcount > 26) {
-                $html .=  "</tbody></table>";
+                $html .=  "</tr></tbody></table>";
                 $pdf->writeHTML($html, true, false, false, false, '');
                 $pdf->AddPage();
                 $html = '';
