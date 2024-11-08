@@ -160,8 +160,8 @@ $html = '';
             }
 
             if ($rowcount > 26) {
-                $pdf->AddPage();
                 $pdf->writeHTML($html, true, false, false, false, '');
+                $pdf->AddPage();
                 $html = '';
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
