@@ -124,12 +124,11 @@ $html = '';
                     $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
                     $html .=  "</tr>";     
                     $locker_count = 1;     
-                    $rowcount++;
                 }
 
                 $html .=  '<tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
-                $html .= $row['locker_name'];
+                $html .= $rowcount . $row['locker_name'];
                 $html .= "</td>";
                 $html .=  '<td style="width:10%">';
                 $html .= "Relief</td>";
