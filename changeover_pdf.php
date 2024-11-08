@@ -142,7 +142,7 @@ $html = '';
                 $html .=  '<td style="width:10%">';
                 $html .= $row['truck_name'] ;
                 $html .=  '</td></tr>';
-
+                $rowcount++; 
                 
                 if ($locker_total % 2 == 0) {
                     $cellbgcolour = "#ffffff";
