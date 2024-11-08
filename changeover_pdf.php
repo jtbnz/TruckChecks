@@ -160,10 +160,11 @@ $html = '';
             }
 
             if ($rowcount > 26) {
+                $html .=  "</tbody></table>";
                 $pdf->writeHTML($html, true, false, false, false, '');
                 $pdf->AddPage();
                 $html = '';
-                $html .=  '<tr style="background-color: #A9A9A9">' ;
+                $html .=  '<table><tbody><tr style="background-color: #A9A9A9">' ;
                 $html .=  '<td style="width:30%">';
                 $html .= $row['locker_name'];
                 $html .= "</td>";
