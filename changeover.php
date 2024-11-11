@@ -87,6 +87,9 @@
 
     if ($selected_truck_id) {
 
+
+        echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
+        
         $truck_id = $selected_truck_id; 
 
         $query = $db->prepare("
