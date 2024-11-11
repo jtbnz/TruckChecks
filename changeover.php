@@ -149,7 +149,7 @@
                     echo "\t<th style='width: 4%;'>Relief</th>\n";
                     echo "\t<th style='width: 4%;'>" .$truck['name'] . "</th>\n";
                 }
-                echo "\</tr>\n";
+                echo "</tr>\n";
 
 
                 
