@@ -92,7 +92,7 @@
         $truck_id = $selected_truck_id; 
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
-        
+
         $query = $db->prepare("
             SELECT 
                 t.name AS truck_name,
@@ -130,12 +130,22 @@
                     echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
                     echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
                     echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
                     echo "</TR>\n";     
                     $locker_count = 1;     
                 }
 
                 echo '<tr style="background-color: #A9A9A9">' . "\n";
-                echo "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
+                for ($i = 0; $i < 4; $i++) {
+                    echo "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th>\n";
+                    echo "\t<th>Relief</th>\n";
+                    echo "\t<th>" .$truck['name'] . "</th>\n";
+                }
+                echo "\</tr>\n";
+
+
                 
                 
                 if ($locker_total % 2 == 0) {
@@ -158,7 +168,7 @@
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
    
 
-            if ($locker_count == 2) {
+            if ($locker_count == 3) {
                 echo "</tr>\n";
                 $locker_count = 0;
 
