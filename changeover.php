@@ -138,7 +138,7 @@
                 }
 
                 echo '<tr style="background-color: #A9A9A9">' . "\n";
-                for ($i = 0; $i < 4; $i++) {
+                for ($i = 0; $i < 3; $i++) {
                     echo "\t<th style='width: 25%;'><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th>\n";
                     echo "\t<th style='width: 4%;'>Relief</th>\n";
                     echo "\t<th style='width: 4%;'>" .$truck['name'] . "</th>\n";
