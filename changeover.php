@@ -125,14 +125,20 @@
 
             if ($prev_locker != $row['locker_name']) {
                 $locker_total++;
-  
+
+                if ($locker_count == 1 && $locker_total > 1) {
+                    for ($i = 0; $i < 6; $i++) {
+                        echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    }
+                    echo "</TR>\n";     
+                    $locker_count = 1;     
+                }
+                
+
                 if ($locker_count == 2 && $locker_total > 1) {
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
-                    echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    for ($i = 0; $i < 3; $i++) {
+                        echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "></td>\n";
+                    }
                     echo "</TR>\n";     
                     $locker_count = 1;     
                 }
@@ -168,7 +174,7 @@
             echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
    
 
-            if ($locker_count == 3) {
+            if ($locker_count = 3) {
                 echo "</tr>\n";
                 $locker_count = 0;
 
@@ -187,6 +193,7 @@
             $html .=  "</tr>";     
             $locker_count = 1;     
         }
+
         echo "</table>";
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
