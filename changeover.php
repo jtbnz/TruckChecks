@@ -50,6 +50,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Truck Change Over">
+    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <title>Check Locker Items</title>
 
 
