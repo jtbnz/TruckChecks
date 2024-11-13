@@ -50,6 +50,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Truck Change Over">
+    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
     <title>Check Locker Items</title>
 
 
@@ -88,6 +89,8 @@
     if ($selected_truck_id) {
 
         $truck_id = $selected_truck_id; 
+        echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
+
 
         $query = $db->prepare("
             SELECT 
