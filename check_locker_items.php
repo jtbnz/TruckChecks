@@ -225,13 +225,14 @@ if ($selected_truck_id) {
                 const code = localStorage.getItem('protection_code');
                 if (!code) {
                     alert('Access denied. Missing protection code.');
-
+                    window.location.href = 'index.php';
                 } else {
                     fetch('check_locker_items.php?validate_code=' + code)
                         .then(response => response.json())
                         .then(data => {
                             if (!data.valid) {
                                 alert('Access denied. Invalid protection code.');
+                                window.location.href = 'index.php';
 
                             }
                         });
