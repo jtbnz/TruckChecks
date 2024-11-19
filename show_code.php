@@ -73,13 +73,13 @@ $qrcode_base64 = base64_encode($result->getString());
 ?>
 
 
-                    <p style="text-align: center;">Use this code to store the Security key</p>
 
-                    <a href="<?= $url ?>" target="_blank">
-                        <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for key storage">
-                    </a>
-                    <!-- <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p> -->
-                </div>
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
+    <h2>Use this code to store the Security key</h2>
+    <a href="<?= $url ?>" target="_blank">
+        <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for key storage">
+    </a>
+</div>
 <?php
 include 'templates/footer.php';
 ?>
