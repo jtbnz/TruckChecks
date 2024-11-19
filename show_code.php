@@ -73,7 +73,8 @@ $qrcode_base64 = base64_encode($result->getString());
 ?>
 
 
-                    <p>Use this code to store the Security key</p>
+                    <p style="text-align: center;">Use this code to store the Security key</p>
+
                     <a href="<?= $url ?>" target="_blank">
                         <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for key storage">
                     </a>
