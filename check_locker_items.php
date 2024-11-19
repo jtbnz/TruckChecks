@@ -30,6 +30,19 @@ $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mo
 
 $db = get_db_connection();
 
+function is_code_valid($db, $code) {
+    $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
+    $query->execute(['code' => $code]);
+    return $query->fetchColumn() > 0;
+}
+
+if (CHECKPROTECT && isset($_GET['validate_code'])) {
+    $code = $_GET['validate_code'];
+    $is_valid = is_code_valid($db, $code);
+    echo json_encode(['valid' => $is_valid]);
+    exit;
+}
+
 function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     // Split the text into words
     $words = explode(' ', $text);
@@ -50,6 +63,8 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     // Join the words back into a single string
     return implode(' ', $words);
 }
+
+
 
 // Handle form submission to update the checks and check_items tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
@@ -203,6 +218,28 @@ if ($selected_truck_id) {
     <title>Check Locker Items</title>
     <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php  echo $version;  ?> ">
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
+    <script>
+        function checkProtection() {
+            const CHECKPROTECT = <?php echo CHECKPROTECT ? 'true' : 'false'; ?>;
+            if (CHECKPROTECT) {
+                const code = localStorage.getItem('protection_code');
+                if (!code) {
+                    alert('Access denied. Missing protection code.');
+
+                } else {
+                    fetch('check_locker_items.php?validate_code=' + code)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.valid) {
+                                alert('Access denied. Invalid protection code.');
+
+                            }
+                        });
+                }
+            }
+        }
+        window.onload = checkProtection;
+    </script>    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Load the last checked-by name from localStorage
