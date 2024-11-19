@@ -1,4 +1,6 @@
 <?php 
+
+
 include('config.php');
 if (DEBUG) {
     ini_set('display_errors', 1);
@@ -11,6 +13,12 @@ if (DEBUG) {
     error_reporting(0);
 }
 
+require 'vendor/autoload.php';
+
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
 
 
 include 'db.php';
@@ -43,7 +51,34 @@ echo "<script>
     }
 </script>";
 
+
+
 echo "<h1>Storing Protection Code</h1>";
 
+$current_directory = dirname($_SERVER['REQUEST_URI']);
+$url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/show_code.php';
+
+$result = Builder::create()
+->writer(new PngWriter())
+->data($url)
+->encoding(new Encoding('UTF-8'))
+->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+->size(600)
+->margin(0)
+->build();
+
+// Get the QR code as a Base64-encoded string
+$qrcode_base64 = base64_encode($result->getString());
+
+?>
+
+
+                    <p>Use this code to store the Security key</p>
+                    <a href="<?= $url ?>" target="_blank">
+                        <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for key storage">
+                    </a>
+                    <!-- <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p> -->
+                </div>
+<?php
 include 'templates/footer.php';
 ?>
