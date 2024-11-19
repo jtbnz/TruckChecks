@@ -27,7 +27,7 @@ $pdo = get_db_connection();
 
 // Fetch the latest check date
 $codeQuery = "select code from protection_codes order by id desc limit 1";
-$codeStmt = $pdo->prepare($latestCheckQuery);
+$codeStmt = $pdo->prepare($codeQuery);
 $codeStmt->execute();
 $code = $codeStmt->fetch(PDO::FETCH_ASSOC)['code'];
 
