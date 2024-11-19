@@ -43,7 +43,7 @@ echo "<script>
     }
 </script>";
 
-echo '<a href="index.php">Return</a>';
+echo "<h1>Storing Protection Code</h1>";
 
 include 'templates/footer.php';
 ?>
