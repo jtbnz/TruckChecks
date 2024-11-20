@@ -123,11 +123,12 @@ function convertToNZST($utcDate) {
                     $background_color = $locker_status['status'];
                     $text_color = 'white';
                     $last_checked = $locker_status['check'] ? $locker_status['check']['check_date'] : 'Never';
+                    $last_checked_display = $last_checked !== 'Never' ? convertToNZST($last_checked) : $last_checked;
                     $checked_by = $locker_status['check'] ? $locker_status['check']['checked_by'] : 'N/A';
                     $missing_items = $locker_status['missing_items'];
                     ?>
                     <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
-                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= convertToNZST($last_checked) ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
+                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked_display ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
                         
                         <?= htmlspecialchars($locker['name']) ?>
                         
