@@ -74,6 +74,15 @@ CREATE TABLE `email_addresses` (
   PRIMARY KEY (`id`)
 ) ;
 
+-- This table is used to storing a code that is needed for submitting a check
+CREATE TABLE `protection_codes` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `code` VARCHAR(255) NOT NULL,
+    `description` TEXT
+);
+insert into protection_codes(code,description) values(SUBSTRING(MD5(RAND()) FROM 1 FOR 32),'Inital code');
+
+
 ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`;
 
 
