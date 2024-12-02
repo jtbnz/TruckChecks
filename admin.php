@@ -65,6 +65,7 @@ $_SESSION['version'] = $version;
 <div class="button-container" style="margin-top: 20px;">    
     <a href="reports.php" class="button touch-button">Reports</a>
     <a href="backups.php" class="button touch-button">Download a backup</a>
+    <a href="show_code.php" class="button touch-button">Display and set a security code if enabled</a>
 </div>
     <div class="button-container" style="margin-top: 20px;">     
     <?php if ($showButton): ?>
