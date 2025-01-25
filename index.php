@@ -109,7 +109,7 @@ function convertToNZST($utcDate) {
         </a>
 
         <?php
-        $query = $db->prepare('SELECT * FROM lockers WHERE truck_id = :truck_id');
+        $query = $db->prepare('SELECT * FROM lockers WHERE truck_id = :truck_id order by name');
         $query->execute(['truck_id' => $truck['id']]);
         $lockers = $query->fetchAll(PDO::FETCH_ASSOC);
         ?>
