@@ -71,9 +71,6 @@ $result = Builder::create()
 $qrcode_base64 = base64_encode($result->getString());
 
 ?>
-
-
-
 <div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
     <h2>Use this code to store the Security key</h2>
     <a href="<?= $url ?>" target="_blank">

@@ -282,6 +282,17 @@ if ($selected_truck_id) {
 
 
     </script>
+    <script>
+        function checkFormSubmission(event) {
+            var checkboxes = document.querySelectorAll('input[name="checked_items[]"]:checked');
+            if (checkboxes.length === 0) {
+                var confirmSubmit = confirm("No items are selected. Do you want to continue?");
+                if (!confirmSubmit) {
+                    event.preventDefault(); // Prevent form submission
+                }
+            }
+        }
+    </script>
 </head>
 <body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
@@ -337,7 +348,7 @@ if ($selected_truck_id) {
                     };
                  ?> 
 
-                <form method="POST">
+                <form method="POST" onsubmit="checkFormSubmission(event)">
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
                     <?= $last_check_border ?>
                         <?php foreach ($items as $item):                         
