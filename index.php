@@ -210,7 +210,7 @@ function closeModal() {
 
     <p id="last-refreshed" style="margin-top: 10px;"></p> 
     <div class="version-number">
-        Version: <?php echo htmlspecialchars($version); ?>
+        Version <?php echo htmlspecialchars($version); ?>
     </div>   
 </footer>
 
