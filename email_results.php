@@ -95,7 +95,7 @@ if (!empty($deletedItems)) {
 }
 
 $emailContent .= $current_url ."\n\n";
-echo "Message to send: " . $emailContent ;
+echo "<br>Message to send: " . $emailContent ;
 
 // Send the email if there are email addresses
 if (!empty($emails)) {
