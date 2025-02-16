@@ -1,11 +1,11 @@
 <?php 
-
+/* 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);  
 
 echo "debug is on";
-
+ */
 include('config.php');
 require '../vendor/autoload.php';
 
@@ -112,7 +112,7 @@ if (!empty($emails)) {
         $mail->SMTPAuth = true;
         $mail->Username = EMAIL_USER; 
         $mail->Password = EMAIL_PASS; 
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure = "ssl";
         $mail->Port = EMAIL_PORT;
 
         // Recipients
@@ -125,20 +125,11 @@ if (!empty($emails)) {
         $mail->isHTML(false);
         $mail->Subject = $subject;
         $mail->Body    = $emailContent;
-        echo "Debugging Information: ";
-        echo "Server: " . EMAIL_HOST . ", ";
-        echo "Username: " . EMAIL_USER . ", ";
-        echo "Port: " . EMAIL_PORT . ", ";
-        echo "SMTP Secure: " . PHPMailer::ENCRYPTION_STARTTLS;
-        //$mail->send();
+        $mail->send();
         echo "Emails sent successfully!";
     } catch (Exception $e) {
         echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-        echo "Debugging Information: ";
-        echo "Server: " . EMAIL_HOST . ", ";
-        echo "Username: " . EMAIL_USER . ", ";
-        echo "Port: " . EMAIL_PORT . ", ";
-        echo "SMTP Secure: " . PHPMailer::ENCRYPTION_STARTTLS;
+
     }
 } else {
     echo "No email addresses to send to.";
