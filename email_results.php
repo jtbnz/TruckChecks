@@ -125,8 +125,12 @@ if (!empty($emails)) {
         $mail->isHTML(false);
         $mail->Subject = $subject;
         $mail->Body    = $emailContent;
-
-        $mail->send();
+        echo "Debugging Information: ";
+        echo "Server: " . EMAIL_HOST . ", ";
+        echo "Username: " . EMAIL_USER . ", ";
+        echo "Port: " . EMAIL_PORT . ", ";
+        echo "SMTP Secure: " . PHPMailer::ENCRYPTION_STARTTLS;
+        //$mail->send();
         echo "Emails sent successfully!";
     } catch (Exception $e) {
         echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
