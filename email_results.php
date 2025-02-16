@@ -5,14 +5,13 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);  */
 
 include('config.php');
+require 'vendor/autoload.php';
 
-
-
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 include 'db.php';
 include 'templates/header.php';
-
-
 
 $pdo = get_db_connection();
 //is_demo = isset($_SESSION['is_demo']) && $_SESSION['is_demo'] === true;
@@ -68,7 +67,6 @@ $deletedItemsQuery = $pdo->prepare("
 $deletedItemsQuery->execute();
 $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
 
-
 // Fetch email addresses
 $emailQuery = "SELECT email FROM email_addresses";
 $emailStmt = $pdo->prepare($emailQuery);
@@ -87,9 +85,6 @@ if (!empty($checks)) {
         $emailContent .= "No missing items found in the last 7 days\n";
 }
 
-
-
-
 $emailContent .= "\nThe following items have been deleted in the last 7 days:\n";
 if (!empty($deletedItems)) {
     foreach ($deletedItems as $deletedItem) {
@@ -98,30 +93,46 @@ if (!empty($deletedItems)) {
 } else {
     $emailContent .= "No items have been deleted in the last 7 days\n";
 }
-   
-
 
 $emailContent .= $current_url ."\n\n";
 echo "Message to send: " . $emailContent ;
 
-
-
 // Send the email if there are email addresses
 if (!empty($emails)) {
     $subject = "Missing Items Report - {$latestCheckDate}";
-    $headers = "From: lockercheck@fireandemergency.nz";
+    $mail = new PHPMailer(true);
 
-    foreach ($emails as $email) {
-        mail($email, $subject, $emailContent, $headers);
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host = EMAIL_HOST; 
+        $mail->SMTPAuth = true;
+        $mail->Username = EMAIL_USER; 
+        $mail->Password = EMAIL_PASS; 
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = EMAIL_PORT;
+
+        // Recipients
+        $mail->setFrom(EMAIL_USER, 'Locker Check');
+        foreach ($emails as $email) {
+            $mail->addAddress($email);
+        }
+
+        // Content
+        $mail->isHTML(false);
+        $mail->Subject = $subject;
+        $mail->Body    = $emailContent;
+
+        $mail->send();
+        echo "Emails sent successfully!";
+    } catch (Exception $e) {
+        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
     }
-
-    echo "Emails sent successfully!";
 } else {
     echo "No email addresses to send to.";
 }
 
-
-
+include 'templates/footer.php';
 ?>
 
 <!DOCTYPE html>
@@ -131,9 +142,6 @@ if (!empty($emails)) {
     <title>Manage Email Addresses</title>
 </head>
 <body class="<?php echo is_demo ? 'demo-mode' : ''; ?>">
-
-
-
     </ul>
     <?php include 'templates/footer.php'; ?>
 </body>
