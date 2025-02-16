@@ -130,12 +130,17 @@ if (!empty($emails)) {
         echo "Emails sent successfully!";
     } catch (Exception $e) {
         echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+        echo "Debugging Information: ";
+        echo "Server: " . EMAIL_HOST . ", ";
+        echo "Username: " . EMAIL_USER . ", ";
+        echo "Port: " . EMAIL_PORT . ", ";
+        echo "SMTP Secure: " . PHPMailer::ENCRYPTION_STARTTLS;
     }
 } else {
     echo "No email addresses to send to.";
 }
 
-include 'templates/footer.php';
+
 ?>
 
 <!DOCTYPE html>
