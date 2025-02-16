@@ -4,7 +4,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);  
 
-echo "debug os on";
+echo "debug is on";
 
 include('config.php');
 require 'vendor/autoload.php';
@@ -101,6 +101,7 @@ echo "<br>Message to send: " . $emailContent ;
 
 // Send the email if there are email addresses
 if (!empty($emails)) {
+    echo "<br>Emails to send to: " . implode(', ', $emails);
     $subject = "Missing Items Report - {$latestCheckDate}";
     $mail = new PHPMailer(true);
 
