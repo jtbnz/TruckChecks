@@ -67,12 +67,12 @@ $html = '';
 
         $html .= '<table style="width: 100%;">';
         $html .= '    <TR>';
-        $html .= '        <TD style="width: 25%;" >';
+        $html .= '        <TD style="width: 40%;" >';
         $html .= '            <h2>Truck Change Over</h2>';
         $html .= '            Date:________________';
         $html .= '        </TD>';
         $html .= '        <TD style="width: 5%;" ></TD>';
-        $html .= '        <TD style="width: 70%;border=1;" >';
+        $html .= '        <TD style="width: 55%;border=1;" >';
         $html .= '            <h4>Notes:</h3>';
         $html .= '            <p>1. Officer keys.</p>';
         $html .= '            <p>2. Station Remotes - keys.</p>';
