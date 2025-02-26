@@ -134,7 +134,7 @@
                 }
 
                 echo '<tr style="background-color: #A9A9A9">' . "\n";
-                echo "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
+                echo "\t<th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" . htmlspecialchars($row['truck_name']) . "</th><th><strong>" . htmlspecialchars($row['locker_name']) . "</strong></th><th>Relief</th><th>" .$truck['name'] . "</th><TR>\n";
                 
                 
                 if ($locker_total % 2 == 0) {
