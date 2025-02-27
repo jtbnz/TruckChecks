@@ -1,34 +1,9 @@
 <?php
-
-
-//session_start();
-include 'db.php';
-//include 'templates/header.php';
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
-
-// Read the cookie value
-$colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
-
-
-
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
-
+// Database connection
 $db = get_db_connection();
+
+// Global variable to enable or disable protection
+define('CHECKPROTECT', true);
 
 function is_code_valid($db, $code) {
     $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
@@ -64,8 +39,6 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     return implode(' ', $words);
 }
 
-
-
 // Handle form submission to update the checks and check_items tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     $locker_id = $_POST['locker_id'];
@@ -76,23 +49,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     setcookie('prevName', $checked_by, time() + (86400 * 120), "/"); 
 
     // Insert a new check record
-    // take out the timezone conversion
-    // $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,CONVERT_TZ(NOW(),'+00:00', '+12:00'), :checked_by, 0 )");
-    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id,NOW(), :checked_by, 0 )");
+    $check_query = $db->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (:locker_id, NOW(), :checked_by, 0 )");
     $check_query->execute([
         'locker_id' => $locker_id,
         'checked_by' => $checked_by
     ]);
 
-    
     // Get the ID of the newly inserted check
     $check_id = $db->lastInsertId();
 
-    // Insert the note into the check_notes table removed the empty check so that it can be deleted
-    //if (!empty($notes)) {
+    // Insert the note into the check_notes table
     $note_query = $db->prepare("INSERT INTO check_notes (check_id, note) VALUES (:check_id, :note)");
     $note_query->execute(['check_id' => $check_id, 'note' => $notes]);
-    //}
 
     // Insert check items (whether present or not)
     $items_query = $db->prepare('SELECT id FROM items WHERE locker_id = :locker_id');
@@ -124,19 +92,14 @@ if ($selected_truck_id) {
 
     $selected_locker_id = isset($_GET['locker_id']) ? $_GET['locker_id'] : null;
 
-    
-
     if ($selected_locker_id) {
-
         // Fetch items for the selected locker
         if (RANDORDER) {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND()');
             echo "<!-- Random order -->";
-            //echo "<!-- " . $query   . " -->";
         } else {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY id');
             echo "<!-- Not Random order -->";
-            //echo "<!-- " . $query   . " -->";
         }
         $query->execute(['locker_id' => $selected_locker_id]);
         $items = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -157,13 +120,8 @@ if ($selected_truck_id) {
         ");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_notes = $last_check_query->fetchColumn();
-        
-     
-
 
         // Fetch last check date and checked_by
-       // $last_check_query = $db->prepare('SELECT check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1');
-       
         $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_check = $last_check_query->fetch(PDO::FETCH_ASSOC);
@@ -180,8 +138,6 @@ if ($selected_truck_id) {
             echo "\n<!-- last check " . $last_check_date->format('Y-m-d H:i:s') . " -->";
             $days_since_last_check = $interval->days;
 
-
-
             if ($days_since_last_check == 0) {
                 $days_since_last_check_text = "<span style='color: green;'>Locker has been checked in the last 24hours " . htmlspecialchars($last_check['checked_by']) . "</span>";
                 $last_check_text = "";
@@ -194,6 +150,17 @@ if ($selected_truck_id) {
             $days_since_last_check_text = "Never Checked";
             $last_check_text = "";
         }
+
+        // Fetch the last 5 checks for the current locker
+        $last_five_checks_query = $db->prepare("
+            SELECT checked_by, CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date 
+            FROM checks 
+            WHERE locker_id = :locker_id 
+            ORDER BY check_date DESC 
+            LIMIT 5
+        ");
+        $last_five_checks_query->execute(['locker_id' => $selected_locker_id]);
+        $last_five_checks = $last_five_checks_query->fetchAll(PDO::FETCH_ASSOC);
     } else {
         $items = [];
         $locker_notes = '';
@@ -216,8 +183,8 @@ if ($selected_truck_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Check lockers for missing items">
     <title>Check Locker Items</title>
-    <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php  echo $version;  ?> ">
-    <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
+    <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php echo $version; ?>">
+    <link rel="stylesheet" href="styles/styles.css?id=<?php echo $version; ?>">
     <script>
         function checkProtection() {
             const CHECKPROTECT = <?php echo CHECKPROTECT ? 'true' : 'false'; ?>;
@@ -233,14 +200,13 @@ if ($selected_truck_id) {
                             if (!data.valid) {
                                 alert('Access denied. Invalid protection code.');
                                 window.location.href = 'index.php';
-
                             }
                         });
                 }
             }
         }
         window.onload = checkProtection;
-    </script>    
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Load the last checked-by name from localStorage
@@ -267,7 +233,6 @@ if ($selected_truck_id) {
                 <?php else: ?>
                     card.classList.remove('checked');
                 <?php endif; ?>
-
             } else {
                 checkbox.checked = true;
                 <?php if ($colorBlindMode): ?>
@@ -275,12 +240,8 @@ if ($selected_truck_id) {
                 <?php else: ?>
                     card.classList.add('checked');
                 <?php endif; ?>
-                
             }
         }
-
-
-
     </script>
     <script>
         function checkFormSubmission(event) {
@@ -337,22 +298,20 @@ if ($selected_truck_id) {
                     </span>
                 </div>
 
-                 <?php
-                    if (!empty($locker_notes)) { 
-                        echo "<BR>";
-                        echo "<div class='center-container'>";
-                        echo "<span class='days-since-check'>";
-                        echo  htmlspecialchars($locker_notes);
-                        echo "</span>";
-                        echo "</div>";
-                    };
-                 ?> 
+                <?php if (!empty($locker_notes)): ?>
+                    <br>
+                    <div class='center-container'>
+                        <span class='days-since-check'>
+                            <?= htmlspecialchars($locker_notes) ?>
+                        </span>
+                    </div>
+                <?php endif; ?>
 
                 <form method="POST" onsubmit="checkFormSubmission(event)">
                     <input type="hidden" name="locker_id" value="<?= $selected_locker_id ?>">
                     <?= $last_check_border ?>
-                        <?php foreach ($items as $item):                         
-                            $split_name = process_words($item['name']);  ?>
+                        <?php foreach ($items as $item): ?>
+                            <?php $split_name = process_words($item['name']); ?>
                             <div class="item-card" onclick="toggleCheck(this)">
                                 <input type="checkbox" name="checked_items[]" value="<?= $item['id'] ?>" class="hidden-checkbox">
                                 <div class="item-content"><?= $split_name ?></div>
@@ -362,12 +321,22 @@ if ($selected_truck_id) {
                     <label for="checked_by">Checked by:</label>
                     <input type="text" name="checked_by" id="checked_by" required value="<?= isset($_COOKIE['prevName']) ? htmlspecialchars($_COOKIE['prevName']) : '' ?>">
                     
-                        <!-- New notes input field -->
+                    <!-- New notes input field -->
                     <label for="notes">Any notes for this check?</label>
                     <textarea id="notes" name="notes"><?php echo htmlspecialchars($last_notes); ?></textarea>
-  
+
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
+
+                <!-- Display the last 5 checks -->
+                <div style="color: grey; font-size: small;">
+                    <h3>Last 5 Checks:</h3>
+                    <ul>
+                        <?php foreach ($last_five_checks as $check): ?>
+                            <li><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
             </div>
         <?php else: ?>
             <p>Please select a locker to check its items.</p>
@@ -380,13 +349,14 @@ if ($selected_truck_id) {
 <?php endif; ?>
 
 <footer>
-    <? $version = $_SESSION['version']; ?>
+    <?php $version = $_SESSION['version']; ?>
     <p><a href="index.php" class="button touch-button">Return to Home</a></p>
-    <p><a href="quiz/quiz.php" class="button touch-button">Locker Quiz</a> </p>
-    <p id="last-refreshed" style="margin-top: 10px;"></p> 
+    <p><a href="quiz/quiz.php" class="button touch-button">Locker Quiz</a></p>
+
+    <p id="last-refreshed" style="margin-top: 10px;"></p>
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
-    </div>   
+    </div>
 </footer>
 </body>
 </html>
