@@ -190,12 +190,10 @@
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                // ... existing locker header code ...
+                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td><tr>";
             }
-        
-            if ($locker_count == 1) {
-                echo '<tr>';
-            }
+            echo '<tr>';
+
         
             $is_relief = isset($current_items[$row['item_name']]) ? $current_items[$row['item_name']]['is_relief'] : false;
             
@@ -207,39 +205,14 @@
             echo "</label>";
             echo "<input type='hidden' name='items[{$row['item_name']}][name]' value='" . htmlspecialchars($row['item_name']) . "'>";
             echo "<input type='hidden' name='items[{$row['item_name']}][locker]' value='" . htmlspecialchars($row['locker_name']) . "'>";
-            echo "</td>";
+            echo "</td></TR>";
 
-
-
-
-            if ($locker_count == 1) {
-                        echo '<tr>' . "\n";          
-                
-            }
-            // echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['locker_name']) .  "</td>\n";
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '">' . htmlspecialchars($row['item_name']) . "</td>\n";
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
-            echo "\t" . '<td style="background-color: ' . $cellbgcolour . '"' . "><center><input type='checkbox'></center></td>\n";
-   
-
-            if ($locker_count == 2) {
-                echo "</tr>\n";
-                $locker_count = 0;
-
-                
-            }
             
             $prev_locker = $row['locker_name'];
 
-            $locker_count++;
         }
 
-        if ($locker_count == 2 && $locker_total > 1) {
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $html .=   '<td style="background-color: ' . $cellbgcolour . '"' . "></td>";
-            $html .=  "</tr>";     
-            $locker_count = 1;     
+   
         }
         echo "</table>";
 
