@@ -190,15 +190,16 @@
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td><tr>";
+                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>";
             }
             echo '<tr>';
 
         
             $is_relief = isset($current_items[$row['item_name']]) ? $current_items[$row['item_name']]['is_relief'] : false;
             
-            echo "<td style='background-color: {$cellbgcolour}'>";
+            echo "<td style='width:80%';background-color: {$cellbgcolour}'>";
             echo htmlspecialchars($row['item_name']);
+            echo "</td><td style='width:80%';background-color: {$cellbgcolour}'>";
             echo "<label class='toggle-switch'>";
             echo "<input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . ">";
             echo "<span class='slider'></span>";
