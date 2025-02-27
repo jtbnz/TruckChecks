@@ -1,9 +1,34 @@
 <?php
-// Database connection
-$db = get_db_connection();
 
-// Global variable to enable or disable protection
-define('CHECKPROTECT', true);
+
+//session_start();
+include 'db.php';
+//include 'templates/header.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if the version session variable is not set
+if (!isset($_SESSION['version'])) {
+    // Get the latest Git tag version
+    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+
+    // Set the session variable
+    $_SESSION['version'] = $version;
+} else {
+    // Use the already set session variable
+    $version = $_SESSION['version'];
+}
+
+// Read the cookie value
+$colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
+
+
+
+//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+
+$db = get_db_connection();
 
 function is_code_valid($db, $code) {
     $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
@@ -38,6 +63,7 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     // Join the words back into a single string
     return implode(' ', $words);
 }
+
 
 // Handle form submission to update the checks and check_items tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
