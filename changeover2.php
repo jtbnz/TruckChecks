@@ -107,7 +107,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Truck Change Over">
     <link rel="stylesheet" href="styles/changeover.css?id=<?php  echo $version;  ?> ">
-    <title>Check Locker Items</title>
+    <title>Truck Change Over</title>
 
 
 </head>
@@ -190,7 +190,7 @@
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                echo "<TR><td colspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>\n";
+                echo "<TR><td style='width:80%';>" .htmlspecialchars($row['locker_name']) . "</td></td></TR>\n";
             }
             echo '<tr>';
 
