@@ -199,8 +199,8 @@
             
             echo "<td style='width:80%;background-color: {$cellbgcolour}'>";
             echo htmlspecialchars($row['item_name']);
-            echo "</td><td style='width:20%;background-color: {$cellbgcolour}'>";
-            echo "<label style='align:center' class='toggle-switch'>";
+            echo "</td><td style='text-align: center;width:20%;background-color: {$cellbgcolour}'>";
+            echo "<label  class='toggle-switch'>";
             echo "<input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . ">";
             echo "<span class='slider'></span>";
             echo "</label>";
