@@ -213,7 +213,7 @@
         }
 
    
-        }
+
         echo "</table>";
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
