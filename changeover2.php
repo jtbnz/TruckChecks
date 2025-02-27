@@ -190,7 +190,7 @@
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                echo "<TR><td style='width:80%;background-color:lightgreen'><h3>" .htmlspecialchars($row['locker_name']) . "</h3></td><td style='width:80%;background-color:lightgreen'>Relief / ". htmlspecialchars($row['truck_name']) . "</td></TR>\n";
+                echo "<TR><td style='width:80%;background-color:lightgreen'><h3>" .htmlspecialchars($row['locker_name']) . "</h3></td><td style='text-align:center;width:80%;background-color:lightgreen'><h3>Relief / ". htmlspecialchars($row['truck_name']) . "</h3></td></TR>\n";
             }
             echo '<tr>';
 
