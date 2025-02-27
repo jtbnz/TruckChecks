@@ -190,7 +190,7 @@
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>";
+                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>\n";
             }
             echo '<tr>';
 
@@ -206,7 +206,7 @@
             echo "</label>";
             echo "<input type='hidden' name='items[{$row['item_name']}][name]' value='" . htmlspecialchars($row['item_name']) . "'>";
             echo "<input type='hidden' name='items[{$row['item_name']}][locker]' value='" . htmlspecialchars($row['locker_name']) . "'>";
-            echo "</td></TR>";
+            echo "</td></TR>\n";
 
             
             $prev_locker = $row['locker_name'];
