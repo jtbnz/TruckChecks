@@ -44,6 +44,34 @@
 
     $db->exec($tables_check);
 
+    // Handle form submission for saving changeover state
+    if (isset($_POST['save_changeover'])) {
+        // Create new changeover record
+        $stmt = $db->prepare("INSERT INTO truck_changeovers (timestamp, truck_name, state) VALUES (NOW(), :truck_name, :state)");
+        $stmt->execute([
+            'truck_name' => $_POST['truck_name'],
+            'state' => $_POST['truck_state'] ? 'Normal' : 'Relief'
+        ]);
+        
+        $changeover_id = $db->lastInsertId();
+        
+        // Save each item's state
+        foreach ($_POST['items'] as $item) {
+            $stmt = $db->prepare("INSERT INTO truck_changeover_items (changeover_id, locker_name, item_name, is_relief) 
+                                VALUES (:changeover_id, :locker_name, :item_name, :is_relief)");
+            $stmt->execute([
+                'changeover_id' => $changeover_id,
+                'locker_name' => $item['locker'],
+                'item_name' => $item['name'],
+                'is_relief' => isset($item['state']) ? 0 : 1 // If checked it's Normal (0), if unchecked it's Relief (1)
+            ]);
+        }
+        
+        // Redirect to prevent form resubmission
+        header("Location: " . $_SERVER['PHP_SELF'] . "?truck_id=" . $_POST['truck_id'] . "&saved=1");
+        exit;
+    }
+
     // Add the state handling
     if (isset($_POST['reset_state'])) {
         // Create new changeover with Normal state
@@ -181,8 +209,11 @@
         echo "<span style='margin-left: 10px;'>Relief / " . htmlspecialchars($row['truck_name']) . "</span>";
         echo "</div>";
         
+
         echo "<form method='POST'>";
+        echo "<input type='hidden' name='truck_id' value='" . $truck_id . "'>";
         echo "<input type='hidden' name='truck_name' value='" . htmlspecialchars($row['truck_name']) . "'>";
+        echo "<input type='hidden' name='truck_state' value='" . ($current_state == 'Normal' ? '1' : '0') . "'>";
         echo "<button type='submit' name='reset_state' class='button touch-button'>Reset State</button>";
         
         echo "\n\n<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
@@ -217,7 +248,14 @@
         }
         echo "</table>";
 
-        echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
+
+        echo "<div style='margin-top: 20px; text-align: center;'>";
+        echo "<button type='submit' name='save_changeover' class='button touch-button'>Save Changeover State</button>";
+        echo "</div>";
+
+        echo "</form>";
+
+        // echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
         
     } else {
         echo "<p>Please select a truck to view its lockers and items.</p>";
