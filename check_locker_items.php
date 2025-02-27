@@ -353,16 +353,6 @@ if ($selected_truck_id) {
 
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
-
-                <!-- Display the last 5 checks -->
-                <div style="color: grey; font-size: small;">
-                    <h3>Last 5 Checks:</h3>
-                    <ul>
-                        <?php foreach ($last_five_checks as $check): ?>
-                            <li><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
             </div>
         <?php else: ?>
             <p>Please select a locker to check its items.</p>
@@ -377,8 +367,16 @@ if ($selected_truck_id) {
 <footer>
     <?php $version = $_SESSION['version']; ?>
     <p><a href="index.php" class="button touch-button">Return to Home</a></p>
-    <p><a href="quiz/quiz.php" class="button touch-button">Locker Quiz</a></p>
 
+    <!-- Display the last 5 checks -->
+    <div style="color: grey; font-size: small;">
+        <h3>Last 5 Checks:</h3>
+        <ul>
+            <?php foreach ($last_five_checks as $check): ?>
+                <li><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
     <p id="last-refreshed" style="margin-top: 10px;"></p>
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
