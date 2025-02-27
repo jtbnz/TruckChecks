@@ -373,7 +373,7 @@ if ($selected_truck_id) {
         <h3>Last 5 Checks:</h3>
 
             <?php foreach ($last_five_checks as $check): ?>
-                <p><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></p>
+                <?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?><br>
             <?php endforeach; ?>
 
     </div>
