@@ -371,11 +371,11 @@ if ($selected_truck_id) {
     <!-- Display the last 5 checks -->
     <div style="color: grey; font-size: small;">
         <h3>Last 5 Checks:</h3>
-        <ul>
+
             <?php foreach ($last_five_checks as $check): ?>
-                <li><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></li>
+                <p><?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?></p>
             <?php endforeach; ?>
-        </ul>
+
     </div>
     <p id="last-refreshed" style="margin-top: 10px;"></p>
     <div class="version-number">
