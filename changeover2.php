@@ -201,7 +201,7 @@
             echo htmlspecialchars($row['item_name']);
             echo "</td><td style='width:20%;background-color: {$cellbgcolour}'>";
             echo "<label class='toggle-switch'>";
-            echo "<center><input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . "><center>";
+            echo "<center><input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . "></center>";
             echo "<span class='slider'></span>";
             echo "</label>";
             echo "<input type='hidden' name='items[{$row['item_name']}][name]' value='" . htmlspecialchars($row['item_name']) . "'>";
