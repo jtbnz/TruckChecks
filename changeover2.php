@@ -185,12 +185,12 @@
         echo "<input type='hidden' name='truck_name' value='" . htmlspecialchars($row['truck_name']) . "'>";
         echo "<button type='submit' name='reset_state' class='button touch-button'>Reset State</button>";
         
-        echo "<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
+        echo "\n\n<table border='1' cellpadding='5' cellspacing='0' style='width: 100%;'>";
         
         
         foreach ($results as $row) {
             if ($prev_locker != $row['locker_name']) {
-                echo "<TR><td rowspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>\n";
+                echo "<TR><td colspan=2 >" .htmlspecialchars($row['locker_name']) . "</td></tr>\n";
             }
             echo '<tr>';
 
