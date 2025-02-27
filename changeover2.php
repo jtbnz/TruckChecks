@@ -200,7 +200,7 @@
             echo "<td style='background-color: {$cellbgcolour}'>";
             echo htmlspecialchars($row['item_name']);
             echo "<label class='toggle-switch'>";
-            echo "<td><input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . ">";
+            echo "<input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . ">";
             echo "<span class='slider'></span>";
             echo "</label>";
             echo "<input type='hidden' name='items[{$row['item_name']}][name]' value='" . htmlspecialchars($row['item_name']) . "'>";
@@ -210,10 +210,10 @@
             
             $prev_locker = $row['locker_name'];
 
-        }
+
 
    
-
+        }
         echo "</table>";
 
         echo '<p><a href="changeover_pdf.php?truck_id=' . $truck_id . '" class="button touch-button">Generate PDF</a></p>';
