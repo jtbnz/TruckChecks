@@ -197,7 +197,7 @@
         
             $is_relief = isset($current_items[$row['item_name']]) ? $current_items[$row['item_name']]['is_relief'] : false;
             
-            echo "<td style='width:80%;background-color: {$cellbgcolour}'>";
+            echo "<td style='background-color: {$cellbgcolour}'>";
             echo htmlspecialchars($row['item_name']);
             echo "<label class='toggle-switch'>";
             echo "</td><td style='width:20%;><input type='checkbox' name='items[{$row['item_name']}][state]' " . ($is_relief ? '' : 'checked') . ">";
