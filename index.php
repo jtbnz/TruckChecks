@@ -64,7 +64,8 @@ if ($colorBlindMode) {
 
 
 $db = get_db_connection();
-$trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
+//$trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
+$trucks = $db->query('SELECT id, name, relief FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
 
 function get_locker_status($locker_id, $db, $colours) {
     // Fetch the most recent check for the locker
@@ -120,7 +121,8 @@ function convertToNZST($utcDate) {
                     <?php
                     $locker_status = get_locker_status($locker['id'], $db, $colours);
                     $locker_url = 'check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
-                    $background_color = $locker_status['status'];
+                    // Override background color if truck is relief
+                    $background_color = $truck['relief'] ? '#808080' : $locker_status['status'];
                     $text_color = 'white';
                     $last_checked = $locker_status['check'] ? $locker_status['check']['check_date'] : 'Never';
                     $last_checked_display = $last_checked !== 'Never' ? convertToNZST($last_checked) : $last_checked;
