@@ -22,7 +22,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 - **QR Code Generation**: Generate QR codes for easy identification of lockers.
 - **Database Management**: Includes tools for maintaining database backups and cleaning tables.
 - **Interactive Quiz**: Users can participate in a quiz where they guess the location of an item. The quiz tracks the number of attempts and calculates a total score based on the number of correct guesses.
-
+- **Changeover Management**: Facilitate the transfer of equipment between trucks during shift changes or crew rotations, ensuring accountability and proper documentation of all transferred items.
 
 ## Installation
 
@@ -99,7 +99,12 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 3. **Generate Reports**:
     - Access `reports.php` to generate and email inventory reports.
 
-4. **Manage Data**:
+4. **Manage Changeovers**:
+    - Use the changeover functionality to track and document equipment transfers between trucks.
+    - Record who performed the changeover, when it occurred, and which items were transferred.
+    - Generate changeover reports to maintain accountability.
+
+5. **Manage Data**:
     - Use various maintenance scripts (`maintain_lockers.php`, `maintain_trucks.php`, etc.) to manage lockers, trucks, and items.
 
 ## Docker Support
@@ -126,6 +131,7 @@ This project supports Docker for easy deployment.
 - **admin.php**: Admin panel for managing the application.
 - **db.php**: Database connection settings.
 - **check_locker_items.php**: Interface for performing locker checks.
+- **changeover.php**: Manages the transfer of equipment between trucks.
 - **reports.php**: Generate and email reports.
 - **qr-codes.php**: Generate QR codes for lockers.
 - **Docker/**: Contains Docker-related files for containerizing the application.
