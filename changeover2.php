@@ -349,7 +349,7 @@ if ($selected_truck_id) {
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="hidden" name="relief_state" value="<?= $truck_relief_state ? '0' : '1' ?>">
                     <button type="submit" name="toggle_relief" class="submit-button">
-                        Set as <?= $truck_relief_state ? 'Normal' : 'Relief Truck' ?>
+                        Set <?= htmlspecialchars($selected_truck['name']) ?> to <?= $truck_relief_state ? 'Normal' : 'Relief Truck' ?>
                     </button>
                 </form>
             </div>
