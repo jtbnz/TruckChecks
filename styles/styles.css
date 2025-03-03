@@ -363,8 +363,8 @@ body.demo-mode::after {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 75%;
-    background-color: rgba(128, 128, 128, 0.9);
+    width: 80%;
+    background-color: rgba(216, 211, 211, 0.9);
     color: white;
     text-align: center;
     font-size: 24px;
