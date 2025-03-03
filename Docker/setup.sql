@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS `locker_item_deletion_log`;
 CREATE TABLE `trucks` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL
+    `relief` BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 -- Create the `lockers` table

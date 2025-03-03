@@ -1,5 +1,8 @@
 <?php
 
+    // ALTER TABLE `trucks` ADD COLUMN `relief` BOOLEAN NOT NULL DEFAULT FALSE;
+
+    
     include 'db.php';
 
 
