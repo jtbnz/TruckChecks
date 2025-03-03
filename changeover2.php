@@ -342,14 +342,14 @@ if ($selected_truck_id) {
         
         <?php if ($selected_truck): ?>
             <div class="truck-relief-toggle">
-                <h2>Truck Relief Status</h2>
-                <p>Current Status: <?= $truck_relief_state ? 'Relief Truck' : 'Regular Truck' ?></p>
+                <h2>Truck Status</h2>
+                <p>Current Status: <?= $truck_relief_state ? 'Relief Truck' : 'Normal' ?></p>
                 
                 <form method="POST" action="changeover2.php">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="hidden" name="relief_state" value="<?= $truck_relief_state ? '0' : '1' ?>">
                     <button type="submit" name="toggle_relief" class="submit-button">
-                        Set as <?= $truck_relief_state ? 'Regular Truck' : 'Relief Truck' ?>
+                        Set as <?= $truck_relief_state ? 'Normal' : 'Relief Truck' ?>
                     </button>
                 </form>
             </div>
