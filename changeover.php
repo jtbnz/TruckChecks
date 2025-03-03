@@ -107,7 +107,7 @@ if (isset($_POST['toggle_relief'])) {
     }
     
     // Redirect to prevent form resubmission
-    header("Location: changeover2.php?truck_id=" . $truck_id);
+    header("Location: changeover.php?truck_id=" . $truck_id);
     exit;
 }
 
@@ -343,7 +343,7 @@ if ($selected_truck_id) {
         
         <div class="truck-selection">
             <h2>Select a Truck</h2>
-            <form method="GET" action="changeover2.php">
+            <form method="GET" action="changeover.php">
                 <select name="truck_id" id="truck_id" onchange="this.form.submit()">
                     <option value="">-- Select Truck --</option>
                     <?php foreach ($trucks as $truck): ?>
@@ -360,7 +360,7 @@ if ($selected_truck_id) {
                 <h2>Truck Status</h2>
                 <p>Current Status: <?= $truck_relief_state ? 'Relief Truck' : 'Normal' ?></p>
                 
-                <form method="POST" action="changeover2.php">
+                <form method="POST" action="changeover.php">
                     <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
                     <input type="hidden" name="relief_state" value="<?= $truck_relief_state ? '0' : '1' ?>">
                     <button type="submit" name="toggle_relief" class="submit-button">
@@ -426,7 +426,7 @@ if ($selected_truck_id) {
                 
                 // Send AJAX request to update item relief status
                 var xhr = new XMLHttpRequest();
-                xhr.open('POST', 'changeover2.php', true);
+                xhr.open('POST', 'changeover.php', true);
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.onload = function() {
                     if (xhr.status === 200) {
