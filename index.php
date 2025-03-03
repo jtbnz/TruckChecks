@@ -116,30 +116,34 @@ function convertToNZST($utcDate) {
         ?>
 
         <?php if (!empty($lockers)): ?>
-            <div class="locker-grid">
-                <?php foreach ($lockers as $locker): ?>
-                    <?php
-                    $locker_status = get_locker_status($locker['id'], $db, $colours);
-                    $locker_url = 'check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
-                    // Override background color if truck is relief
-                    $background_color = $truck['relief'] ? '#808080' : $locker_status['status'];
-                    $text_color = 'white';
-                    $last_checked = $locker_status['check'] ? $locker_status['check']['check_date'] : 'Never';
-                    $last_checked_display = $last_checked !== 'Never' ? convertToNZST($last_checked) : $last_checked;
-                    $checked_by = $locker_status['check'] ? $locker_status['check']['checked_by'] : 'N/A';
-                    $missing_items = $locker_status['missing_items'];
-                    ?>
-                    <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
-                        onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked_display ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
-                        
-                        <?= htmlspecialchars($locker['name']) ?>
-                        
-                        <?php if (!empty($missing_items)): ?>
-                            <span class="badge">!</span>
-                        <?php endif; ?>
-                    </div>
-
-                <?php endforeach; ?>
+            <div class="locker-container">
+                <?php if ($truck['relief']): ?>
+                    <div class="relief-truck-indicator">Relief Truck</div>
+                <?php endif; ?>
+                <div class="locker-grid">
+                    <?php foreach ($lockers as $locker): ?>
+                        <?php
+                        $locker_status = get_locker_status($locker['id'], $db, $colours);
+                        $locker_url = 'check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'];
+                        // Override background color if truck is relief
+                        $background_color = $truck['relief'] ? '#808080' : $locker_status['status'];
+                        $text_color = 'white';
+                        $last_checked = $locker_status['check'] ? $locker_status['check']['check_date'] : 'Never';
+                        $last_checked_display = $last_checked !== 'Never' ? convertToNZST($last_checked) : $last_checked;
+                        $checked_by = $locker_status['check'] ? $locker_status['check']['checked_by'] : 'N/A';
+                        $missing_items = $locker_status['missing_items'];
+                        ?>
+                        <div class="locker-cell" style="background-color: <?= $background_color ?>; color: <?= $text_color ?>;" 
+                            onclick="showLockerInfo('<?= htmlspecialchars($locker['name']) ?>', '<?= $last_checked_display ?>', '<?= $checked_by ?>', <?= htmlspecialchars(json_encode($missing_items)) ?>, '<?= $locker_url ?>')">
+                            
+                            <?= htmlspecialchars($locker['name']) ?>
+                            
+                            <?php if (!empty($missing_items)): ?>
+                                <span class="badge">!</span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
         <?php else: ?>
             <p>No lockers found for this truck.</p>
