@@ -398,7 +398,7 @@ if ($selected_truck_id) {
                                         <span class="switch-handle"></span> 
                                     </label>
                                 <?php else: ?>
-                                    <span>Regular truck item</span>
+                                    <span>On <?= htmlspecialchars($selected_truck['name']) ?></span>
                                 <?php endif; ?>
                             </div>
                         </div>
