@@ -185,7 +185,7 @@ if ($selected_truck_id) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Truck Change Over Relief Mode">
     <link rel="stylesheet" href="styles/styles.css?id=<?php echo $version; ?>">
-    <title>Truck Relief Management</title>
+    <title>Relief Truck Management</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -372,6 +372,7 @@ if ($selected_truck_id) {
             <?php if ($truck_relief_state): ?>
                 <div class="relief-instructions">
                     <p>This truck is in Relief mode. Toggle the switches below to indicate which items should go on the relief truck.</p>
+                    <p>Don't forget non checked items such as station keys, Door remotes, tablets etc.</p> 
                 </div>
             <?php endif; ?>
             
