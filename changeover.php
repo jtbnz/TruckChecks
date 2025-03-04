@@ -339,7 +339,7 @@ if ($selected_truck_id) {
 </head>
 <body>
     <div class="container">
-        <h1>Truck Relief Management</h1>
+        <h1>Relief Truck Management</h1>
         
         <div class="truck-selection">
             <h2>Select a Truck</h2>
