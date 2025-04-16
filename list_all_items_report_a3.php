@@ -209,10 +209,42 @@ $pdf->setPage($current_page);
 // Group lockers into rows of 3 (or fewer for the last row)
 $locker_rows = array_chunk($lockers, 3);
 
-// Process each row of lockers - simplified approach focusing on the specific issue
-$current_row_y = $start_y_after_title;
+// Completely different approach using direct rendering of each locker
+
+// Function to render a single locker
+function renderLocker($pdf, $locker, $x, $y, $width, $height) {
+    // Set position
+    $pdf->SetXY($x, $y);
+    
+    // Debug: Print locker ID
+    $pdf->SetFont('helvetica', '', 6);
+    $pdf->Text($x, $y - 3, "ID: " . $locker['id'] . ", Name: " . $locker['name']);
+    $pdf->SetFont('helvetica', '', 12);
+    
+    // Create content
+    $content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . 
+               htmlspecialchars($locker['name']) . ' (ID: ' . $locker['id'] . ')</h3>';
+    $content .= '<table border="0" cellpadding="3" style="width:100%;">';
+    
+    // Add items or a message if no items
+    if (empty($locker['items'])) {
+        $content .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
+    } else {
+        foreach ($locker['items'] as $item) {
+            $content .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
+        }
+    }
+    
+    $content .= '</table>';
+    
+    // Render the locker
+    $pdf->MultiCell($width, $height, $content, 1, 'L', false, 0, $x, $y, true, 0, true);
+}
+
+// Start with a clean page
+$pdf->AddPage();
 $current_page = 1;
-$pdf->setPage($current_page);
+$current_row_y = $start_y_after_title;
 
 // Debug: Print all locker IDs at the top
 $locker_ids = array_column($lockers, 'id');
@@ -221,14 +253,16 @@ $pdf->Cell(0, 5, "Locker IDs: " . implode(', ', $locker_ids), 0, 1, 'R');
 $pdf->SetFont('helvetica', '', 12);
 $pdf->Ln(2);
 
-// Process each row of lockers
-for ($i = 0; $i < count($lockers); $i += 3) {
+// Process lockers in groups of 3
+$total_lockers = count($lockers);
+
+for ($i = 0; $i < $total_lockers; $i += 3) {
     // Calculate row height based on the tallest locker in this row
     $row_height = 0;
-    for ($j = 0; $j < 3; $j++) {
-        if ($i + $j < count($lockers)) {
-            $row_height = max($row_height, $lockers[$i + $j]['estimated_height']);
-        }
+    $lockers_in_row = min(3, $total_lockers - $i);
+    
+    for ($j = 0; $j < $lockers_in_row; $j++) {
+        $row_height = max($row_height, $lockers[$i + $j]['estimated_height']);
     }
     
     // Check if this row fits on the current page
@@ -239,47 +273,23 @@ for ($i = 0; $i < count($lockers); $i += 3) {
         $current_row_y = $page_top_margin;
     }
     
-    // Process each locker in this row
-    for ($j = 0; $j < 3; $j++) {
-        $index = $i + $j;
-        
-        // Skip if we've processed all lockers
-        if ($index >= count($lockers)) {
-            continue;
-        }
-        
-        // Get the current locker
-        $locker = $lockers[$index];
-        
-        // Set position for this locker
+    // Render each locker in this row
+    for ($j = 0; $j < $lockers_in_row; $j++) {
+        $locker_index = $i + $j;
         $current_x = $column_positions[$j];
+        
+        // Make sure we're on the correct page
         $pdf->setPage($current_page);
-        $pdf->SetXY($current_x, $current_row_y);
         
-        // Debug: Print locker index and ID
-        $pdf->SetFont('helvetica', '', 6);
-        $pdf->Text($current_x, $current_row_y - 3, "Index: $index, ID: " . $locker['id']);
-        $pdf->SetFont('helvetica', '', 12);
-        
-        // Start capturing content for this locker
-        $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . 
-                          htmlspecialchars($locker['name']) . ' (ID: ' . $locker['id'] . ')</h3>';
-        $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
-        
-        // Add items or a message if no items
-        if (empty($locker['items'])) {
-            $locker_content .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
-        } else {
-            foreach ($locker['items'] as $item) {
-                $locker_content .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
-            }
-        }
-        
-        $locker_content .= '</table>';
-        
-        // Create a cell with border for the locker box - IMPORTANT: last parameter changed to 0
-        // This prevents the cursor from moving to the next line, which might be causing the issue
-        $pdf->MultiCell($column_width, $row_height, $locker_content, 1, 'L', false, 0, $current_x, $current_row_y, true, 0, true);
+        // Render this locker
+        renderLocker(
+            $pdf, 
+            $lockers[$locker_index], 
+            $current_x, 
+            $current_row_y, 
+            $column_width, 
+            $row_height
+        );
     }
     
     // Move to the next row
