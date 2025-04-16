@@ -159,107 +159,68 @@ foreach ($lockers as &$locker) {
     }
 }
 
-// Function to find the best column for a locker
-function findBestColumn($columns, $locker_height, $max_height, $pdf, $start_y_after_title) {
-    $best_fit = -1;
-    $min_waste = PHP_INT_MAX;
-    $current_page = $pdf->getPage();
-    
-    // First try columns on the current page
-    foreach ($columns as $idx => $col) {
-        // Only consider columns on the current page
-        if ($col['page'] == $current_page) {
-            // Calculate remaining space in this column
-            $remaining_space = $max_height - $col['y'];
-            
-            // If locker fits in this column
-            if ($remaining_space >= $locker_height) {
-                $waste = $remaining_space - $locker_height;
-                // Choose column with least waste
-                if ($waste < $min_waste) {
-                    $min_waste = $waste;
-                    $best_fit = $idx;
-                }
-            }
-        }
-    }
-    
-    // If no fit found on current page, check if any column has space
-    if ($best_fit == -1) {
-        foreach ($columns as $idx => $col) {
-            // Calculate remaining space in this column
-            $remaining_space = $max_height - $col['y'];
-            
-            // If locker fits in this column
-            if ($remaining_space >= $locker_height) {
-                $waste = $remaining_space - $locker_height;
-                // Choose column with least waste
-                if ($waste < $min_waste) {
-                    $min_waste = $waste;
-                    $best_fit = $idx;
-                }
-            }
-        }
-    }
-    
-    return $best_fit;
-}
+// Completely redesigned layout algorithm to flow lockers across columns (horizontally)
+// rather than down columns (vertically)
 
-// Process each locker
-foreach ($lockers as $locker) {
-    // Find the best column for this locker
-    $best_column = findBestColumn($columns, $locker['estimated_height'], $max_height, $pdf, $start_y_after_title);
+// Calculate column positions
+$column_positions = [
+    $column1_x,
+    $column2_x,
+    $column3_x
+];
+
+// Initialize the current row position
+$current_row_y = $start_y_after_title;
+$current_page = 1;
+$pdf->setPage($current_page);
+
+// Group lockers into rows of 3 (or fewer for the last row)
+$locker_rows = array_chunk($lockers, 3);
+
+// Process each row of lockers
+foreach ($locker_rows as $row) {
+    // Determine the tallest locker in this row
+    $row_height = 0;
+    foreach ($row as $locker) {
+        $row_height = max($row_height, $locker['estimated_height']);
+    }
     
-    // If no column has enough space, create a new page
-    if ($best_column == -1) {
+    // Check if this row fits on the current page
+    if ($current_row_y + $row_height > $max_height) {
+        // Row doesn't fit, create a new page
         $pdf->AddPage();
-        $new_page = $pdf->getPage();
-        
-        // Reset all three columns for the new page
-        $columns[0]['y'] = $page_top_margin;
-        $columns[0]['page'] = $new_page;
-        $columns[1]['y'] = $page_top_margin;
-        $columns[1]['page'] = $new_page;
-        $columns[2]['y'] = $page_top_margin;
-        $columns[2]['page'] = $new_page;
-        
-        // Always start with the first column on a new page
-        $best_column = 0;
+        $current_page = $pdf->getPage();
+        $current_row_y = $page_top_margin;
     }
     
-    // Set position for this locker box
-    $current_x = $columns[$best_column]['x'];
-    $current_y = $columns[$best_column]['y'];
-    
-    // If we're on the first page, ensure all columns start below the title
-    if ($columns[$best_column]['page'] == 1 && $current_y < $start_y_after_title) {
-        $current_y = $start_y_after_title;
-        $columns[$best_column]['y'] = $current_y;
-    }
-    
-    $pdf->setPage($columns[$best_column]['page']);
-    $pdf->SetXY($current_x, $current_y);
-    
-    // Start capturing content for this locker
-    $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . '</h3>';
-    $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
-    
-    // Add items or a message if no items
-    if (empty($locker['items'])) {
-        $locker_content .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
-    } else {
-        foreach ($locker['items'] as $item) {
-            $locker_content .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
+    // Process each locker in the row
+    foreach ($row as $index => $locker) {
+        // Set position for this locker box
+        $current_x = $column_positions[$index];
+        $pdf->setPage($current_page);
+        $pdf->SetXY($current_x, $current_row_y);
+        
+        // Start capturing content for this locker
+        $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . '</h3>';
+        $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
+        
+        // Add items or a message if no items
+        if (empty($locker['items'])) {
+            $locker_content .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
+        } else {
+            foreach ($locker['items'] as $item) {
+                $locker_content .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
+            }
         }
+        
+        $locker_content .= '</table>';
+        
+        // Create a cell with border for the locker box
+        $pdf->MultiCell($column_width, $row_height, $locker_content, 1, 'L', false, 1, $current_x, $current_row_y, true, 0, true);
     }
     
-    $locker_content .= '</table>';
-    
-    // Create a cell with border for the locker box
-    $pdf->MultiCell($column_width, 0, $locker_content, 1, 'L', false, 1, $current_x, $current_y, true, 0, true);
-    
-    // Update position for next locker in this column
-    $columns[$best_column]['y'] = $pdf->GetY() + $spacing_between_lockers;
+    // Move to the next row
+    $current_row_y += $row_height + $spacing_between_lockers;
 }
 
 // Output the PDF
