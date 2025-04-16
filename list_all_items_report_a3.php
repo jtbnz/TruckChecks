@@ -79,6 +79,9 @@ $pdf->SetFont('helvetica', '', 10);
 $pdf->Cell(0, 5, 'Generated on: ' . date('Y-m-d H:i:s'), 0, 1, 'C');
 $pdf->Ln(5);
 
+// Store the Y position after the title for use in column positioning
+$start_y_after_title = $pdf->GetY();
+
 // Query to retrieve all lockers and items for the selected truck
 $query = $db->prepare("
     SELECT 
@@ -97,20 +100,28 @@ $query = $db->prepare("
 $query->execute(['truck_id' => $selected_truck_id]);
 $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-// Group items by locker
+// Group items by locker and calculate item count
 $lockers = [];
 foreach ($results as $row) {
     if (!isset($lockers[$row['locker_id']])) {
         $lockers[$row['locker_id']] = [
             'name' => $row['locker_name'],
-            'items' => []
+            'items' => [],
+            'item_count' => 0
         ];
     }
     
     if (!empty($row['item_name'])) {
         $lockers[$row['locker_id']]['items'][] = $row['item_name'];
+        $lockers[$row['locker_id']]['item_count']++;
     }
 }
+
+// Sort lockers by item count (descending) to optimize layout
+// This helps balance columns and minimize page count
+usort($lockers, function($a, $b) {
+    return $b['item_count'] - $a['item_count'];
+});
 
 // Set up the layout for two columns
 $pdf->SetFont('helvetica', '', 12);
@@ -124,7 +135,7 @@ $max_height = $pdf->getPageHeight() - 20; // Maximum height for content
 $left_column_x = 5;
 $right_column_x = $left_column_x + $column_width + 6; // 6mm spacing between columns
 $current_x = $left_column_x;
-$current_y = $pdf->GetY();
+$current_y = $start_y_after_title; // Start below the title
 $column = 0; // 0 = left column, 1 = right column
 $page_top_margin = 5;
 
@@ -152,6 +163,11 @@ foreach ($lockers as $locker) {
             $current_x = $left_column_x;
             $current_y = $page_top_margin;
         }
+    }
+    
+    // On the first page, make sure the right column starts below the title
+    if ($pdf->getPage() == 1 && $column == 1 && $current_y < $start_y_after_title) {
+        $current_y = $start_y_after_title;
     }
     
     // Set position for this locker box
