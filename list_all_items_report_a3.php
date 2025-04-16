@@ -53,11 +53,11 @@ $pdf->SetAutoPageBreak(TRUE, 10);
 // Set default monospaced font
 $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
 
-// Set margins
-$pdf->SetMargins(10, 10, 10, true);
+// Set margins - reduced from 10 to 5
+$pdf->SetMargins(5, 5, 5, true);
 
 // Set auto page breaks
-$pdf->SetAutoPageBreak(TRUE, 10);
+$pdf->SetAutoPageBreak(TRUE, 5);
 
 // Set image scale factor
 $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
@@ -116,9 +116,9 @@ foreach ($results as $row) {
 $pdf->SetFont('helvetica', '', 12);
 
 // Calculate dimensions for the layout
-$page_width = $pdf->getPageWidth() - 20; // Total usable width (A3 width minus margins)
-$column_width = $page_width / 2 - 5; // Width for each column, with some spacing
-$max_height = $pdf->getPageHeight() - 40; // Maximum height for content
+$page_width = $pdf->getPageWidth() - 10; // Total usable width (A3 width minus margins)
+$column_width = $page_width / 2 - 3; // Width for each column, with less spacing
+$max_height = $pdf->getPageHeight() - 20; // Maximum height for content
 
 // Variables to track position
 $current_x = 10;
@@ -133,8 +133,8 @@ foreach ($lockers as $locker) {
     // Calculate if we need to move to next column or page
     if ($locker_count > 0 && $locker_count % 2 == 0) {
         // Reset to left column but on a new row
-        $current_x = 10;
-        $current_y = $max_y_in_row + 10; // Add some spacing between rows
+        $current_x = 5;
+        $current_y = $max_y_in_row + 5; // Reduced spacing between rows from 10 to 5
         $column = 0;
         
         // Check if we need a new page
@@ -148,9 +148,8 @@ foreach ($lockers as $locker) {
     // Set position for this locker box
     $pdf->SetXY($current_x, $current_y);
     
-    // Start capturing content for this locker
-    $locker_content = '<div style="width:100%;">';
-    $locker_content .= '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . '</h3>';
+    // Start capturing content for this locker - removed the div wrapper to eliminate extra line
+    $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . '</h3>';
     $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
     
     // Add items or a message if no items
@@ -163,7 +162,7 @@ foreach ($lockers as $locker) {
     }
     
     $locker_content .= '</table>';
-    $locker_content .= '</div>';
+    // Removed closing div tag
     
     // Create a cell with border for the locker box
     $pdf->MultiCell($column_width, 0, $locker_content, 1, 'L', false, 1, $current_x, $current_y, true, 0, true);
@@ -175,7 +174,7 @@ foreach ($lockers as $locker) {
     // Move to next column
     $column++;
     if ($column < 2) {
-        $current_x = $current_x + $column_width + 10; // Add spacing between columns
+        $current_x = $current_x + $column_width + 6; // Reduced spacing between columns from 10 to 6
     }
     
     $locker_count++;
