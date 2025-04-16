@@ -23,7 +23,8 @@ include 'templates/header.php';
 <div class="button-container" style="margin-top: 20px;">
     <a href="locker_check_report.php" class="button touch-button">Locker Check Reports</a>
     <a href="deleted_items_report.php" class="button touch-button">Deleted Items</a>
-    <a href="list_all_items_report.php" class="button touch-button">List All Items </a>
+    <a href="list_all_items_report.php" class="button touch-button">List All Items</a>
+    <a href="list_all_items_report_a3.php" class="button touch-button">A3 Locker Items Report</a>
     <a href="find.php" class="button touch-button">Find an Item</a>
 
 </div>
