@@ -100,31 +100,51 @@ $query = $db->prepare("
 $query->execute(['truck_id' => $selected_truck_id]);
 $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
-// Group items by locker and calculate item count
-$lockers_map = [];
-foreach ($results as $row) {
-    $locker_id = $row['locker_id'];
+// Group items by locker and calculate item count - completely rewritten to ensure no duplicates
+$lockers = [];
+$processed_locker_ids = []; // Track which lockers we've already processed
+
+// First, get all unique lockers for this truck
+$lockers_query = $db->prepare("
+    SELECT 
+        id,
+        name
+    FROM 
+        lockers
+    WHERE 
+        truck_id = :truck_id
+    ORDER BY 
+        name
+");
+$lockers_query->execute(['truck_id' => $selected_truck_id]);
+$all_lockers = $lockers_query->fetchAll(PDO::FETCH_ASSOC);
+
+// Process each locker
+foreach ($all_lockers as $locker) {
+    // Get all items for this locker
+    $items_query = $db->prepare("
+        SELECT 
+            name
+        FROM 
+            items
+        WHERE 
+            locker_id = :locker_id
+        ORDER BY 
+            name
+    ");
+    $items_query->execute(['locker_id' => $locker['id']]);
+    $items = $items_query->fetchAll(PDO::FETCH_COLUMN);
     
-    if (!isset($lockers_map[$locker_id])) {
-        $lockers_map[$locker_id] = [
-            'id' => $locker_id,
-            'name' => $row['locker_name'],
-            'items' => [],
-            'item_count' => 0
-        ];
-    }
-    
-    if (!empty($row['item_name'])) {
-        // Avoid duplicate items
-        if (!in_array($row['item_name'], $lockers_map[$locker_id]['items'])) {
-            $lockers_map[$locker_id]['items'][] = $row['item_name'];
-            $lockers_map[$locker_id]['item_count']++;
-        }
-    }
+    // Add this locker to our array
+    $lockers[] = [
+        'id' => $locker['id'],
+        'name' => $locker['name'],
+        'items' => $items,
+        'item_count' => count($items)
+    ];
 }
 
-// Convert to indexed array and sort by item count (descending)
-$lockers = array_values($lockers_map);
+// Sort lockers by item count (descending)
 usort($lockers, function($a, $b) {
     return $b['item_count'] - $a['item_count'];
 });
@@ -190,7 +210,7 @@ $pdf->setPage($current_page);
 $locker_rows = array_chunk($lockers, 3);
 
 // Process each row of lockers
-foreach ($locker_rows as $row) {
+foreach ($locker_rows as $row_index => $row) {
     // Determine the tallest locker in this row
     $row_height = 0;
     foreach ($row as $locker) {
@@ -235,6 +255,7 @@ foreach ($locker_rows as $row) {
     $current_row_y += $row_height + $spacing_between_lockers;
 }
 
-// Output the PDF
-$pdf->Output('locker_items_report_a3.pdf', 'I');
+// Let's try a different approach to ensure no duplicates
+// Output the PDF with a timestamp to prevent caching issues
+$pdf->Output('locker_items_report_a3.pdf?t=' . time(), 'I');
 ?>
