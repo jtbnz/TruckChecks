@@ -101,10 +101,13 @@ $query->execute(['truck_id' => $selected_truck_id]);
 $results = $query->fetchAll(PDO::FETCH_ASSOC);
 
 // Group items by locker and calculate item count
-$lockers = [];
+$lockers_map = [];
 foreach ($results as $row) {
-    if (!isset($lockers[$row['locker_id']])) {
-        $lockers[$row['locker_id']] = [
+    $locker_id = $row['locker_id'];
+    
+    if (!isset($lockers_map[$locker_id])) {
+        $lockers_map[$locker_id] = [
+            'id' => $locker_id,
             'name' => $row['locker_name'],
             'items' => [],
             'item_count' => 0
@@ -112,16 +115,25 @@ foreach ($results as $row) {
     }
     
     if (!empty($row['item_name'])) {
-        $lockers[$row['locker_id']]['items'][] = $row['item_name'];
-        $lockers[$row['locker_id']]['item_count']++;
+        // Avoid duplicate items
+        if (!in_array($row['item_name'], $lockers_map[$locker_id]['items'])) {
+            $lockers_map[$locker_id]['items'][] = $row['item_name'];
+            $lockers_map[$locker_id]['item_count']++;
+        }
     }
 }
 
-// Sort lockers by item count (descending) to optimize layout
-// This helps balance columns and minimize page count
+// Convert to indexed array and sort by item count (descending)
+$lockers = array_values($lockers_map);
 usort($lockers, function($a, $b) {
     return $b['item_count'] - $a['item_count'];
 });
+
+// Debug: Count lockers
+$locker_count = count($lockers);
+$pdf->SetFont('helvetica', '', 10);
+$pdf->Cell(0, 5, "Total Lockers: $locker_count", 0, 1, 'R');
+$pdf->Ln(2);
 
 // Set up the layout for two columns
 $pdf->SetFont('helvetica', '', 12);
