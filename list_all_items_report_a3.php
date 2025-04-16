@@ -131,46 +131,78 @@ $page_width = $pdf->getPageWidth() - 10; // Total usable width (A3 width minus m
 $column_width = $page_width / 2 - 3; // Width for each column, with less spacing
 $max_height = $pdf->getPageHeight() - 20; // Maximum height for content
 
-// Variables to track position
+// Advanced layout algorithm with better space utilization
+$page_top_margin = 5;
+$spacing_between_lockers = 5;
 $left_column_x = 5;
 $right_column_x = $left_column_x + $column_width + 6; // 6mm spacing between columns
-$current_x = $left_column_x;
-$current_y = $start_y_after_title; // Start below the title
-$column = 0; // 0 = left column, 1 = right column
-$page_top_margin = 5;
 
-// Loop through each locker and create a box
-foreach ($lockers as $locker) {
-    // Estimate the height of this locker box
-    $estimated_height = 30; // Base height for header
+// Track available space in both columns
+$columns = [
+    0 => ['x' => $left_column_x, 'y' => $start_y_after_title, 'page' => 1],
+    1 => ['x' => $right_column_x, 'y' => $start_y_after_title, 'page' => 1]
+];
+$current_column = 0;
+
+// Pre-calculate estimated heights for all lockers
+foreach ($lockers as &$locker) {
+    $locker['estimated_height'] = 30; // Base height for header
     if (!empty($locker['items'])) {
-        $estimated_height += count($locker['items']) * 10; // Estimate 10mm per item
+        $locker['estimated_height'] += count($locker['items']) * 10; // Estimate 10mm per item
     } else {
-        $estimated_height += 10; // Height for "No items" message
+        $locker['estimated_height'] += 10; // Height for "No items" message
     }
+}
+
+// Function to find the best column for a locker
+function findBestColumn($columns, $locker_height, $max_height, $pdf, $start_y_after_title) {
+    $best_fit = -1;
+    $min_waste = PHP_INT_MAX;
     
-    // Check if we need to move to next column or page
-    if ($current_y + $estimated_height > $max_height) {
-        // If we're in the left column, move to the right column
-        if ($column == 0) {
-            $column = 1;
-            $current_x = $right_column_x;
-            $current_y = $page_top_margin;
-        } else {
-            // If we're already in the right column, add a new page
-            $pdf->AddPage();
-            $column = 0;
-            $current_x = $left_column_x;
-            $current_y = $page_top_margin;
+    foreach ($columns as $idx => $col) {
+        // Calculate remaining space in this column
+        $remaining_space = $max_height - $col['y'];
+        
+        // If locker fits in this column
+        if ($remaining_space >= $locker_height) {
+            $waste = $remaining_space - $locker_height;
+            // Choose column with least waste
+            if ($waste < $min_waste) {
+                $min_waste = $waste;
+                $best_fit = $idx;
+            }
         }
     }
     
-    // On the first page, make sure the right column starts below the title
-    if ($pdf->getPage() == 1 && $column == 1 && $current_y < $start_y_after_title) {
-        $current_y = $start_y_after_title;
+    return $best_fit;
+}
+
+// Process each locker
+foreach ($lockers as $locker) {
+    // Find the best column for this locker
+    $best_column = findBestColumn($columns, $locker['estimated_height'], $max_height, $pdf, $start_y_after_title);
+    
+    // If no column has enough space, create a new page
+    if ($best_column == -1) {
+        $pdf->AddPage();
+        $columns[0]['y'] = $page_top_margin;
+        $columns[0]['page'] = $pdf->getPage();
+        $columns[1]['y'] = $page_top_margin;
+        $columns[1]['page'] = $pdf->getPage();
+        $best_column = 0; // Start with left column on new page
     }
     
     // Set position for this locker box
+    $current_x = $columns[$best_column]['x'];
+    $current_y = $columns[$best_column]['y'];
+    
+    // If we're on the first page and in the right column, ensure we're below the title
+    if ($columns[$best_column]['page'] == 1 && $best_column == 1 && $current_y < $start_y_after_title) {
+        $current_y = $start_y_after_title;
+        $columns[$best_column]['y'] = $current_y;
+    }
+    
+    $pdf->setPage($columns[$best_column]['page']);
     $pdf->SetXY($current_x, $current_y);
     
     // Start capturing content for this locker
@@ -191,8 +223,8 @@ foreach ($lockers as $locker) {
     // Create a cell with border for the locker box
     $pdf->MultiCell($column_width, 0, $locker_content, 1, 'L', false, 1, $current_x, $current_y, true, 0, true);
     
-    // Update position for next locker
-    $current_y = $pdf->GetY() + 5; // Add 5mm spacing between lockers
+    // Update position for next locker in this column
+    $columns[$best_column]['y'] = $pdf->GetY() + $spacing_between_lockers;
 }
 
 // Output the PDF
