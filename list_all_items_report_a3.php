@@ -149,11 +149,8 @@ usort($lockers, function($a, $b) {
     return $b['item_count'] - $a['item_count'];
 });
 
-// Debug: Count lockers
-$locker_count = count($lockers);
-$pdf->SetFont('helvetica', '', 10);
-$pdf->Cell(0, 5, "Total Lockers: $locker_count", 0, 1, 'R');
-$pdf->Ln(2);
+// Set font for content
+$pdf->SetFont('helvetica', '', 12);
 
 // Set up the layout for two columns
 $pdf->SetFont('helvetica', '', 12);
@@ -216,14 +213,9 @@ function renderLocker($pdf, $locker, $x, $y, $width, $height) {
     // Set position
     $pdf->SetXY($x, $y);
     
-    // Debug: Print locker ID
-    $pdf->SetFont('helvetica', '', 6);
-    $pdf->Text($x, $y - 3, "ID: " . $locker['id'] . ", Name: " . $locker['name']);
-    $pdf->SetFont('helvetica', '', 12);
-    
     // Create content
     $content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . 
-               htmlspecialchars($locker['name']) . ' (ID: ' . $locker['id'] . ')</h3>';
+               htmlspecialchars($locker['name']) . '</h3>';
     $content .= '<table border="0" cellpadding="3" style="width:100%;">';
     
     // Add items or a message if no items
@@ -246,12 +238,6 @@ $pdf->AddPage();
 $current_page = 1;
 $current_row_y = $start_y_after_title;
 
-// Debug: Print all locker IDs at the top
-$locker_ids = array_column($lockers, 'id');
-$pdf->SetFont('helvetica', '', 8);
-$pdf->Cell(0, 5, "Locker IDs: " . implode(', ', $locker_ids), 0, 1, 'R');
-$pdf->SetFont('helvetica', '', 12);
-$pdf->Ln(2);
 
 // Process lockers in groups of 3
 $total_lockers = count($lockers);
