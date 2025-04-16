@@ -121,34 +121,43 @@ $column_width = $page_width / 2 - 3; // Width for each column, with less spacing
 $max_height = $pdf->getPageHeight() - 20; // Maximum height for content
 
 // Variables to track position
-$current_x = 10;
+$left_column_x = 5;
+$right_column_x = $left_column_x + $column_width + 6; // 6mm spacing between columns
+$current_x = $left_column_x;
 $current_y = $pdf->GetY();
-$column_start_y = $current_y;
-$max_y_in_row = $current_y;
-$locker_count = 0;
-$column = 0;
+$column = 0; // 0 = left column, 1 = right column
+$page_top_margin = 5;
 
 // Loop through each locker and create a box
 foreach ($lockers as $locker) {
-    // Calculate if we need to move to next column or page
-    if ($locker_count > 0 && $locker_count % 2 == 0) {
-        // Reset to left column but on a new row
-        $current_x = 5;
-        $current_y = $max_y_in_row + 5; // Reduced spacing between rows from 10 to 5
-        $column = 0;
-        
-        // Check if we need a new page
-        if ($current_y + 50 > $max_height) { // 50 is a minimum box height estimate
+    // Estimate the height of this locker box
+    $estimated_height = 30; // Base height for header
+    if (!empty($locker['items'])) {
+        $estimated_height += count($locker['items']) * 10; // Estimate 10mm per item
+    } else {
+        $estimated_height += 10; // Height for "No items" message
+    }
+    
+    // Check if we need to move to next column or page
+    if ($current_y + $estimated_height > $max_height) {
+        // If we're in the left column, move to the right column
+        if ($column == 0) {
+            $column = 1;
+            $current_x = $right_column_x;
+            $current_y = $page_top_margin;
+        } else {
+            // If we're already in the right column, add a new page
             $pdf->AddPage();
-            $current_y = 10;
-            $max_y_in_row = $current_y;
+            $column = 0;
+            $current_x = $left_column_x;
+            $current_y = $page_top_margin;
         }
     }
     
     // Set position for this locker box
     $pdf->SetXY($current_x, $current_y);
     
-    // Start capturing content for this locker - removed the div wrapper to eliminate extra line
+    // Start capturing content for this locker
     $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . '</h3>';
     $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
     
@@ -162,22 +171,12 @@ foreach ($lockers as $locker) {
     }
     
     $locker_content .= '</table>';
-    // Removed closing div tag
     
     // Create a cell with border for the locker box
     $pdf->MultiCell($column_width, 0, $locker_content, 1, 'L', false, 1, $current_x, $current_y, true, 0, true);
     
-    // Update position tracking
-    $end_y = $pdf->GetY();
-    $max_y_in_row = max($max_y_in_row, $end_y);
-    
-    // Move to next column
-    $column++;
-    if ($column < 2) {
-        $current_x = $current_x + $column_width + 6; // Reduced spacing between columns from 10 to 6
-    }
-    
-    $locker_count++;
+    // Update position for next locker
+    $current_y = $pdf->GetY() + 5; // Add 5mm spacing between lockers
 }
 
 // Output the PDF
