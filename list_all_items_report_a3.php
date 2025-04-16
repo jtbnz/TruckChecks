@@ -209,71 +209,61 @@ $pdf->setPage($current_page);
 // Group lockers into rows of 3 (or fewer for the last row)
 $locker_rows = array_chunk($lockers, 3);
 
-// Completely rewritten rendering approach to avoid any potential duplication issues
+// Completely different approach using HTML tables instead of MultiCell
 
 // Start with a clean page
 $pdf->AddPage();
-$current_page = 1;
-$current_row_y = $start_y_after_title;
 
-// Process each locker individually
-for ($i = 0; $i < count($lockers); $i++) {
-    // Determine which column this locker should be in
-    $column_index = $i % 3;
-    $current_x = $column_positions[$column_index];
+// Create an HTML table for the entire layout
+$html = '<table border="0" cellspacing="5" cellpadding="0" style="width:100%;">';
+
+// Process lockers in groups of 3 (for 3 columns)
+for ($i = 0; $i < count($lockers); $i += 3) {
+    $html .= '<tr>';
     
-    // If this is the start of a new row (first column)
-    if ($column_index == 0 && $i > 0) {
-        // Move to the next row
-        $current_row_y += $prev_row_height + $spacing_between_lockers;
+    // Process up to 3 lockers for this row
+    for ($j = 0; $j < 3; $j++) {
+        $index = $i + $j;
         
-        // Check if we need a new page
-        if ($current_row_y + $lockers[$i]['estimated_height'] > $max_height) {
-            $pdf->AddPage();
-            $current_page++;
-            $current_row_y = $page_top_margin;
+        // Check if we have a locker at this index
+        if ($index < count($lockers)) {
+            $locker = $lockers[$index];
+            
+            $html .= '<td style="width:33%; vertical-align:top;">';
+            $html .= '<div style="border:1px solid #000; padding:0; margin:0;">';
+            $html .= '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . 
+                     htmlspecialchars($locker['name']) . ' (ID: ' . $locker['id'] . ')</h3>';
+            
+            $html .= '<table border="0" cellpadding="3" style="width:100%;">';
+            
+            // Add items or a message if no items
+            if (empty($locker['items'])) {
+                $html .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
+            } else {
+                foreach ($locker['items'] as $item) {
+                    $html .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
+                }
+            }
+            
+            $html .= '</table>';
+            $html .= '</div>';
+            $html .= '</td>';
+        } else {
+            // Empty cell for padding
+            $html .= '<td style="width:33%;"></td>';
         }
     }
     
-    // Set the page and position
-    $pdf->setPage($current_page);
-    $pdf->SetXY($current_x, $current_row_y);
+    $html .= '</tr>';
     
-    // Get the current locker
-    $locker = $lockers[$i];
-    
-    // Start capturing content for this locker
-    $locker_content = '<h3 style="background-color:#f0f0f0; padding:5px; margin:0;">' . htmlspecialchars($locker['name']) . ' (ID: ' . $locker['id'] . ')</h3>';
-    $locker_content .= '<table border="0" cellpadding="3" style="width:100%;">';
-    
-    // Add items or a message if no items
-    if (empty($locker['items'])) {
-        $locker_content .= '<tr><td style="text-align:center;"><i>No items in this locker</i></td></tr>';
-    } else {
-        foreach ($locker['items'] as $item) {
-            $locker_content .= '<tr><td>' . htmlspecialchars($item) . '</td></tr>';
-        }
-    }
-    
-    $locker_content .= '</table>';
-    
-    // Determine the height for this row (only needed for the first column)
-    if ($column_index == 0) {
-        // Find the tallest locker in this row
-        $prev_row_height = $lockers[$i]['estimated_height'];
-        
-        // Check the next two lockers (if they exist)
-        if ($i + 1 < count($lockers)) {
-            $prev_row_height = max($prev_row_height, $lockers[$i + 1]['estimated_height']);
-        }
-        if ($i + 2 < count($lockers)) {
-            $prev_row_height = max($prev_row_height, $lockers[$i + 2]['estimated_height']);
-        }
-    }
-    
-    // Create a cell with border for the locker box
-    $pdf->MultiCell($column_width, $prev_row_height, $locker_content, 1, 'L', false, 0, $current_x, $current_row_y, true, 0, true);
+    // Add some spacing between rows
+    $html .= '<tr><td colspan="3" style="height:5px;"></td></tr>';
 }
+
+$html .= '</table>';
+
+// Write the HTML to the PDF
+$pdf->writeHTML($html, true, false, true, false, '');
 
 // Let's try a different approach to ensure no duplicates
 // Output the PDF with a timestamp to prevent caching issues
