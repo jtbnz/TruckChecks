@@ -163,18 +163,41 @@ foreach ($lockers as &$locker) {
 function findBestColumn($columns, $locker_height, $max_height, $pdf, $start_y_after_title) {
     $best_fit = -1;
     $min_waste = PHP_INT_MAX;
+    $current_page = $pdf->getPage();
     
+    // First try columns on the current page
     foreach ($columns as $idx => $col) {
-        // Calculate remaining space in this column
-        $remaining_space = $max_height - $col['y'];
-        
-        // If locker fits in this column
-        if ($remaining_space >= $locker_height) {
-            $waste = $remaining_space - $locker_height;
-            // Choose column with least waste
-            if ($waste < $min_waste) {
-                $min_waste = $waste;
-                $best_fit = $idx;
+        // Only consider columns on the current page
+        if ($col['page'] == $current_page) {
+            // Calculate remaining space in this column
+            $remaining_space = $max_height - $col['y'];
+            
+            // If locker fits in this column
+            if ($remaining_space >= $locker_height) {
+                $waste = $remaining_space - $locker_height;
+                // Choose column with least waste
+                if ($waste < $min_waste) {
+                    $min_waste = $waste;
+                    $best_fit = $idx;
+                }
+            }
+        }
+    }
+    
+    // If no fit found on current page, check if any column has space
+    if ($best_fit == -1) {
+        foreach ($columns as $idx => $col) {
+            // Calculate remaining space in this column
+            $remaining_space = $max_height - $col['y'];
+            
+            // If locker fits in this column
+            if ($remaining_space >= $locker_height) {
+                $waste = $remaining_space - $locker_height;
+                // Choose column with least waste
+                if ($waste < $min_waste) {
+                    $min_waste = $waste;
+                    $best_fit = $idx;
+                }
             }
         }
     }
@@ -190,14 +213,18 @@ foreach ($lockers as $locker) {
     // If no column has enough space, create a new page
     if ($best_column == -1) {
         $pdf->AddPage();
+        $new_page = $pdf->getPage();
+        
         // Reset all three columns for the new page
         $columns[0]['y'] = $page_top_margin;
-        $columns[0]['page'] = $pdf->getPage();
+        $columns[0]['page'] = $new_page;
         $columns[1]['y'] = $page_top_margin;
-        $columns[1]['page'] = $pdf->getPage();
+        $columns[1]['page'] = $new_page;
         $columns[2]['y'] = $page_top_margin;
-        $columns[2]['page'] = $pdf->getPage();
-        $best_column = 0; // Start with left column on new page
+        $columns[2]['page'] = $new_page;
+        
+        // Always start with the first column on a new page
+        $best_column = 0;
     }
     
     // Set position for this locker box
