@@ -128,19 +128,24 @@ $pdf->SetFont('helvetica', '', 12);
 
 // Calculate dimensions for the layout
 $page_width = $pdf->getPageWidth() - 10; // Total usable width (A3 width minus margins)
-$column_width = $page_width / 2 - 3; // Width for each column, with less spacing
+$column_width = $page_width / 3 - 4; // Width for each column, with spacing between columns
 $max_height = $pdf->getPageHeight() - 20; // Maximum height for content
 
 // Advanced layout algorithm with better space utilization
 $page_top_margin = 5;
 $spacing_between_lockers = 5;
-$left_column_x = 5;
-$right_column_x = $left_column_x + $column_width + 6; // 6mm spacing between columns
+$spacing_between_columns = 5; // Spacing between columns
 
-// Track available space in both columns
+// Calculate column positions
+$column1_x = 5; // Left column
+$column2_x = $column1_x + $column_width + $spacing_between_columns; // Middle column
+$column3_x = $column2_x + $column_width + $spacing_between_columns; // Right column
+
+// Track available space in all three columns
 $columns = [
-    0 => ['x' => $left_column_x, 'y' => $start_y_after_title, 'page' => 1],
-    1 => ['x' => $right_column_x, 'y' => $start_y_after_title, 'page' => 1]
+    0 => ['x' => $column1_x, 'y' => $start_y_after_title, 'page' => 1],
+    1 => ['x' => $column2_x, 'y' => $start_y_after_title, 'page' => 1],
+    2 => ['x' => $column3_x, 'y' => $start_y_after_title, 'page' => 1]
 ];
 $current_column = 0;
 
@@ -185,10 +190,13 @@ foreach ($lockers as $locker) {
     // If no column has enough space, create a new page
     if ($best_column == -1) {
         $pdf->AddPage();
+        // Reset all three columns for the new page
         $columns[0]['y'] = $page_top_margin;
         $columns[0]['page'] = $pdf->getPage();
         $columns[1]['y'] = $page_top_margin;
         $columns[1]['page'] = $pdf->getPage();
+        $columns[2]['y'] = $page_top_margin;
+        $columns[2]['page'] = $pdf->getPage();
         $best_column = 0; // Start with left column on new page
     }
     
@@ -196,8 +204,8 @@ foreach ($lockers as $locker) {
     $current_x = $columns[$best_column]['x'];
     $current_y = $columns[$best_column]['y'];
     
-    // If we're on the first page and in the right column, ensure we're below the title
-    if ($columns[$best_column]['page'] == 1 && $best_column == 1 && $current_y < $start_y_after_title) {
+    // If we're on the first page, ensure all columns start below the title
+    if ($columns[$best_column]['page'] == 1 && $current_y < $start_y_after_title) {
         $current_y = $start_y_after_title;
         $columns[$best_column]['y'] = $current_y;
     }
