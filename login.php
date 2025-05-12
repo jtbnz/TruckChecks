@@ -4,21 +4,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
-
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
-
-
 // Check if the user is already logged in
 if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
     header('Location: admin.php');
@@ -38,21 +23,106 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = "Incorrect password.";
     }
 }
+
+include 'templates/header.php';
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login</title>
-</head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
-    <h2>Login</h2>
-    <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
-    <form method="post" action="">
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required>
-        <input type="submit" value="Login">
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-title {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #12044C;
+    }
+
+    .login-form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    .login-button {
+        padding: 15px;
+        background-color: #12044C;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        margin-top: 10px;
+    }
+
+    .login-button:hover {
+        background-color: #0056b3;
+    }
+
+    .error-message {
+        color: red;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+        .login-container {
+            width: 90%;
+            margin: 20px auto;
+            padding: 15px;
+        }
+
+        .form-group input {
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        .login-button {
+            padding: 18px;
+            font-size: 18px;
+        }
+    }
+</style>
+
+<div class="login-container">
+    <h2 class="login-title">Login</h2>
+    
+    <?php if (isset($error)): ?>
+        <div class="error-message"><?php echo $error; ?></div>
+    <?php endif; ?>
+    
+    <form method="post" action="" class="login-form">
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+        <button type="submit" class="login-button">Login</button>
     </form>
-    <?php include 'templates/footer.php'; ?>    
-</body>
-</html>
+</div>
+
+<?php include 'templates/footer.php'; ?>
