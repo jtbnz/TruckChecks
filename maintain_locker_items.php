@@ -193,8 +193,14 @@ if (isset($_GET['move_item_id'])) {
     $original_locker_id = $_GET['locker_id'];
     $original_truck_id = $_GET['truck_id'];
     
-    // Get the item details
-    $query = $db->prepare('SELECT * FROM items WHERE id = :id');
+    // Get the item details with current truck and locker information
+    $query = $db->prepare('
+        SELECT i.*, l.id AS current_locker_id, l.name AS current_locker_name, t.id AS current_truck_id, t.name AS current_truck_name
+        FROM items i
+        JOIN lockers l ON i.locker_id = l.id
+        JOIN trucks t ON l.truck_id = t.id
+        WHERE i.id = :id
+    ');
     $query->execute(['id' => $move_item_id]);
     $move_item = $query->fetch(PDO::FETCH_ASSOC);
     
@@ -219,7 +225,11 @@ if (isset($_GET['move_item_id'])) {
         echo '<select name="new_locker_id" required>';
         echo '<option value="">-- Select New Locker --</option>';
         foreach ($move_lockers as $locker) {
-            echo '<option value="' . $locker['id'] . '">' . htmlspecialchars($locker['name']) . '</option>';
+            $isCurrent = ($locker['id'] == $move_item['current_locker_id']);
+            echo '<option value="' . $locker['id'] . '"' . ($isCurrent ? ' style="font-weight: bold;"' : '') . '>' 
+                . htmlspecialchars($locker['name']) 
+                . ($isCurrent ? ' (Current)' : '') 
+                . '</option>';
         }
         echo '</select>';
         echo '<button type="submit" name="move_item_submit" class="button touch-button">Move Item</button>';
@@ -236,7 +246,11 @@ if (isset($_GET['move_item_id'])) {
         echo '<select name="move_truck_id" required>';
         echo '<option value="">-- Select Truck --</option>';
         foreach ($trucks as $truck) {
-            echo '<option value="' . $truck['id'] . '">' . htmlspecialchars($truck['name']) . '</option>';
+            $isCurrent = ($truck['id'] == $move_item['current_truck_id']);
+            echo '<option value="' . $truck['id'] . '"' . ($isCurrent ? ' style="font-weight: bold;"' : '') . '>' 
+                . htmlspecialchars($truck['name']) 
+                . ($isCurrent ? ' (Current)' : '') 
+                . '</option>';
         }
         echo '</select>';
         echo '<button type="submit" class="button touch-button">Next</button>';
