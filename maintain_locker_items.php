@@ -198,6 +198,9 @@ if (isset($_GET['move_item_id'])) {
     $query->execute(['id' => $move_item_id]);
     $move_item = $query->fetch(PDO::FETCH_ASSOC);
     
+    // Add a div with ID for scrolling
+    echo '<div id="moveItemSection">';
+    
     // If we're selecting a new truck for the move
     if (isset($_GET['move_select_truck'])) {
         $move_truck_id = $_GET['move_truck_id'];
@@ -240,6 +243,19 @@ if (isset($_GET['move_item_id'])) {
         echo '</form>';
         echo '<a href="maintain_locker_items.php?truck_id=' . $original_truck_id . '&locker_id=' . $original_locker_id . '" class="button touch-button">Cancel</a>';
     }
+    
+    // Close the div
+    echo '</div>';
+    
+    // Add JavaScript to scroll to the move section
+    echo '<script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const moveSection = document.getElementById("moveItemSection");
+            if (moveSection) {
+                moveSection.scrollIntoView({ behavior: "smooth" });
+            }
+        });
+    </script>';
 }
 ?>
 
