@@ -72,6 +72,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     }
 }
 
+// Handle moving an item to a different locker
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['move_item_submit'])) {
+    $item_id = $_POST['item_id'];
+    $new_locker_id = $_POST['new_locker_id'];
+
+    if (!empty($item_id) && !empty($new_locker_id)) {
+        $query = $db->prepare('UPDATE items SET locker_id = :locker_id WHERE id = :id');
+        $query->execute(['locker_id' => $new_locker_id, 'id' => $item_id]);
+        
+        // Redirect back to the locker view
+        $original_locker_id = $_POST['original_locker_id'];
+        $original_truck_id = $_POST['original_truck_id'];
+        header("Location: maintain_locker_items.php?truck_id=$original_truck_id&locker_id=$original_locker_id");
+        exit;
+    }
+}
+
 // Check if a truck has been selected
 $selected_truck_id = isset($_GET['truck_id']) ? $_GET['truck_id'] : null;
 
@@ -155,6 +172,7 @@ if ($selected_truck_id) {
                     
                     </form>
                         <a href="?delete_item_id=<?= $item['id'] ?>&locker_id=<?= $selected_locker_id ?>&truck_id=<?= $selected_truck_id ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
+                        <a href="?move_item_id=<?= $item['id'] ?>&locker_id=<?= $selected_locker_id ?>&truck_id=<?= $selected_truck_id ?>">Move</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -167,6 +185,63 @@ if ($selected_truck_id) {
 <?php else: ?>
     <p>Please select a truck to manage its lockers and items.</p>
 <?php endif; ?>
+
+<?php
+// Handle the move item functionality
+if (isset($_GET['move_item_id'])) {
+    $move_item_id = $_GET['move_item_id'];
+    $original_locker_id = $_GET['locker_id'];
+    $original_truck_id = $_GET['truck_id'];
+    
+    // Get the item details
+    $query = $db->prepare('SELECT * FROM items WHERE id = :id');
+    $query->execute(['id' => $move_item_id]);
+    $move_item = $query->fetch(PDO::FETCH_ASSOC);
+    
+    // If we're selecting a new truck for the move
+    if (isset($_GET['move_select_truck'])) {
+        $move_truck_id = $_GET['move_truck_id'];
+        
+        // Fetch lockers for the selected truck
+        $query = $db->prepare('SELECT * FROM lockers WHERE truck_id = :truck_id');
+        $query->execute(['truck_id' => $move_truck_id]);
+        $move_lockers = $query->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Display locker selection form
+        echo '<h2>Select New Locker for "' . htmlspecialchars($move_item['name']) . '"</h2>';
+        echo '<form method="POST">';
+        echo '<input type="hidden" name="item_id" value="' . $move_item_id . '">';
+        echo '<input type="hidden" name="original_locker_id" value="' . $original_locker_id . '">';
+        echo '<input type="hidden" name="original_truck_id" value="' . $original_truck_id . '">';
+        echo '<select name="new_locker_id" required>';
+        echo '<option value="">-- Select New Locker --</option>';
+        foreach ($move_lockers as $locker) {
+            echo '<option value="' . $locker['id'] . '">' . htmlspecialchars($locker['name']) . '</option>';
+        }
+        echo '</select>';
+        echo '<button type="submit" name="move_item_submit" class="button touch-button">Move Item</button>';
+        echo '</form>';
+        echo '<a href="maintain_locker_items.php?truck_id=' . $original_truck_id . '&locker_id=' . $original_locker_id . '" class="button touch-button">Cancel</a>';
+    } else {
+        // Display truck selection form
+        echo '<h2>Select Truck for Moving "' . htmlspecialchars($move_item['name']) . '"</h2>';
+        echo '<form method="GET">';
+        echo '<input type="hidden" name="move_item_id" value="' . $move_item_id . '">';
+        echo '<input type="hidden" name="locker_id" value="' . $original_locker_id . '">';
+        echo '<input type="hidden" name="truck_id" value="' . $original_truck_id . '">';
+        echo '<input type="hidden" name="move_select_truck" value="1">';
+        echo '<select name="move_truck_id" required>';
+        echo '<option value="">-- Select Truck --</option>';
+        foreach ($trucks as $truck) {
+            echo '<option value="' . $truck['id'] . '">' . htmlspecialchars($truck['name']) . '</option>';
+        }
+        echo '</select>';
+        echo '<button type="submit" class="button touch-button">Next</button>';
+        echo '</form>';
+        echo '<a href="maintain_locker_items.php?truck_id=' . $original_truck_id . '&locker_id=' . $original_locker_id . '" class="button touch-button">Cancel</a>';
+    }
+}
+?>
 
 <div class="button-container" style="margin-top: 20px;">
     <a href="admin.php" class="button touch-button">Admin Page</a>
