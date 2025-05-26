@@ -192,9 +192,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <?php else: ?>
 <h2>Add New Item</h2>
 <form method="POST" class="add-item-form">
-    <div class="input-container">
-        <input type="text" name="item_name" placeholder="Item Name" required>
-    </div>
+
     <div class="input-container">
         <label for="add_truck_filter">Select Truck:</label>
         <select id="add_truck_filter" onchange="updateAddLockerDropdown()">
@@ -209,6 +207,9 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <select name="locker_id" id="locker_id" required>
             <option value="">Select Truck First</option>
         </select>
+    </div>
+    <div class="input-container">
+        <input type="text" name="item_name" placeholder="Item Name" required>
     </div>
     <div class="button-container">
         <button type="submit" name="add_item" class="button touch-button">Add Item</button>
