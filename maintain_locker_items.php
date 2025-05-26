@@ -302,6 +302,8 @@ function updateFilters() {
     const selectedTruck = truckSelect.value;
     const selectedLocker = lockerSelect.value;
     
+    console.log('updateFilters called - Truck:', selectedTruck, 'Locker:', selectedLocker);
+    
     // Update locker dropdown based on selected truck
     updateLockerDropdown(selectedTruck, selectedLocker);
     
@@ -309,24 +311,30 @@ function updateFilters() {
     updateItemsList(selectedTruck, selectedLocker);
     
     // Update URL without page reload
-    const url = new URL(window.location);
-    if (selectedTruck) {
-        url.searchParams.set('truck_filter', selectedTruck);
-    } else {
-        url.searchParams.delete('truck_filter');
+    try {
+        const url = new URL(window.location);
+        if (selectedTruck) {
+            url.searchParams.set('truck_filter', selectedTruck);
+        } else {
+            url.searchParams.delete('truck_filter');
+        }
+        
+        if (selectedLocker) {
+            url.searchParams.set('locker_filter', selectedLocker);
+        } else {
+            url.searchParams.delete('locker_filter');
+        }
+        
+        window.history.replaceState({}, '', url);
+    } catch (e) {
+        console.error('Error updating URL:', e);
     }
-    
-    if (selectedLocker) {
-        url.searchParams.set('locker_filter', selectedLocker);
-    } else {
-        url.searchParams.delete('locker_filter');
-    }
-    
-    window.history.replaceState({}, '', url);
 }
 
 function updateLockerDropdown(selectedTruck, currentLocker = '') {
     const lockerSelect = document.getElementById('locker_filter');
+    
+    console.log('updateLockerDropdown called - Truck:', selectedTruck, 'Current Locker:', currentLocker);
     
     // Clear current locker options
     lockerSelect.innerHTML = '<option value="">ALL</option>';
@@ -334,22 +342,33 @@ function updateLockerDropdown(selectedTruck, currentLocker = '') {
     if (selectedTruck) {
         // Get lockers for selected truck via AJAX
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', '?ajax=get_lockers&truck_id=' + selectedTruck, true);
+        const url = window.location.pathname + '?ajax=get_lockers&truck_id=' + encodeURIComponent(selectedTruck);
+        console.log('AJAX URL:', url);
+        
+        xhr.open('GET', url, true);
         xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                try {
-                    const lockers = JSON.parse(xhr.responseText);
-                    lockers.forEach(function(locker) {
-                        const option = document.createElement('option');
-                        option.value = locker.id;
-                        option.textContent = locker.name;
-                        if (locker.id == currentLocker) {
-                            option.selected = true;
-                        }
-                        lockerSelect.appendChild(option);
-                    });
-                } catch (e) {
-                    console.error('Error parsing locker data:', e);
+            console.log('XHR State:', xhr.readyState, 'Status:', xhr.status);
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log('Response:', xhr.responseText);
+                    try {
+                        const lockers = JSON.parse(xhr.responseText);
+                        console.log('Parsed lockers:', lockers);
+                        lockers.forEach(function(locker) {
+                            const option = document.createElement('option');
+                            option.value = locker.id;
+                            option.textContent = locker.name;
+                            if (locker.id == currentLocker) {
+                                option.selected = true;
+                            }
+                            lockerSelect.appendChild(option);
+                        });
+                    } catch (e) {
+                        console.error('Error parsing locker data:', e);
+                        console.error('Response was:', xhr.responseText);
+                    }
+                } else {
+                    console.error('AJAX Error - Status:', xhr.status, 'Response:', xhr.responseText);
                 }
             }
         };
@@ -367,11 +386,15 @@ function updateItemsList(selectedTruck, selectedLocker) {
     if (selectedTruck) params.append('truck_filter', selectedTruck);
     if (selectedLocker) params.append('locker_filter', selectedLocker);
     
-    xhr.open('GET', '?' + params.toString(), true);
+    const url = window.location.pathname + '?' + params.toString();
+    console.log('Items AJAX URL:', url);
+    
+    xhr.open('GET', url, true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
             try {
                 const data = JSON.parse(xhr.responseText);
+                console.log('Items data:', data);
                 
                 // Update item count
                 document.getElementById('item-count').textContent = data.count;
@@ -418,16 +441,26 @@ function updateItemsList(selectedTruck, selectedLocker) {
                 }
             } catch (e) {
                 console.error('Error parsing items data:', e);
+                console.error('Response was:', xhr.responseText);
             }
         }
     };
     xhr.send();
 }
 
-// Clear locker filter when truck changes
-document.getElementById('truck_filter').addEventListener('change', function() {
-    if (!this.value) {
-        document.getElementById('locker_filter').value = '';
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up event listeners');
+    
+    // Clear locker filter when truck changes
+    const truckSelect = document.getElementById('truck_filter');
+    if (truckSelect) {
+        truckSelect.addEventListener('change', function() {
+            console.log('Truck changed to:', this.value);
+            if (!this.value) {
+                document.getElementById('locker_filter').value = '';
+            }
+        });
     }
 });
 </script>
