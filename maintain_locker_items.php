@@ -49,11 +49,29 @@ if (isset($_GET['edit_id'])) {
     $edit_item = $query->fetch(PDO::FETCH_ASSOC);
 }
 
-// Fetch all lockers for the dropdown
-$lockers = $db->query('SELECT l.*, t.name as truck_name FROM lockers l JOIN trucks t ON l.truck_id = t.id')->fetchAll(PDO::FETCH_ASSOC);
+// Get filter parameters
+$truck_filter = $_GET['truck_filter'] ?? '';
 
-// Fetch all items with locker and truck names
-$items = $db->query('SELECT i.*, l.name as locker_name, t.name as truck_name FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id ORDER BY t.name, l.name, i.name')->fetchAll(PDO::FETCH_ASSOC);
+// Fetch all trucks for the dropdown and filter
+$trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch all lockers for the dropdown
+$lockers = $db->query('SELECT l.*, t.name as truck_name FROM lockers l JOIN trucks t ON l.truck_id = t.id ORDER BY t.name, l.name')->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch items with optional truck filter
+$items_query = 'SELECT i.*, l.name as locker_name, t.name as truck_name, t.id as truck_id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id';
+$params = [];
+
+if (!empty($truck_filter)) {
+    $items_query .= ' WHERE t.id = ?';
+    $params[] = $truck_filter;
+}
+
+$items_query .= ' ORDER BY t.name, l.name, i.name';
+
+$stmt = $db->prepare($items_query);
+$stmt->execute($params);
+$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <h1>Maintain Locker Items</h1>
@@ -77,7 +95,7 @@ $items = $db->query('SELECT i.*, l.name as locker_name, t.name as truck_name FRO
     </div>
     <div class="button-container">
         <button type="submit" name="edit_item" class="button touch-button">Update Item</button>
-        <a href="maintain_locker_items.php" class="button touch-button" style="background-color: #6c757d;">Cancel</a>
+        <a href="maintain_locker_items.php<?= !empty($truck_filter) ? '?truck_filter=' . urlencode($truck_filter) : '' ?>" class="button touch-button" style="background-color: #6c757d;">Cancel</a>
     </div>
 </form>
 <?php else: ?>
@@ -100,16 +118,64 @@ $items = $db->query('SELECT i.*, l.name as locker_name, t.name as truck_name FRO
 </form>
 <?php endif; ?>
 
+<div class="filter-section" style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px;">
+    <h2>Filter Items by Truck</h2>
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
+        <?php if (isset($_GET['edit_id'])): ?>
+            <input type="hidden" name="edit_id" value="<?= htmlspecialchars($_GET['edit_id']) ?>">
+        <?php endif; ?>
+        
+        <div>
+            <label for="truck_filter">Select Truck:</label>
+            <select name="truck_filter" id="truck_filter">
+                <option value="">All Trucks</option>
+                <?php foreach ($trucks as $truck): ?>
+                    <option value="<?= $truck['id'] ?>" <?= $truck_filter == $truck['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($truck['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div>
+            <button type="submit" class="button touch-button">Apply Filter</button>
+            <a href="maintain_locker_items.php" class="button touch-button" style="background-color: #6c757d;">Show All</a>
+        </div>
+    </form>
+</div>
+
+<div class="stats-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
+    <h2>Items Summary</h2>
+    <p><strong>Total Items Shown:</strong> <?= count($items) ?></p>
+    <?php if (!empty($truck_filter)): ?>
+        <?php 
+        $selected_truck = array_filter($trucks, function($truck) use ($truck_filter) {
+            return $truck['id'] == $truck_filter;
+        });
+        $selected_truck = reset($selected_truck);
+        ?>
+        <p><strong>Filtered by Truck:</strong> <?= htmlspecialchars($selected_truck['name']) ?></p>
+    <?php else: ?>
+        <p><strong>Showing:</strong> All trucks</p>
+    <?php endif; ?>
+</div>
+
 <h2>Existing Items</h2>
-<ul>
-    <?php foreach ($items as $item): ?>
-        <li>
-            <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
-            <a href="?edit_id=<?= $item['id'] ?>">Edit</a> | 
-            <a href="?delete_item_id=<?= $item['id'] ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
-        </li>
-    <?php endforeach; ?>
-</ul>
+<?php if (!empty($items)): ?>
+    <ul>
+        <?php foreach ($items as $item): ?>
+            <li>
+                <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
+                <a href="?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) ? '&truck_filter=' . urlencode($truck_filter) : '' ?>">Edit</a> | 
+                <a href="?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) ? '&truck_filter=' . urlencode($truck_filter) : '' ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php else: ?>
+    <div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+        <p>No items found<?= !empty($truck_filter) ? ' for the selected truck' : '' ?>.</p>
+    </div>
+<?php endif; ?>
 
 <div class="button-container" style="margin-top: 20px;">
     <a href="admin.php" class="button touch-button">Admin Page</a>
