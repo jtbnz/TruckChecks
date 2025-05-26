@@ -196,11 +196,18 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <input type="text" name="item_name" placeholder="Item Name" required>
     </div>
     <div class="input-container">
-        <select name="locker_id" required>
-            <option value="">Select Locker</option>
-            <?php foreach ($lockers as $locker): ?>
-                <option value="<?= $locker['id'] ?>"><?= htmlspecialchars($locker['truck_name']) ?> - <?= htmlspecialchars($locker['name']) ?></option>
+        <label for="add_truck_filter">Select Truck:</label>
+        <select id="add_truck_filter" onchange="updateAddLockerDropdown()">
+            <option value="">Select Truck First</option>
+            <?php foreach ($trucks as $truck): ?>
+                <option value="<?= $truck['id'] ?>"><?= htmlspecialchars($truck['name']) ?></option>
             <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="input-container">
+        <label for="locker_id">Select Locker:</label>
+        <select name="locker_id" id="locker_id" required>
+            <option value="">Select Truck First</option>
         </select>
     </div>
     <div class="button-container">
@@ -447,6 +454,54 @@ function updateItemsList(selectedTruck, selectedLocker) {
         }
     };
     xhr.send();
+}
+
+// Function for Add New Item truck/locker filtering
+function updateAddLockerDropdown() {
+    const addTruckSelect = document.getElementById('add_truck_filter');
+    const addLockerSelect = document.getElementById('locker_id');
+    const selectedTruck = addTruckSelect.value;
+    
+    console.log('updateAddLockerDropdown called - Truck:', selectedTruck);
+    
+    // Clear current locker options
+    addLockerSelect.innerHTML = '<option value="">Select Locker</option>';
+    
+    if (selectedTruck) {
+        // Get lockers for selected truck via AJAX
+        const xhr = new XMLHttpRequest();
+        const url = window.location.pathname + '?ajax=get_lockers&truck_id=' + encodeURIComponent(selectedTruck);
+        console.log('Add Item AJAX URL:', url);
+        
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function() {
+            console.log('Add Item XHR State:', xhr.readyState, 'Status:', xhr.status);
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log('Add Item Response:', xhr.responseText);
+                    try {
+                        const lockers = JSON.parse(xhr.responseText);
+                        console.log('Add Item Parsed lockers:', lockers);
+                        lockers.forEach(function(locker) {
+                            const option = document.createElement('option');
+                            option.value = locker.id;
+                            option.textContent = locker.name;
+                            addLockerSelect.appendChild(option);
+                        });
+                    } catch (e) {
+                        console.error('Add Item Error parsing locker data:', e);
+                        console.error('Add Item Response was:', xhr.responseText);
+                    }
+                } else {
+                    console.error('Add Item AJAX Error - Status:', xhr.status, 'Response:', xhr.responseText);
+                }
+            }
+        };
+        xhr.send();
+    } else {
+        // Reset to default message when no truck is selected
+        addLockerSelect.innerHTML = '<option value="">Select Truck First</option>';
+    }
 }
 
 // Wait for DOM to be ready
