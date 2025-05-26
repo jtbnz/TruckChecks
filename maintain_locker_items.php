@@ -2,7 +2,6 @@
 // Include password file
 include('config.php');
 include 'db.php';
-include 'templates/header.php';
 
 // Check if the user is logged in
 if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
@@ -11,6 +10,79 @@ if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME]
 }
 
 $db = get_db_connection();
+
+// Handle AJAX requests FIRST, before any HTML output
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json');
+    
+    if ($_GET['ajax'] === 'get_lockers' && isset($_GET['truck_id'])) {
+        $truck_id = $_GET['truck_id'];
+        if (empty($truck_id)) {
+            echo json_encode([]);
+        } else {
+            $stmt = $db->prepare('SELECT id, name FROM lockers WHERE truck_id = ? ORDER BY name');
+            $stmt->execute([$truck_id]);
+            $ajax_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($ajax_lockers);
+        }
+        exit;
+    }
+    
+    if ($_GET['ajax'] === 'get_items') {
+        $ajax_truck_filter = $_GET['truck_filter'] ?? '';
+        $ajax_locker_filter = $_GET['locker_filter'] ?? '';
+        
+        $ajax_items_query = 'SELECT i.*, l.name as locker_name, t.name as truck_name, t.id as truck_id, l.id as locker_id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id';
+        $ajax_params = [];
+        $ajax_where_conditions = [];
+
+        if (!empty($ajax_truck_filter)) {
+            $ajax_where_conditions[] = 't.id = ?';
+            $ajax_params[] = $ajax_truck_filter;
+        }
+
+        if (!empty($ajax_locker_filter)) {
+            $ajax_where_conditions[] = 'l.id = ?';
+            $ajax_params[] = $ajax_locker_filter;
+        }
+
+        if (!empty($ajax_where_conditions)) {
+            $ajax_items_query .= ' WHERE ' . implode(' AND ', $ajax_where_conditions);
+        }
+
+        $ajax_items_query .= ' ORDER BY t.name, l.name, i.name';
+
+        $ajax_stmt = $db->prepare($ajax_items_query);
+        $ajax_stmt->execute($ajax_params);
+        $ajax_items = $ajax_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get filter names for display
+        $truck_name = '';
+        $locker_name = '';
+        
+        if (!empty($ajax_truck_filter)) {
+            $truck_stmt = $db->prepare('SELECT name FROM trucks WHERE id = ?');
+            $truck_stmt->execute([$ajax_truck_filter]);
+            $truck_name = $truck_stmt->fetchColumn();
+        }
+        
+        if (!empty($ajax_locker_filter)) {
+            $locker_stmt = $db->prepare('SELECT name FROM lockers WHERE id = ?');
+            $locker_stmt->execute([$ajax_locker_filter]);
+            $locker_name = $locker_stmt->fetchColumn();
+        }
+        
+        echo json_encode([
+            'items' => $ajax_items,
+            'count' => count($ajax_items),
+            'truck_name' => $truck_name,
+            'locker_name' => $locker_name
+        ]);
+        exit;
+    }
+}
+
+include 'templates/header.php';
 
 // Handle adding a new item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
@@ -91,77 +163,6 @@ $items_query .= ' ORDER BY t.name, l.name, i.name';
 $stmt = $db->prepare($items_query);
 $stmt->execute($params);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Handle AJAX requests
-if (isset($_GET['ajax'])) {
-    header('Content-Type: application/json');
-    
-    if ($_GET['ajax'] === 'get_lockers' && isset($_GET['truck_id'])) {
-        $truck_id = $_GET['truck_id'];
-        if (empty($truck_id)) {
-            echo json_encode([]);
-        } else {
-            $stmt = $db->prepare('SELECT id, name FROM lockers WHERE truck_id = ? ORDER BY name');
-            $stmt->execute([$truck_id]);
-            $ajax_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($ajax_lockers);
-        }
-        exit;
-    }
-    
-    if ($_GET['ajax'] === 'get_items') {
-        $ajax_truck_filter = $_GET['truck_filter'] ?? '';
-        $ajax_locker_filter = $_GET['locker_filter'] ?? '';
-        
-        $ajax_items_query = 'SELECT i.*, l.name as locker_name, t.name as truck_name, t.id as truck_id, l.id as locker_id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id';
-        $ajax_params = [];
-        $ajax_where_conditions = [];
-
-        if (!empty($ajax_truck_filter)) {
-            $ajax_where_conditions[] = 't.id = ?';
-            $ajax_params[] = $ajax_truck_filter;
-        }
-
-        if (!empty($ajax_locker_filter)) {
-            $ajax_where_conditions[] = 'l.id = ?';
-            $ajax_params[] = $ajax_locker_filter;
-        }
-
-        if (!empty($ajax_where_conditions)) {
-            $ajax_items_query .= ' WHERE ' . implode(' AND ', $ajax_where_conditions);
-        }
-
-        $ajax_items_query .= ' ORDER BY t.name, l.name, i.name';
-
-        $ajax_stmt = $db->prepare($ajax_items_query);
-        $ajax_stmt->execute($ajax_params);
-        $ajax_items = $ajax_stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Get filter names for display
-        $truck_name = '';
-        $locker_name = '';
-        
-        if (!empty($ajax_truck_filter)) {
-            $truck_stmt = $db->prepare('SELECT name FROM trucks WHERE id = ?');
-            $truck_stmt->execute([$ajax_truck_filter]);
-            $truck_name = $truck_stmt->fetchColumn();
-        }
-        
-        if (!empty($ajax_locker_filter)) {
-            $locker_stmt = $db->prepare('SELECT name FROM lockers WHERE id = ?');
-            $locker_stmt->execute([$ajax_locker_filter]);
-            $locker_name = $locker_stmt->fetchColumn();
-        }
-        
-        echo json_encode([
-            'items' => $ajax_items,
-            'count' => count($ajax_items),
-            'truck_name' => $truck_name,
-            'locker_name' => $locker_name
-        ]);
-        exit;
-    }
-}
 ?>
 
 <h1>Maintain Locker Items</h1>
