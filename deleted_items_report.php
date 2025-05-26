@@ -1,138 +1,162 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-// Check if the user is logged in
+// Include password file
+include('config.php');
+include 'db.php';
+include 'templates/header.php';
 
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
+// Check if the user is logged in
+if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
     header('Location: login.php');
     exit;
 }
 
-include('config.php');
-include 'templates/header.php';
-include 'db.php'; // Include the database connection file
-
 $db = get_db_connection();
 
-// Define the number of log entries per page
-$limit = 200;
+// Get filter parameters
+$table_filter = $_GET['table'] ?? '';
+$date_from = $_GET['date_from'] ?? '';
+$date_to = $_GET['date_to'] ?? '';
 
-// Get the current page number from the query string (default is 1)
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
+// Build query
+$query = "SELECT * FROM audit_log WHERE 1=1";
+$params = [];
 
-// Calculate the offset for the query
-$offset = ($page - 1) * $limit;
+if (!empty($table_filter)) {
+    $query .= " AND table_name = ?";
+    $params[] = $table_filter;
+}
 
-// Get the total number of log entries
-$totalQuery = $db->query("SELECT COUNT(*) FROM locker_item_deletion_log");
-$totalRows = $totalQuery->fetchColumn();
+if (!empty($date_from)) {
+    $query .= " AND deleted_at >= ?";
+    $params[] = $date_from . ' 00:00:00';
+}
 
-// Calculate the total number of pages
-$totalPages = ceil($totalRows / $limit);
- 
-// Fetch the log entries for the current page
-$stmt = $db->prepare("
-    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS local_time
-    FROM locker_item_deletion_log
-    ORDER BY deleted_at DESC
-    LIMIT :limit OFFSET :offset
-");
+if (!empty($date_to)) {
+    $query .= " AND deleted_at <= ?";
+    $params[] = $date_to . ' 23:59:59';
+}
 
-$stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-$stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-$stmt->execute();
-$logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$query .= " ORDER BY deleted_at DESC";
 
+try {
+    $stmt = $db->prepare($query);
+    $stmt->execute($params);
+    $audit_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $error_message = "Error fetching audit records: " . $e->getMessage();
+    $audit_records = [];
+}
+
+// Get available tables for filter
+$available_tables = ['items', 'lockers', 'trucks', 'checks'];
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Deleted Items Report</title>
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .pagination {
-            margin: 20px 0;
-            text-align: center;
-        }
-        .pagination a {
-            margin: 0 5px;
-            padding: 8px 16px;
-            text-decoration: none;
-            color: #007bff;
-            border: 1px solid #ddd;
-        }
-        .pagination a.active {
-            background-color: #007bff;
-            color: white;
-            border: 1px solid #007bff;
-        }
-        .pagination a:hover {
-            background-color: #ddd;
-        }
-    </style>
-</head>
-<body>
 
 <h1>Deleted Items Report</h1>
 
-<table>
-    <thead>
-        <tr>
-            <th>Truck Name</th>
-            <th>Locker Name</th>
-            <th>Item Name</th>
-            <th>Date Deleted</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (count($logs) > 0): ?>
-            <?php foreach ($logs as $log): ?>
-                <tr>
-                    <td><?php echo htmlspecialchars($log['truck_name']); ?></td>
-                    <td><?php echo htmlspecialchars($log['locker_name']); ?></td>
-                    <td><?php echo htmlspecialchars($log['item_name']); ?></td>
-                    <td><?php echo htmlspecialchars($log['local_time']); ?></td>
-                </tr>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <tr>
-                <td colspan="4">No log entries found.</td>
-            </tr>
-        <?php endif; ?>
-    </tbody>
-</table>
+<?php if (isset($error_message)): ?>
+    <div class="error-message" style="color: red; margin: 20px 0; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <?= htmlspecialchars($error_message) ?>
+    </div>
+<?php endif; ?>
 
-<div class="pagination">
-    <?php if ($page > 1): ?>
-        <a href="?page=<?php echo $page - 1; ?>">&laquo; Previous</a>
+<div class="filter-section" style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px;">
+    <h2>Filter Options</h2>
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
+        <div>
+            <label for="table">Table:</label>
+            <select name="table" id="table">
+                <option value="">All Tables</option>
+                <?php foreach ($available_tables as $table): ?>
+                    <option value="<?= $table ?>" <?= $table_filter === $table ? 'selected' : '' ?>>
+                        <?= ucfirst($table) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div>
+            <label for="date_from">From Date:</label>
+            <input type="date" name="date_from" id="date_from" value="<?= htmlspecialchars($date_from) ?>">
+        </div>
+        
+        <div>
+            <label for="date_to">To Date:</label>
+            <input type="date" name="date_to" id="date_to" value="<?= htmlspecialchars($date_to) ?>">
+        </div>
+        
+        <div>
+            <button type="submit" class="button touch-button">Apply Filter</button>
+            <a href="deleted_items_report.php" class="button touch-button" style="background-color: #6c757d;">Clear</a>
+        </div>
+    </form>
+</div>
+
+<div class="stats-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
+    <h2>Summary</h2>
+    <p><strong>Total Records:</strong> <?= count($audit_records) ?></p>
+    <?php if (!empty($table_filter)): ?>
+        <p><strong>Filtered by Table:</strong> <?= htmlspecialchars(ucfirst($table_filter)) ?></p>
     <?php endif; ?>
-
-    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-        <a href="?page=<?php echo $i; ?>" class="<?php if ($i == $page) echo 'active'; ?>"><?php echo $i; ?></a>
-    <?php endfor; ?>
-
-    <?php if ($page < $totalPages): ?>
-        <a href="?page=<?php echo $page + 1; ?>">Next &raquo;</a>
+    <?php if (!empty($date_from) || !empty($date_to)): ?>
+        <p><strong>Date Range:</strong> 
+            <?= !empty($date_from) ? htmlspecialchars($date_from) : 'Beginning' ?> 
+            to 
+            <?= !empty($date_to) ? htmlspecialchars($date_to) : 'Now' ?>
+        </p>
     <?php endif; ?>
 </div>
-<div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">Admin Page</a>
 
+<?php if (!empty($audit_records)): ?>
+    <div class="audit-records">
+        <h2>Audit Records</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">ID</th>
+                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Table</th>
+                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Record ID</th>
+                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Deleted At</th>
+                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($audit_records as $record): ?>
+                        <tr>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['id']) ?></td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars(ucfirst($record['table_name'])) ?></td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['record_id']) ?></td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['deleted_at']) ?></td>
+                            <td style="border: 1px solid #dee2e6; padding: 8px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                                <?php
+                                $data = json_decode($record['row_data'], true);
+                                if ($data) {
+                                    $display_data = [];
+                                    foreach ($data as $key => $value) {
+                                        if ($key !== 'id') { // Skip ID as it's already shown
+                                            $display_data[] = $key . ': ' . $value;
+                                        }
+                                    }
+                                    echo htmlspecialchars(implode(', ', $display_data));
+                                } else {
+                                    echo htmlspecialchars($record['row_data']);
+                                }
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php else: ?>
+    <div class="no-records" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+        <p>No audit records found matching the current filters.</p>
+    </div>
+<?php endif; ?>
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Back to Admin</a>
 </div>
 
 <?php include 'templates/footer.php'; ?>

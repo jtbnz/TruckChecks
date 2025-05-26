@@ -1,69 +1,63 @@
 <?php
-
-
-// Include the database connection
-include 'password.php';
+// Include password file
+include('config.php');
 include 'db.php';
 include 'templates/header.php';
 
-
 // Check if the user is logged in
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
+if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
     header('Location: login.php');
     exit;
 }
 
-
 $db = get_db_connection();
 
-// Initialize variables for feedback
-$message = "";
-$rows_updated = 0;
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['ignore_recent_checks'])) {
-        // SQL statement to update ignore_check to true for checks within the last 6 days
-        $sql = "UPDATE checks SET ignore_check = true WHERE check_date >= NOW() - INTERVAL 6 DAY";
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
-        $rows_updated = $stmt->rowCount();
-        $message = "Updated $rows_updated rows to ignore recent checks.";
-    } elseif (isset($_POST['reset_ignore_recent_checks'])) {
-        // SQL statement to reset ignore_check to false for checks within the last 6 days
-        $sql = "UPDATE checks SET ignore_check = false WHERE check_date >= NOW() - INTERVAL 6 DAY";
-        $stmt = $db->prepare($sql);
-        $stmt->execute();
-        $rows_updated = $stmt->rowCount();
-        $message = "Reset ignore recent checks for $rows_updated rows.";
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['reset_checks'])) {
+    try {
+        // Reset all locker checks by deleting all check records
+        $db->exec('DELETE FROM checks');
+        
+        // Reset auto-increment counter
+        $db->exec('ALTER TABLE checks AUTO_INCREMENT = 1');
+        
+        $success_message = "All locker checks have been reset successfully!";
+    } catch (Exception $e) {
+        $error_message = "Error resetting locker checks: " . $e->getMessage();
     }
 }
-
 ?>
 
+<h1>Reset Locker Checks</h1>
 
+<?php if (isset($success_message)): ?>
+    <div class="success-message" style="color: green; margin: 20px 0; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">
+        <?= htmlspecialchars($success_message) ?>
+    </div>
+<?php endif; ?>
 
-    <h1>Reset Locker Checks</h1>
-    <h2>This page allows you to ignore recent checks so that the main page will show all lockers as red.</h2>
-    <h2>This can be useful if locker checks have been completed during the week</h2>
-    <h3>You can either choose to ignore all checks performed within the last 6 days, or reset this status.</h3>
-    
-    <form method="POST" action="">
-    <div class="button-container" style="margin-top: 20px;">
-        <button type="submit" name="ignore_recent_checks" class="button touch-button">Ignore Recent Checks</button>
-        <button type="submit" name="reset_ignore_recent_checks" class="button touch-button">Reset Ignore Recent Checks</button>
-        </div>
-    </form>
-    
-    <?php if (!empty($message)): ?>
-        <p><?php echo htmlspecialchars($message); ?></p>
-    <?php endif; ?>
+<?php if (isset($error_message)): ?>
+    <div class="error-message" style="color: red; margin: 20px 0; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <?= htmlspecialchars($error_message) ?>
+    </div>
+<?php endif; ?>
 
-    <div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">Admin Page</a>
-
+<div class="warning-message" style="color: #856404; margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+    <strong>Warning:</strong> This will reset all locker check records, allowing all lockers to be checked again.
+    <br><br>
+    This action will delete all existing check history and cannot be undone.
 </div>
+
+<form method="POST" onsubmit="return confirm('Are you sure you want to reset all locker checks? This will delete all check history.');">
+    <div class="button-container">
+        <button type="submit" name="reset_checks" class="button touch-button" style="background-color: #dc3545;">
+            Reset All Locker Checks
+        </button>
+    </div>
+</form>
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Back to Admin</a>
+</div>
+
 <?php include 'templates/footer.php'; ?>
-
-
-</body>
-</html>

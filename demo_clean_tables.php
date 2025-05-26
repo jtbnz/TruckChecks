@@ -1,97 +1,63 @@
 <?php
-/* ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL); */
+// Include password file
 include('config.php');
-
-// Include the database connection
 include 'db.php';
-$db = get_db_connection();
 include 'templates/header.php';
 
 // Check if the user is logged in
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
+if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
     header('Location: login.php');
     exit;
 }
 
-// Check if the session variable 'IS_DEMO' is set and true
-$showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+$db = get_db_connection();
 
-// Handle the delete request
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
-    if ($_POST['confirm_delete'] === 'yes') {
-        // Delete all records from 'checks' and 'check_items' tables
-        try {
-            $db->beginTransaction();
-            $db->exec("DELETE FROM check_items");
-            $db->exec("DELETE FROM checks");
-            $db->commit();
-            echo "<script>alert('All checks have been deleted successfully.');</script>";
-        } catch (Exception $e) {
-            $db->rollBack();
-            echo "<script>alert('Failed to delete checks: " . $e->getMessage() . "');</script>";
-        }
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['clean_tables'])) {
+    try {
+        // Delete all records from checks table
+        $db->exec('DELETE FROM checks');
+        
+        // Reset auto-increment counter
+        $db->exec('ALTER TABLE checks AUTO_INCREMENT = 1');
+        
+        $success_message = "Demo data has been cleaned successfully!";
+    } catch (Exception $e) {
+        $error_message = "Error cleaning demo data: " . $e->getMessage();
     }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Delete Checks</title>
-    <style>
-        .delete-button {
-            background-color: red;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-        }
-        .popup button {
-            margin: 5px;
-            padding: 10px 20px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+<h1>Clean Demo Data</h1>
 
-<?php if ($showButton): ?>
-    <form method="POST" action="">
-        <button type="button" class="delete-button" onclick="showPopup()">Delete Checks</button>
-    </form>
+<?php if (isset($success_message)): ?>
+    <div class="success-message" style="color: green; margin: 20px 0; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">
+        <?= htmlspecialchars($success_message) ?>
+    </div>
 <?php endif; ?>
 
-<div id="popup" class="popup">
-    <p>Are you sure? This will delete all existing checks from the database.</p>
-    <form method="POST" action="">
-        <button type="submit" name="confirm_delete" value="yes">Yes, Delete</button>
-        <button type="button" onclick="hidePopup()">No</button>
-    </form>
+<?php if (isset($error_message)): ?>
+    <div class="error-message" style="color: red; margin: 20px 0; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <?= htmlspecialchars($error_message) ?>
+    </div>
+<?php endif; ?>
+
+<div class="warning-message" style="color: #856404; margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+    <strong>Warning:</strong> This will delete all check records from the database. This action cannot be undone.
+    <br><br>
+    This is intended for demo environments only to reset check data while preserving truck, locker, and item configurations.
 </div>
 
-<script>
-    function showPopup() {
-        document.getElementById('popup').style.display = 'block';
-    }
+<form method="POST" onsubmit="return confirm('Are you sure you want to delete all check records? This action cannot be undone.');">
+    <div class="button-container">
+        <button type="submit" name="clean_tables" class="button touch-button" style="background-color: #dc3545;">
+            Clean Demo Check Data
+        </button>
+    </div>
+</form>
 
-    function hidePopup() {
-        document.getElementById('popup').style.display = 'none';
-    }
-</script>
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Back to Admin</a>
+</div>
+
 <?php include 'templates/footer.php'; ?>
-</body>
-</html>

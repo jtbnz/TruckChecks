@@ -1,82 +1,99 @@
-<?php 
-
-
+<?php
+// Include password file
 include('config.php');
-if (DEBUG) {
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-    echo "Debug mode is on";
-} else {
-    ini_set('display_errors', 0);
-    ini_set('display_startup_errors', 0);
-    error_reporting(0);
-}
-
-require 'vendor/autoload.php';
-
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\PngWriter;
-use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
-
-
 include 'db.php';
 include 'templates/header.php';
 
 // Check if the user is logged in
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
+if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
     header('Location: login.php');
     exit;
 }
 
-$pdo = get_db_connection();
+$db = get_db_connection();
 
-
-// Fetch the latest check date
-$codeQuery = "select code from protection_codes order by id desc limit 1";
-$codeStmt = $pdo->prepare($codeQuery);
-$codeStmt->execute();
-$code = $codeStmt->fetch(PDO::FETCH_ASSOC)['code'];
-
-
-echo "<script>
-    const storedCode = localStorage.getItem('protection_code');
-    const newCode = '$code';
-    if (storedCode === newCode) {
-        alert('The code is already set.');
-    } else {
-        localStorage.setItem('protection_code', newCode);
-        alert('Code stored successfully.');
+// Handle form submission for setting new code
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_code'])) {
+    $new_code = $_POST['security_code'];
+    if (!empty($new_code)) {
+        try {
+            // Check if settings table exists and has a security_code entry
+            $stmt = $db->prepare('SELECT COUNT(*) FROM settings WHERE setting_name = "security_code"');
+            $stmt->execute();
+            $exists = $stmt->fetchColumn();
+            
+            if ($exists) {
+                // Update existing code
+                $stmt = $db->prepare('UPDATE settings SET setting_value = ? WHERE setting_name = "security_code"');
+                $stmt->execute([$new_code]);
+            } else {
+                // Insert new code
+                $stmt = $db->prepare('INSERT INTO settings (setting_name, setting_value) VALUES ("security_code", ?)');
+                $stmt->execute([$new_code]);
+            }
+            
+            $success_message = "Security code has been set successfully!";
+        } catch (Exception $e) {
+            $error_message = "Error setting security code: " . $e->getMessage();
+        }
     }
-</script>";
+}
 
-
-
-echo "<h1>Storing Protection Code</h1>";
-
-$current_directory = dirname($_SERVER['REQUEST_URI']);
-$url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/show_code.php';
-
-$result = Builder::create()
-->writer(new PngWriter())
-->data($url)
-->encoding(new Encoding('UTF-8'))
-->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
-->size(600)
-->margin(0)
-->build();
-
-// Get the QR code as a Base64-encoded string
-$qrcode_base64 = base64_encode($result->getString());
-
+// Get current security code
+try {
+    $stmt = $db->prepare('SELECT setting_value FROM settings WHERE setting_name = "security_code"');
+    $stmt->execute();
+    $current_code = $stmt->fetchColumn();
+} catch (Exception $e) {
+    $current_code = null;
+}
 ?>
-<div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;">
-    <h2>Use this code to store the Security key</h2>
-    <a href="<?= $url ?>" target="_blank">
-        <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="QR Code for key storage">
-    </a>
+
+<h1>Security Code Management</h1>
+
+<?php if (isset($success_message)): ?>
+    <div class="success-message" style="color: green; margin: 20px 0; padding: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">
+        <?= htmlspecialchars($success_message) ?>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($error_message)): ?>
+    <div class="error-message" style="color: red; margin: 20px 0; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
+        <?= htmlspecialchars($error_message) ?>
+    </div>
+<?php endif; ?>
+
+<div class="info-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
+    <h2>Current Security Code</h2>
+    <?php if ($current_code): ?>
+        <div style="font-size: 24px; font-weight: bold; color: #12044C; margin: 10px 0;">
+            <?= htmlspecialchars($current_code) ?>
+        </div>
+    <?php else: ?>
+        <p style="color: #666;">No security code is currently set.</p>
+    <?php endif; ?>
 </div>
-<?php
-include 'templates/footer.php';
-?>
+
+<div class="form-section">
+    <h2>Set New Security Code</h2>
+    <form method="POST">
+        <div class="input-container">
+            <label for="security_code">New Security Code:</label>
+            <input type="text" name="security_code" id="security_code" placeholder="Enter new security code" required>
+        </div>
+        <div class="button-container">
+            <button type="submit" name="set_code" class="button touch-button">Set Security Code</button>
+        </div>
+    </form>
+</div>
+
+<div class="info-section" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+    <h3>About Security Codes</h3>
+    <p>Security codes can be used for additional verification when accessing certain features of the system. The code is stored in the database and can be updated as needed.</p>
+</div>
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Back to Admin</a>
+</div>
+
+<?php include 'templates/footer.php'; ?>
