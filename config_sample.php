@@ -26,5 +26,9 @@ optional add an .htaccess to further restrict access
  if (!defined('RANDORDER')) define('RANDORDER', true); // Randomize the order of the locker items on the check page
  if (!defined('DEBUG'))     define('DEBUG'    , false); // Set to true to enable debugging
 
+ // IP Geolocation API Key for ipgeolocation.io
+ // Get your free API key from https://ipgeolocation.io/
+ // Leave empty to disable IP geolocation lookups
+ if (!defined('IP_API_KEY')) define('IP_API_KEY', ''); // Your ipgeolocation.io API key
 
 ?>

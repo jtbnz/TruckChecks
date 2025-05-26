@@ -18,7 +18,7 @@ function getRealIpAddr() {
     return $ip;
 }
 
-// Function to get location info from IP (basic implementation)
+// Function to get location info from IP using ipgeolocation.io API
 function getLocationFromIP($ip) {
     $location = ['country' => '', 'city' => ''];
     
@@ -29,8 +29,44 @@ function getLocationFromIP($ip) {
         return $location;
     }
     
-    // You can integrate with a free IP geolocation service here
-    // For now, we'll leave it empty for external IPs
+    // Check if API key is defined and not empty
+    if (!defined('IP_API_KEY') || empty(IP_API_KEY)) {
+        return $location; // Return empty location if no API key
+    }
+    
+    try {
+        // Build API URL
+        $api_url = "https://api.ipgeolocation.io/ipgeo?apiKey=" . urlencode(IP_API_KEY) . "&ip=" . urlencode($ip);
+        
+        // Set up context for the HTTP request
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 5, // 5 second timeout
+                'user_agent' => 'TruckChecks/1.0'
+            ]
+        ]);
+        
+        // Make the API request
+        $response = file_get_contents($api_url, false, $context);
+        
+        if ($response !== false) {
+            $data = json_decode($response, true);
+            
+            if ($data && !isset($data['message'])) { // Check if response is valid and no error message
+                $location['country'] = $data['country_name'] ?? '';
+                $location['city'] = $data['city'] ?? '';
+                
+                // Add additional location data if available
+                if (isset($data['state_prov']) && !empty($data['state_prov'])) {
+                    $location['city'] = $data['city'] . ', ' . $data['state_prov'];
+                }
+            }
+        }
+    } catch (Exception $e) {
+        // Log error but don't break the login process
+        error_log("IP Geolocation API error: " . $e->getMessage());
+    }
+    
     return $location;
 }
 
