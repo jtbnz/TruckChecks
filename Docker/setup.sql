@@ -8,6 +8,7 @@ DROP TABLE IF EXISTS `lockers`;
 DROP TABLE IF EXISTS `trucks`;
 DROP TABLE IF EXISTS `email_addresses`;
 DROP TABLE IF EXISTS `locker_item_deletion_log`;
+DROP TABLE IF EXISTS `audit_log`;
 
 -- Create the `trucks` table
 CREATE TABLE `trucks` (
@@ -68,6 +69,15 @@ CREATE TABLE locker_item_deletion_log (
     deleted_at DATETIME
 );
 
+-- Create audit_log table for tracking deletions (MariaDB compatible)
+CREATE TABLE `audit_log` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `table_name` VARCHAR(50) NOT NULL,
+    `record_id` INT NOT NULL,
+    `deleted_data` TEXT NOT NULL,
+    `deleted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `deleted_by` VARCHAR(255) DEFAULT 'SYSTEM'
+);
 
 CREATE TABLE `email_addresses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -83,10 +93,7 @@ CREATE TABLE `protection_codes` (
 );
 insert into protection_codes(code,description) values(SUBSTRING(MD5(RAND()) FROM 1 FOR 32),'Inital code');
 
-
 ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`;
-
-
 
 CREATE TABLE `swap_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -97,7 +104,6 @@ CREATE TABLE `swap_items` (
   KEY `swap_id` (`swap_id`),
   KEY `item_id` (`item_id`)
 );
-
 
 CREATE TABLE `swap` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -118,7 +124,70 @@ CREATE TABLE `swap` (
 ) 
 ;
 
+-- Create audit triggers for deletion tracking (MariaDB compatible)
 
+-- Trigger for items table
+DELIMITER $$
+CREATE TRIGGER audit_items_delete
+    BEFORE DELETE ON items
+    FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (table_name, record_id, deleted_data)
+    VALUES ('items', OLD.id, CONCAT(
+        '{"id":', OLD.id, 
+        ',"name":"', IFNULL(OLD.name, ''), 
+        '","locker_id":', IFNULL(OLD.locker_id, 'null'), '}'
+    ));
+END$$
+DELIMITER ;
+
+-- Trigger for lockers table
+DELIMITER $$
+CREATE TRIGGER audit_lockers_delete
+    BEFORE DELETE ON lockers
+    FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (table_name, record_id, deleted_data)
+    VALUES ('lockers', OLD.id, CONCAT(
+        '{"id":', OLD.id, 
+        ',"name":"', IFNULL(OLD.name, ''), 
+        '","truck_id":', IFNULL(OLD.truck_id, 'null'),
+        ',"notes":"', IFNULL(REPLACE(OLD.notes, '"', '\\"'), ''), '"}'
+    ));
+END$$
+DELIMITER ;
+
+-- Trigger for trucks table
+DELIMITER $$
+CREATE TRIGGER audit_trucks_delete
+    BEFORE DELETE ON trucks
+    FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (table_name, record_id, deleted_data)
+    VALUES ('trucks', OLD.id, CONCAT(
+        '{"id":', OLD.id, 
+        ',"name":"', IFNULL(OLD.name, ''), 
+        '","relief":', IFNULL(OLD.relief, 'false'), '}'
+    ));
+END$$
+DELIMITER ;
+
+-- Trigger for checks table
+DELIMITER $$
+CREATE TRIGGER audit_checks_delete
+    BEFORE DELETE ON checks
+    FOR EACH ROW
+BEGIN
+    INSERT INTO audit_log (table_name, record_id, deleted_data)
+    VALUES ('checks', OLD.id, CONCAT(
+        '{"id":', OLD.id, 
+        ',"locker_id":', IFNULL(OLD.locker_id, 'null'),
+        ',"check_date":"', IFNULL(OLD.check_date, ''),
+        '","checked_by":"', IFNULL(OLD.checked_by, ''),
+        '","ignore_check":', IFNULL(OLD.ignore_check, 'false'), '}'
+    ));
+END$$
+DELIMITER ;
 
 -- Insert sample data into `trucks` table
 INSERT INTO `trucks` (`name`) VALUES 
@@ -182,6 +251,3 @@ INSERT INTO `check_items` (`check_id`, `item_id`, `is_present`) VALUES
 (1, 3, false),  -- Item 3 missing in this check
 (2, 4, true),
 (2, 5, true);
-
-
-	
