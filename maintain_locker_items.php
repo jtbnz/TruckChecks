@@ -91,6 +91,77 @@ $items_query .= ' ORDER BY t.name, l.name, i.name';
 $stmt = $db->prepare($items_query);
 $stmt->execute($params);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Handle AJAX requests
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json');
+    
+    if ($_GET['ajax'] === 'get_lockers' && isset($_GET['truck_id'])) {
+        $truck_id = $_GET['truck_id'];
+        if (empty($truck_id)) {
+            echo json_encode([]);
+        } else {
+            $stmt = $db->prepare('SELECT id, name FROM lockers WHERE truck_id = ? ORDER BY name');
+            $stmt->execute([$truck_id]);
+            $ajax_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode($ajax_lockers);
+        }
+        exit;
+    }
+    
+    if ($_GET['ajax'] === 'get_items') {
+        $ajax_truck_filter = $_GET['truck_filter'] ?? '';
+        $ajax_locker_filter = $_GET['locker_filter'] ?? '';
+        
+        $ajax_items_query = 'SELECT i.*, l.name as locker_name, t.name as truck_name, t.id as truck_id, l.id as locker_id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id';
+        $ajax_params = [];
+        $ajax_where_conditions = [];
+
+        if (!empty($ajax_truck_filter)) {
+            $ajax_where_conditions[] = 't.id = ?';
+            $ajax_params[] = $ajax_truck_filter;
+        }
+
+        if (!empty($ajax_locker_filter)) {
+            $ajax_where_conditions[] = 'l.id = ?';
+            $ajax_params[] = $ajax_locker_filter;
+        }
+
+        if (!empty($ajax_where_conditions)) {
+            $ajax_items_query .= ' WHERE ' . implode(' AND ', $ajax_where_conditions);
+        }
+
+        $ajax_items_query .= ' ORDER BY t.name, l.name, i.name';
+
+        $ajax_stmt = $db->prepare($ajax_items_query);
+        $ajax_stmt->execute($ajax_params);
+        $ajax_items = $ajax_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get filter names for display
+        $truck_name = '';
+        $locker_name = '';
+        
+        if (!empty($ajax_truck_filter)) {
+            $truck_stmt = $db->prepare('SELECT name FROM trucks WHERE id = ?');
+            $truck_stmt->execute([$ajax_truck_filter]);
+            $truck_name = $truck_stmt->fetchColumn();
+        }
+        
+        if (!empty($ajax_locker_filter)) {
+            $locker_stmt = $db->prepare('SELECT name FROM lockers WHERE id = ?');
+            $locker_stmt->execute([$ajax_locker_filter]);
+            $locker_name = $locker_stmt->fetchColumn();
+        }
+        
+        echo json_encode([
+            'items' => $ajax_items,
+            'count' => count($ajax_items),
+            'truck_name' => $truck_name,
+            'locker_name' => $locker_name
+        ]);
+        exit;
+    }
+}
 ?>
 
 <h1>Maintain Locker Items</h1>
@@ -139,15 +210,11 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <div class="filter-section" style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px;">
     <h2>Filter Items</h2>
-    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;" id="filterForm">
-        <?php if (isset($_GET['edit_id'])): ?>
-            <input type="hidden" name="edit_id" value="<?= htmlspecialchars($_GET['edit_id']) ?>">
-        <?php endif; ?>
-        
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
         <div>
             <label for="truck_filter">Select Truck:</label>
-            <select name="truck_filter" id="truck_filter" onchange="updateLockerFilter()">
-                <option value="">All Trucks</option>
+            <select name="truck_filter" id="truck_filter" onchange="updateFilters()">
+                <option value="">ALL</option>
                 <?php foreach ($trucks as $truck): ?>
                     <option value="<?= $truck['id'] ?>" <?= $truck_filter == $truck['id'] ? 'selected' : '' ?>>
                         <?= htmlspecialchars($truck['name']) ?>
@@ -158,8 +225,8 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         <div>
             <label for="locker_filter">Select Locker:</label>
-            <select name="locker_filter" id="locker_filter">
-                <option value="">All Lockers</option>
+            <select name="locker_filter" id="locker_filter" onchange="updateFilters()">
+                <option value="">ALL</option>
                 <?php if (!empty($truck_filter)): ?>
                     <?php foreach ($filter_lockers as $locker): ?>
                         <option value="<?= $locker['id'] ?>" <?= $locker_filter == $locker['id'] ? 'selected' : '' ?>>
@@ -169,23 +236,100 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </select>
         </div>
-        
-        <div>
-            <button type="submit" class="button touch-button">Apply Filter</button>
-            <a href="maintain_locker_items.php" class="button touch-button" style="background-color: #6c757d;">Show All</a>
+    </div>
+</div>
+
+<div class="stats-section" id="stats-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
+    <h2>Items Summary</h2>
+    <p><strong>Total Items Shown:</strong> <span id="item-count"><?= count($items) ?></span></p>
+    <p id="filter-status">
+        <?php if (!empty($truck_filter)): ?>
+            <?php 
+            $selected_truck = array_filter($trucks, function($truck) use ($truck_filter) {
+                return $truck['id'] == $truck_filter;
+            });
+            $selected_truck = reset($selected_truck);
+            ?>
+            <strong>Filtered by Truck:</strong> <?= htmlspecialchars($selected_truck['name']) ?>
+            <?php if (!empty($locker_filter)): ?>
+                <?php 
+                $selected_locker = array_filter($filter_lockers, function($locker) use ($locker_filter) {
+                    return $locker['id'] == $locker_filter;
+                });
+                if (empty($selected_locker)) {
+                    $selected_locker = array_filter($lockers, function($locker) use ($locker_filter) {
+                        return $locker['id'] == $locker_filter;
+                    });
+                }
+                $selected_locker = reset($selected_locker);
+                ?>
+                <br><strong>Filtered by Locker:</strong> <?= htmlspecialchars($selected_locker['name']) ?>
+            <?php endif; ?>
+        <?php else: ?>
+            <strong>Showing:</strong> All trucks and lockers
+        <?php endif; ?>
+    </p>
+</div>
+
+<h2>Existing Items</h2>
+<div id="items-list">
+    <?php if (!empty($items)): ?>
+        <ul>
+            <?php foreach ($items as $item): ?>
+                <li>
+                    <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
+                    <a href="?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>">Edit</a> | 
+                    <a href="?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php else: ?>
+        <div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
+            <p>No items found<?= !empty($truck_filter) || !empty($locker_filter) ? ' for the selected filters' : '' ?>.</p>
         </div>
-    </form>
+    <?php endif; ?>
+</div>
+
+<div class="button-container" style="margin-top: 20px;">
+    <a href="admin.php" class="button touch-button">Admin Page</a>
 </div>
 
 <script>
-// JavaScript to update locker dropdown based on selected truck
-function updateLockerFilter() {
+// JavaScript for real-time filtering
+function updateFilters() {
     const truckSelect = document.getElementById('truck_filter');
     const lockerSelect = document.getElementById('locker_filter');
     const selectedTruck = truckSelect.value;
+    const selectedLocker = lockerSelect.value;
+    
+    // Update locker dropdown based on selected truck
+    updateLockerDropdown(selectedTruck, selectedLocker);
+    
+    // Update items list and summary
+    updateItemsList(selectedTruck, selectedLocker);
+    
+    // Update URL without page reload
+    const url = new URL(window.location);
+    if (selectedTruck) {
+        url.searchParams.set('truck_filter', selectedTruck);
+    } else {
+        url.searchParams.delete('truck_filter');
+    }
+    
+    if (selectedLocker) {
+        url.searchParams.set('locker_filter', selectedLocker);
+    } else {
+        url.searchParams.delete('locker_filter');
+    }
+    
+    window.history.replaceState({}, '', url);
+}
+
+function updateLockerDropdown(selectedTruck, currentLocker = '') {
+    const lockerSelect = document.getElementById('locker_filter');
     
     // Clear current locker options
-    lockerSelect.innerHTML = '<option value="">All Lockers</option>';
+    lockerSelect.innerHTML = '<option value="">ALL</option>';
     
     if (selectedTruck) {
         // Get lockers for selected truck via AJAX
@@ -199,6 +343,9 @@ function updateLockerFilter() {
                         const option = document.createElement('option');
                         option.value = locker.id;
                         option.textContent = locker.name;
+                        if (locker.id == currentLocker) {
+                            option.selected = true;
+                        }
                         lockerSelect.appendChild(option);
                     });
                 } catch (e) {
@@ -207,81 +354,82 @@ function updateLockerFilter() {
             }
         };
         xhr.send();
+    } else {
+        // Clear locker selection when no truck is selected
+        lockerSelect.value = '';
     }
 }
 
-// Auto-submit form when truck changes (optional - remove if you prefer manual apply)
+function updateItemsList(selectedTruck, selectedLocker) {
+    const xhr = new XMLHttpRequest();
+    const params = new URLSearchParams();
+    params.append('ajax', 'get_items');
+    if (selectedTruck) params.append('truck_filter', selectedTruck);
+    if (selectedLocker) params.append('locker_filter', selectedLocker);
+    
+    xhr.open('GET', '?' + params.toString(), true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                const data = JSON.parse(xhr.responseText);
+                
+                // Update item count
+                document.getElementById('item-count').textContent = data.count;
+                
+                // Update filter status
+                let filterStatus = '';
+                if (data.truck_name) {
+                    filterStatus += '<strong>Filtered by Truck:</strong> ' + data.truck_name;
+                    if (data.locker_name) {
+                        filterStatus += '<br><strong>Filtered by Locker:</strong> ' + data.locker_name;
+                    }
+                } else {
+                    filterStatus = '<strong>Showing:</strong> All trucks and lockers';
+                }
+                document.getElementById('filter-status').innerHTML = filterStatus;
+                
+                // Update items list
+                const itemsList = document.getElementById('items-list');
+                if (data.items.length > 0) {
+                    let html = '<ul>';
+                    data.items.forEach(function(item) {
+                        const editParams = new URLSearchParams();
+                        editParams.append('edit_id', item.id);
+                        if (selectedTruck) editParams.append('truck_filter', selectedTruck);
+                        if (selectedLocker) editParams.append('locker_filter', selectedLocker);
+                        
+                        const deleteParams = new URLSearchParams();
+                        deleteParams.append('delete_item_id', item.id);
+                        if (selectedTruck) deleteParams.append('truck_filter', selectedTruck);
+                        if (selectedLocker) deleteParams.append('locker_filter', selectedLocker);
+                        
+                        html += '<li>' + 
+                                item.name + ' (' + item.truck_name + ' - ' + item.locker_name + ') ' +
+                                '<a href="?' + editParams.toString() + '">Edit</a> | ' +
+                                '<a href="?' + deleteParams.toString() + '" onclick="return confirm(\'Are you sure you want to delete this item?\');">Delete</a>' +
+                                '</li>';
+                    });
+                    html += '</ul>';
+                    itemsList.innerHTML = html;
+                } else {
+                    const filterText = (selectedTruck || selectedLocker) ? ' for the selected filters' : '';
+                    itemsList.innerHTML = '<div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">' +
+                                         '<p>No items found' + filterText + '.</p></div>';
+                }
+            } catch (e) {
+                console.error('Error parsing items data:', e);
+            }
+        }
+    };
+    xhr.send();
+}
+
+// Clear locker filter when truck changes
 document.getElementById('truck_filter').addEventListener('change', function() {
-    // Clear locker filter when truck changes
-    document.getElementById('locker_filter').value = '';
+    if (!this.value) {
+        document.getElementById('locker_filter').value = '';
+    }
 });
 </script>
-
-<?php
-// Handle AJAX request for lockers
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_lockers' && isset($_GET['truck_id'])) {
-    $truck_id = $_GET['truck_id'];
-    $stmt = $db->prepare('SELECT id, name FROM lockers WHERE truck_id = ? ORDER BY name');
-    $stmt->execute([$truck_id]);
-    $ajax_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    header('Content-Type: application/json');
-    echo json_encode($ajax_lockers);
-    exit;
-}
-?>
-
-<div class="stats-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
-    <h2>Items Summary</h2>
-    <p><strong>Total Items Shown:</strong> <?= count($items) ?></p>
-    <?php if (!empty($truck_filter)): ?>
-        <?php 
-        $selected_truck = array_filter($trucks, function($truck) use ($truck_filter) {
-            return $truck['id'] == $truck_filter;
-        });
-        $selected_truck = reset($selected_truck);
-        ?>
-        <p><strong>Filtered by Truck:</strong> <?= htmlspecialchars($selected_truck['name']) ?></p>
-    <?php endif; ?>
-    <?php if (!empty($locker_filter)): ?>
-        <?php 
-        $selected_locker = array_filter($filter_lockers, function($locker) use ($locker_filter) {
-            return $locker['id'] == $locker_filter;
-        });
-        if (empty($selected_locker)) {
-            // Fallback to all lockers if filter_lockers is empty
-            $selected_locker = array_filter($lockers, function($locker) use ($locker_filter) {
-                return $locker['id'] == $locker_filter;
-            });
-        }
-        $selected_locker = reset($selected_locker);
-        ?>
-        <p><strong>Filtered by Locker:</strong> <?= htmlspecialchars($selected_locker['name']) ?></p>
-    <?php endif; ?>
-    <?php if (empty($truck_filter) && empty($locker_filter)): ?>
-        <p><strong>Showing:</strong> All trucks and lockers</p>
-    <?php endif; ?>
-</div>
-
-<h2>Existing Items</h2>
-<?php if (!empty($items)): ?>
-    <ul>
-        <?php foreach ($items as $item): ?>
-            <li>
-                <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
-                <a href="?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>">Edit</a> | 
-                <a href="?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-<?php else: ?>
-    <div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-        <p>No items found<?= !empty($truck_filter) || !empty($locker_filter) ? ' for the selected filters' : '' ?>.</p>
-    </div>
-<?php endif; ?>
-
-<div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">Admin Page</a>
-</div>
 
 <?php include 'templates/footer.php'; ?>
