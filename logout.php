@@ -1,13 +1,19 @@
 <?php
+include('config.php');
 
-include 'header.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Remove the logged-in cookie
-setcookie('logged_in', '', time() - 3600, "/"); // Expire the cookie
+include 'templates/header.php';
+
+// Remove the logged-in cookie with the correct name (includes DB_NAME)
+setcookie('logged_in_' . DB_NAME, '', time() - 3600, "/"); // Expire the cookie
+
 // Unset all of the session variables
 $_SESSION = array();
 
-//  also delete the session cookie
+// Also delete the session cookie
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(session_name(), '', time() - 42000,
@@ -16,7 +22,7 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// destroy the session
+// Destroy the session
 session_destroy();
 
 // Redirect to login page
