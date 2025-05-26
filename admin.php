@@ -1,6 +1,5 @@
 <?php
 
-
 include('config.php');
 if (DEBUG) {
     ini_set('display_errors', 1);
@@ -25,10 +24,8 @@ if (isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true) {
     echo "<!-- Not in Demo Mode -->";
 }
 
-
-
-// Check if the user is logged in
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
+// Check if the user is logged in (FIXED: was redirecting when logged in, should redirect when NOT logged in)
+if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
     header('Location: login.php');
     exit;
 }
@@ -67,7 +64,8 @@ $_SESSION['version'] = $version;
     <a href="backups.php" class="button touch-button">Download a backup</a>
     <a href="show_code.php" class="button touch-button">Display and set a security code if enabled</a>
 </div>
-    <div class="button-container" style="margin-top: 20px;">     
+<div class="button-container" style="margin-top: 20px;">
+    <a href="login_logs.php" class="button touch-button">View Login Logs</a>
     <?php if ($showButton): ?>
         <a href="demo_clean_tables.php" class="button touch-button">Delete Demo Checks Data</a>
     <?php endif; ?>
@@ -75,7 +73,6 @@ $_SESSION['version'] = $version;
 
 <div class="button-container" style="margin-top: 20px;">
     <a href="logout.php" class="button touch-button">Logout</a>
-
 </div>
 
 <?php include 'templates/footer.php'; ?>

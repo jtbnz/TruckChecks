@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS `trucks`;
 DROP TABLE IF EXISTS `email_addresses`;
 DROP TABLE IF EXISTS `locker_item_deletion_log`;
 DROP TABLE IF EXISTS `audit_log`;
+DROP TABLE IF EXISTS `login_log`;
 
 -- Create the `trucks` table
 CREATE TABLE `trucks` (
@@ -77,6 +78,24 @@ CREATE TABLE `audit_log` (
     `deleted_data` TEXT NOT NULL,
     `deleted_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `deleted_by` VARCHAR(255) DEFAULT 'SYSTEM'
+);
+
+-- Create login_log table for tracking login attempts
+CREATE TABLE `login_log` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `ip_address` VARCHAR(45) NOT NULL,
+    `user_agent` TEXT,
+    `login_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `success` BOOLEAN NOT NULL,
+    `session_id` VARCHAR(255),
+    `referer` VARCHAR(500),
+    `accept_language` VARCHAR(255),
+    `country` VARCHAR(100),
+    `city` VARCHAR(100),
+    `browser_info` TEXT,
+    INDEX `idx_ip_address` (`ip_address`),
+    INDEX `idx_login_time` (`login_time`),
+    INDEX `idx_success` (`success`)
 );
 
 CREATE TABLE `email_addresses` (
