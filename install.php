@@ -9,6 +9,67 @@ if (!file_exists('config.php')) {
 
 include_once('config.php');
 
+// Function to execute SQL file with proper parsing
+function executeSqlFile($db, $filePath) {
+    $sql = file_get_contents($filePath);
+    if ($sql === false) {
+        throw new Exception("Could not read SQL file: $filePath");
+    }
+    
+    // Remove comments and split into statements
+    $lines = explode("\n", $sql);
+    $statements = [];
+    $currentStatement = '';
+    $inDelimiter = false;
+    
+    foreach ($lines as $line) {
+        $line = trim($line);
+        
+        // Skip empty lines and comments
+        if (empty($line) || strpos($line, '--') === 0) {
+            continue;
+        }
+        
+        // Handle DELIMITER statements
+        if (strpos($line, 'DELIMITER') === 0) {
+            if ($currentStatement) {
+                $statements[] = trim($currentStatement);
+                $currentStatement = '';
+            }
+            $inDelimiter = !$inDelimiter;
+            continue;
+        }
+        
+        $currentStatement .= $line . "\n";
+        
+        // Check for statement end
+        if (!$inDelimiter && (substr($line, -1) === ';')) {
+            $statements[] = trim($currentStatement);
+            $currentStatement = '';
+        } elseif ($inDelimiter && (substr($line, -2) === '$$')) {
+            $statements[] = trim($currentStatement);
+            $currentStatement = '';
+        }
+    }
+    
+    // Add any remaining statement
+    if (trim($currentStatement)) {
+        $statements[] = trim($currentStatement);
+    }
+    
+    // Execute each statement
+    foreach ($statements as $statement) {
+        $statement = trim($statement);
+        if (!empty($statement)) {
+            try {
+                $db->exec($statement);
+            } catch (Exception $e) {
+                throw new Exception("Error executing SQL statement: " . $e->getMessage() . "\nStatement: " . substr($statement, 0, 200) . "...");
+            }
+        }
+    }
+}
+
 // Test database connection
 try {
     $testDb = new PDO("mysql:host=" . DB_HOST, DB_USER, DB_PASS);
@@ -76,23 +137,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
-            // Read and execute setup.sql
-            $setupSql = file_get_contents('Docker/setup.sql');
-            if ($setupSql === false) {
-                throw new Exception("Could not read Docker/setup.sql file");
-            }
-            
             // Execute setup.sql
-            $db->exec($setupSql);
-            
-            // Read and execute V4Changes.sql
-            $v4Sql = file_get_contents('V4Changes.sql');
-            if ($v4Sql === false) {
-                throw new Exception("Could not read V4Changes.sql file");
-            }
+            executeSqlFile($db, 'Docker/setup.sql');
             
             // Execute V4Changes.sql
-            $db->exec($v4Sql);
+            executeSqlFile($db, 'V4Changes.sql');
             
             $success = "Fresh installation completed successfully!";
             $step = 'create_superuser';
@@ -107,14 +156,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
-            // Read and execute V4Changes.sql
-            $v4Sql = file_get_contents('V4Changes.sql');
-            if ($v4Sql === false) {
-                throw new Exception("Could not read V4Changes.sql file");
-            }
-            
             // Execute V4Changes.sql
-            $db->exec($v4Sql);
+            executeSqlFile($db, 'V4Changes.sql');
             
             $success = "Upgrade to V4 completed successfully!";
             $step = 'create_superuser';
@@ -151,7 +194,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Execute on target database
             $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $db->exec($mergeSql);
+            
+            // Write temporary file and execute
+            $tempFile = tempnam(sys_get_temp_dir(), 'merge_sql');
+            file_put_contents($tempFile, $mergeSql);
+            executeSqlFile($db, $tempFile);
+            unlink($tempFile);
             
             $success = "Data import completed successfully!";
             
