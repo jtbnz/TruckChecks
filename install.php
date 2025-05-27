@@ -9,6 +9,24 @@ if (!file_exists('config.php')) {
 
 include_once('config.php');
 
+// Security check - installer access control
+$allowInstaller = false;
+
+// Check if ALLOW_INSTALLER is set in config
+if (defined('ALLOW_INSTALLER') && ALLOW_INSTALLER === true) {
+    $allowInstaller = true;
+} else {
+    // Check if user is logged in as superuser
+    session_start();
+    if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
+        $allowInstaller = true;
+    }
+}
+
+if (!$allowInstaller) {
+    die('<h1>Access Denied</h1><p>Installer access is restricted. Either set <code>define("ALLOW_INSTALLER", true);</code> in your config.php file, or log in as a superuser to access the installer.</p>');
+}
+
 // Function to execute SQL file with proper parsing for MySQL triggers and procedures
 function executeSqlFile($db, $filePath) {
     $sql = file_get_contents($filePath);
@@ -739,10 +757,10 @@ if ($step == 'manage_stations' || $step == 'create_admin' || $step == 'import') 
             const existingField = document.getElementById('existing_station_field');
             const newField = document.getElementById('new_station_field');
             
-            if (existingOption.checked) {
+            if (existingOption && existingOption.checked) {
                 existingField.classList.add('show');
                 newField.classList.remove('show');
-            } else if (newOption.checked) {
+            } else if (newOption && newOption.checked) {
                 newField.classList.add('show');
                 existingField.classList.remove('show');
             }
@@ -753,13 +771,15 @@ if ($step == 'manage_stations' || $step == 'create_admin' || $step == 'import') 
             radioItems.forEach(item => {
                 item.addEventListener('click', function() {
                     const radio = this.querySelector('input[type="radio"]');
-                    radio.checked = true;
-                    
-                    // Update visual selection
-                    radioItems.forEach(r => r.classList.remove('selected'));
-                    this.classList.add('selected');
-                    
-                    toggleStationOption();
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        // Update visual selection
+                        radioItems.forEach(r => r.classList.remove('selected'));
+                        this.classList.add('selected');
+                        
+                        toggleStationOption();
+                    }
                 });
             });
             
