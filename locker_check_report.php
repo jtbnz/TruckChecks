@@ -4,6 +4,11 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */
 
 include 'db.php'; 
+include_once('auth.php');
+
+// Require authentication and station context
+$station = requireStation();
+$user = getCurrentUser();
 
 $db = get_db_connection();
 
@@ -24,12 +29,18 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+$IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
-
-
-// Fetch unique check dates for the dropdown
-$dates_query = $db->query('SELECT DISTINCT DATE(check_date) as last_checked FROM checks ORDER BY check_date DESC');
+// Fetch unique check dates for the dropdown - filtered by current station
+$dates_query = $db->prepare('
+    SELECT DISTINCT DATE(c.check_date) as last_checked 
+    FROM checks c
+    JOIN lockers l ON c.locker_id = l.id
+    JOIN trucks t ON l.truck_id = t.id
+    WHERE t.station_id = :station_id
+    ORDER BY c.check_date DESC
+');
+$dates_query->execute(['station_id' => $station['id']]);
 $dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission to filter by date
@@ -39,23 +50,25 @@ $report_data = [];
 $missing_items = [];
 
 if ($selected_date) {
-    // Fetch the most recent check for each locker on the selected date
+    // Fetch the most recent check for each locker on the selected date - filtered by current station
     $report_query = $db->prepare("
-
         WITH LatestChecks AS (
             SELECT 
-                locker_id, 
-                MAX(id) AS latest_check_id
-            FROM checks
-            WHERE DATE(check_date) = :selected_date
-            GROUP BY locker_id
+                c.locker_id, 
+                MAX(c.id) AS latest_check_id
+            FROM checks c
+            JOIN lockers l ON c.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            WHERE DATE(c.check_date) = :selected_date
+            AND t.station_id = :station_id
+            GROUP BY c.locker_id
         )
         SELECT 
             t.name as truck_name, 
             l.name as locker_name, 
             i.name as item_name, 
             ci.is_present as checked, 
-            CONVERT_TZ(check_date, '+00:00', '+12:00') AS check_date,
+            CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
             cn.note as notes,
             c.checked_by,
             c.id as check_id
@@ -66,12 +79,13 @@ if ($selected_date) {
         JOIN trucks t ON l.truck_id = t.id
         JOIN items i ON ci.item_id = i.id
         JOIN check_notes cn on ci.check_id = cn.check_id
+        WHERE t.station_id = :station_id2
         ORDER BY t.name, l.name;
     ");
     
-
     $report_query->bindParam(':selected_date', $selected_date);
-
+    $report_query->bindParam(':station_id', $station['id']);
+    $report_query->bindParam(':station_id2', $station['id']);
     
     $report_query->execute();
     $report_data = $report_query->fetchAll(PDO::FETCH_ASSOC);
@@ -112,18 +126,33 @@ if (isset($_POST['export_csv'])) {
     }
     fclose($output);
     exit;
-}?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Locker Check Reports</title>
-    <link rel="stylesheet" href="styles/reports.css?id=V9"> 
+}
 
+include 'templates/header.php';
+?>
 
-</head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+<style>
+    .station-info {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .station-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #12044C;
+    }
+</style>
+
+<div class="station-info">
+    <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
+    <?php if ($station['description']): ?>
+        <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
+    <?php endif; ?>
+</div>
 
 <h1>Locker Check Reports</h1>
 
@@ -133,7 +162,6 @@ if (isset($_POST['export_csv'])) {
     <select name="check_date" id="check_date" required>
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
-
         <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
             <?= htmlspecialchars(convertToNZST($date['last_checked'])) ?>
         </option>
@@ -218,8 +246,12 @@ if (isset($_POST['export_csv'])) {
         ?>
     </div>
 
+<?php elseif ($selected_date && empty($report_data)): ?>
+    <div style="text-align: center; padding: 40px; color: #666;">
+        <h3>No Check Data Found</h3>
+        <p>No locker checks were found for the selected date in this station.</p>
+    </div>
 <?php endif; ?>
-
 
 <!-- JavaScript to handle expand/collapse functionality -->
 <script>
@@ -232,6 +264,5 @@ if (isset($_POST['export_csv'])) {
         }
     }
 </script>
+
 <?php include 'templates/footer.php'; ?>
-</body>
-</html>
