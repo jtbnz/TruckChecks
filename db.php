@@ -15,30 +15,32 @@ if (DEBUG) {
     error_reporting(0);
 }
 
-function get_db_connection() {
+if (!function_exists('get_db_connection')) {
+    function get_db_connection() {
 
-    $charset = 'utf8mb4';
+        $charset = 'utf8mb4';
 
-    $dsn = "mysql:host=" .DB_HOST . ";dbname=" . DB_NAME . ";charset=$charset";
+        $dsn = "mysql:host=" .DB_HOST . ";dbname=" . DB_NAME . ";charset=$charset";
 
-    $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Fetch results as associative arrays
-        PDO::ATTR_EMULATE_PREPARES   => false,                   // Use native prepared statements
-    ];
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,  // Throw exceptions for errors
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,        // Fetch results as associative arrays
+            PDO::ATTR_EMULATE_PREPARES   => false,                   // Use native prepared statements
+        ];
 
-    try {
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-        return $pdo;
-    } catch (PDOException $e) {
-        // Log the error message to a file or another logging system
-        error_log($e->getMessage(), 3, 'db_errors.log');
+        try {
+            $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+            return $pdo;
+        } catch (PDOException $e) {
+            // Log the error message to a file or another logging system
+            error_log($e->getMessage(), 3, 'db_errors.log');
 
-        // Display a user-friendly error message (or redirect to an error page)
-        echo "<p>There was an error connecting to the database. Please try again later.</p>";
+            // Display a user-friendly error message (or redirect to an error page)
+            echo "<p>There was an error connecting to the database. Please try again later.</p>";
 
-        // Stop script execution
-        exit;
+            // Stop script execution
+            exit;
+        }
     }
 }
 ?>

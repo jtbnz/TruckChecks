@@ -1,7 +1,7 @@
 <?php
 include_once('auth.php');
-include('config.php');
-include('db.php');
+include_once('config.php');
+include_once('db.php');
 
 // Require authentication
 requireAuth();
