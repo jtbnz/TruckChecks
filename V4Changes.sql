@@ -153,10 +153,60 @@ CREATE INDEX `idx_user_stations_station_id` ON `user_stations`(`station_id`);
 CREATE INDEX `idx_audit_log_station_id` ON `audit_log`(`station_id`);
 CREATE INDEX `idx_audit_log_user_id` ON `audit_log`(`user_id`);
 
+-- Create station_settings table for station-specific configuration
+CREATE TABLE `station_settings` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `station_id` INT NOT NULL,
+    `setting_key` VARCHAR(100) NOT NULL,
+    `setting_value` TEXT,
+    `setting_type` ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string',
+    `description` TEXT,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`station_id`) REFERENCES `stations`(`id`) ON DELETE CASCADE,
+    UNIQUE KEY `unique_station_setting` (`station_id`, `setting_key`),
+    INDEX `idx_station_settings_station_id` (`station_id`),
+    INDEX `idx_station_settings_key` (`setting_key`)
+);
+
+-- Insert default station settings for all existing stations
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'refresh_interval', '30000', 'integer', 'Page auto-refresh interval in milliseconds'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'randomize_order', 'true', 'boolean', 'Randomize the order of locker items on check pages'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'is_demo', 'false', 'boolean', 'Enable demo mode for this station'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'ip_api_key', '', 'string', 'IP Geolocation API key for ipgeolocation.io'
+FROM `stations` s;
+
 -- Add sample stations for demonstration
 INSERT INTO `stations` (`name`, `description`) VALUES 
 ('North Station', 'Northern depot operations'),
 ('South Station', 'Southern depot operations'),
 ('East Station', 'Eastern depot operations');
+
+-- Add default settings for the new sample stations
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'refresh_interval', '30000', 'integer', 'Page auto-refresh interval in milliseconds'
+FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'randomize_order', 'true', 'boolean', 'Randomize the order of locker items on check pages'
+FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'is_demo', 'false', 'boolean', 'Enable demo mode for this station'
+FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'ip_api_key', '', 'string', 'IP Geolocation API key for ipgeolocation.io'
+FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
 
 COMMIT;

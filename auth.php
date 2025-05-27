@@ -138,6 +138,18 @@ class AuthManager {
     }
     
     /**
+     * Update last login timestamp
+     */
+    private function updateLastLogin($userId) {
+        try {
+            $stmt = $this->db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+            $stmt->execute([$userId]);
+        } catch (Exception $e) {
+            error_log("Update last login error: " . $e->getMessage());
+        }
+    }
+    
+    /**
      * Update session activity
      */
     private function updateSessionActivity($sessionToken) {
@@ -154,29 +166,9 @@ class AuthManager {
     }
     
     /**
-     * Update user last login
-     */
-    private function updateLastLogin($userId) {
-        try {
-            $stmt = $this->db->prepare("
-                UPDATE users 
-                SET last_login = NOW() 
-                WHERE id = ?
-            ");
-            $stmt->execute([$userId]);
-        } catch (Exception $e) {
-            error_log("Last login update error: " . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Get current user info
+     * Get current user
      */
     public function getCurrentUser() {
-        if (!$this->isAuthenticated()) {
-            return null;
-        }
-        
         if (isset($_SESSION['user_id'])) {
             try {
                 $stmt = $this->db->prepare("
@@ -326,16 +318,97 @@ class AuthManager {
     }
     
     /**
-     * Check if user has access to station
+     * Check if user has access to a specific station
      */
-    public function hasStationAccess($stationId, $userId = null) {
-        $userStations = $this->getUserStations($userId);
-        foreach ($userStations as $station) {
-            if ($station['id'] == $stationId) {
-                return true;
-            }
+    public function hasStationAccess($stationId) {
+        $user = $this->getCurrentUser();
+        if (!$user) return false;
+        
+        // Superusers have access to all stations
+        if ($user['role'] === 'superuser') return true;
+        
+        // Check if user is assigned to this station
+        try {
+            $stmt = $this->db->prepare("
+                SELECT COUNT(*) FROM user_stations 
+                WHERE user_id = ? AND station_id = ?
+            ");
+            $stmt->execute([$user['id'], $stationId]);
+            return $stmt->fetchColumn() > 0;
+        } catch (Exception $e) {
+            return false;
         }
-        return false;
+    }
+    
+    /**
+     * Get station-specific setting value
+     */
+    public function getStationSetting($stationId, $settingKey, $defaultValue = null) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT setting_value, setting_type 
+                FROM station_settings 
+                WHERE station_id = ? AND setting_key = ?
+            ");
+            $stmt->execute([$stationId, $settingKey]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                return $defaultValue;
+            }
+            
+            // Convert value based on type
+            switch ($result['setting_type']) {
+                case 'boolean':
+                    return $result['setting_value'] === 'true';
+                case 'integer':
+                    return (int)$result['setting_value'];
+                case 'json':
+                    return json_decode($result['setting_value'], true);
+                default:
+                    return $result['setting_value'];
+            }
+        } catch (Exception $e) {
+            return $defaultValue;
+        }
+    }
+    
+    /**
+     * Get all station settings as an associative array
+     */
+    public function getStationSettings($stationId) {
+        try {
+            $stmt = $this->db->prepare("
+                SELECT setting_key, setting_value, setting_type 
+                FROM station_settings 
+                WHERE station_id = ?
+            ");
+            $stmt->execute([$stationId]);
+            $settings = [];
+            
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $value = $row['setting_value'];
+                
+                // Convert value based on type
+                switch ($row['setting_type']) {
+                    case 'boolean':
+                        $value = $value === 'true';
+                        break;
+                    case 'integer':
+                        $value = (int)$value;
+                        break;
+                    case 'json':
+                        $value = json_decode($value, true);
+                        break;
+                }
+                
+                $settings[$row['setting_key']] = $value;
+            }
+            
+            return $settings;
+        } catch (Exception $e) {
+            return [];
+        }
     }
     
     /**
@@ -446,5 +519,19 @@ function getCurrentStationOrRedirect() {
         exit;
     }
     return $station;
+}
+
+/**
+ * Helper function to get station setting with fallback to config constants
+ */
+function getStationSetting($settingKey, $defaultValue = null) {
+    global $auth;
+    
+    $station = $auth->getCurrentStation();
+    if (!$station) {
+        return $defaultValue;
+    }
+    
+    return $auth->getStationSetting($station['id'], $settingKey, $defaultValue);
 }
 ?>
