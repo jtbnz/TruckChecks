@@ -1,123 +1,222 @@
 # Active Context
 
 ## Current Work Focus
-The system has recently undergone significant enhancements to improve user experience and functionality, particularly in the maintenance and filtering capabilities.
+**MAJOR VERSION UPGRADE TO V4 - STATION HIERARCHY IMPLEMENTATION**
 
-## Recent Major Changes
+The system is undergoing a major architectural upgrade to introduce the Station concept, creating a new hierarchy: Stations → Trucks → Lockers → Items. This represents the most significant change to the system since its inception.
 
-### 1. Authentication System Fixes (Latest Session)
-- **Issue**: Logout functionality was broken due to incorrect cookie handling
-- **Solution**: Fixed cookie deletion logic in logout.php
-- **Impact**: Users can now properly log out and security is maintained
+## Major V4 Changes Implemented
 
-### 2. Edit Functionality Restoration
-- **Issue**: Edit capabilities were accidentally removed from maintenance pages
-- **Solution**: Restored full CRUD operations to:
-  - `maintain_trucks.php`: Add, edit, delete trucks
-  - `maintain_lockers.php`: Add, edit, delete lockers with truck assignment
-  - `maintain_locker_items.php`: Add, edit, delete items with locker assignment
-- **Impact**: Full administrative control restored
+### 1. Database Schema Upgrade (V4Changes.sql)
+- **New Tables**:
+  - `stations`: Master station registry with name, description, timestamps
+  - `users`: User management with roles (superuser, station_admin)
+  - `user_stations`: Many-to-many relationship between users and stations
+  - `user_sessions`: Enhanced session management with tokens and station context
+- **Schema Modifications**:
+  - Added `station_id` to `trucks` table with foreign key constraint
+  - Enhanced `audit_log` with station and user context
+  - Updated `login_log` with user tracking
+- **Data Migration**:
+  - Created "Default Station" for existing trucks
+  - Default superuser account (admin/admin123)
+  - Sample stations for demonstration
 
-### 3. Advanced Filtering System Implementation
-- **Feature**: Real-time truck/locker filtering in `maintain_locker_items.php`
-- **Capabilities**:
-  - Dynamic locker dropdown based on truck selection
-  - Instant item list filtering without page reloads
-  - Real-time summary updates
-  - URL state management for bookmarking filtered views
-- **Technical**: AJAX-based filtering with proper JSON endpoints
+### 2. Authentication System Overhaul (auth.php)
+- **Dual Authentication Support**:
+  - Legacy password-based authentication (backward compatibility)
+  - New user-based authentication with username/password
+  - Automatic detection and handling of both modes
+- **Session Management**:
+  - Secure token-based sessions with 90-day expiration
+  - Station context maintained in sessions
+  - Long-term station preference cookies
+- **Access Control**:
+  - Role-based permissions (superuser vs station_admin)
+  - Station-scoped access control
+  - Helper functions: `requireAuth()`, `requireStation()`, `requireSuperuser()`
 
-### 4. Enhanced Add Item Workflow
-- **Feature**: Two-step truck/locker selection for adding new items
-- **Benefits**:
-  - Prevents assignment errors
-  - Faster locker selection
-  - Intuitive user workflow
-- **Implementation**: Separate AJAX handling for add form vs. filter form
+### 3. Station Selection System
+- **Public Interface (index.php)**:
+  - Automatic station detection from cookies/session
+  - Station selection dropdown for multiple stations
+  - Station filtering of trucks display
+  - "Change Station" functionality
+- **Admin Interface (select_station.php)**:
+  - Visual station selection with statistics
+  - User role display and station access validation
+  - Auto-selection for single station users
+  - Responsive design with touch-friendly interface
 
-### 5. Database Auditing Preparation
-- **Context**: User requested audit functionality for tables: items, lockers, trucks, checks
-- **Requirement**: Triggers to record deleted data in audit_log table
-- **Status**: Ready for implementation in setup.sql
+### 4. Enhanced Login System (login.php)
+- **Adaptive Interface**:
+  - Tabbed interface when both auth modes available
+  - Legacy-only mode when no users exist
+  - Automatic redirection based on user type
+- **Improved Logging**:
+  - Enhanced login attempt tracking
+  - User context in login logs
+  - Geographic and browser information
+- **User Experience**:
+  - Clear mode switching
+  - Helpful information for each auth type
+  - Mobile-optimized forms
+
+### 5. Station Management Interface (manage_stations.php)
+- **Comprehensive Station CRUD**:
+  - Add, edit, delete stations with validation
+  - Station statistics (truck count, user count)
+  - Real-time data loading via AJAX
+- **Advanced Features**:
+  - Expandable station details
+  - User and truck listings per station
+  - Deletion protection for stations with trucks
+  - Responsive grid layout
+- **Superuser Only**: Restricted to superuser role
+
+### 6. Database Merge Capability (merge_database.sql)
+- **Complete Data Migration**:
+  - Merges entire TruckChecks instance into main database
+  - Creates temporary station for merged data
+  - Maintains all relationships and data integrity
+  - Handles ID mapping and conflict resolution
+- **Comprehensive Coverage**:
+  - All core tables: trucks, lockers, items, checks
+  - Extended tables: swap data, email addresses
+  - Audit trail preservation
+  - User creation for merged station
 
 ## Current System State
 
-### Working Features
-- ✅ User authentication and logout
-- ✅ Full CRUD operations on all entities
-- ✅ Real-time filtering and search
-- ✅ Dynamic form interactions
-- ✅ Report generation
-- ✅ QR code functionality
-- ✅ Email integration
+### ✅ Fully Implemented Features
+- **Station Hierarchy**: Complete 4-level hierarchy (Stations → Trucks → Lockers → Items)
+- **Dual Authentication**: Legacy and user-based auth working seamlessly
+- **Station Management**: Full CRUD operations for superusers
+- **Access Control**: Role-based permissions with station scoping
+- **Session Management**: Secure token-based sessions with station context
+- **Database Migration**: V4 upgrade and merge scripts ready
+- **Responsive Design**: Mobile-friendly interfaces throughout
 
-### Recent Technical Improvements
-- **AJAX Architecture**: Proper JSON endpoints with error handling
-- **JavaScript Enhancement**: Real-time DOM updates without page reloads
-- **URL Management**: Browser history integration for filtered states
-- **Form Validation**: Client and server-side validation
-- **Error Handling**: Comprehensive error logging and user feedback
+### 🔄 Backward Compatibility Maintained
+- **Legacy Authentication**: Original password-based login still works
+- **Existing Data**: All current trucks/lockers/items preserved
+- **API Compatibility**: Existing maintenance pages will work (need updates)
+- **Configuration**: Original config.php structure unchanged
 
 ## Next Steps & Pending Work
 
-### 1. Audit System Implementation
-- **Task**: Add audit triggers to setup.sql for tables: items, lockers, trucks, checks
-- **Requirements**:
-  - Create audit_log table structure
-  - Implement DELETE triggers for each table
-  - Store complete row data before deletion
-  - Include timestamp and user context
+### 1. Update Maintenance Pages (High Priority)
+- **maintain_trucks.php**: Add station assignment and filtering
+- **maintain_lockers.php**: Ensure station context validation
+- **maintain_locker_items.php**: Update for station-aware operations
+- **All pages**: Implement station access control
 
-### 2. Potential Enhancements
-- **Mobile Optimization**: Further touch interface improvements
-- **Bulk Operations**: Multi-select and bulk actions
-- **Advanced Search**: Full-text search capabilities
-- **Dashboard Analytics**: Usage statistics and trends
-- **API Development**: RESTful endpoints for external integration
+### 2. User Management System
+- **manage_users.php**: Create comprehensive user management interface
+- **User assignment**: Station admin creation and assignment
+- **Password management**: Change password functionality
+- **User roles**: Enhanced role management
 
-## Key Technical Decisions
+### 3. Enhanced Admin Interface
+- **admin.php**: Update for role-based menu options
+- **Station switching**: Quick station change in admin area
+- **Dashboard**: Station-specific statistics and overview
+- **Settings**: Station-aware configuration options
 
-### AJAX Implementation Pattern
-```javascript
-// Established pattern for AJAX requests
-function updateData() {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', window.location.pathname + '?ajax=endpoint&param=value', true);
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            const data = JSON.parse(xhr.responseText);
-            // Update DOM
-        }
-    };
-    xhr.send();
-}
+### 4. Settings and Configuration
+- **settings.php**: Add station selection and management
+- **Station preferences**: User-specific station settings
+- **Configuration**: Station-specific settings if needed
+
+### 5. Reports and Analytics
+- **Station-filtered reports**: All reports respect station context
+- **Cross-station reports**: Superuser-only comprehensive reports
+- **User activity**: Station admin activity tracking
+
+## Technical Architecture
+
+### Authentication Flow
+```
+1. User visits login.php
+2. System detects available auth modes
+3. User authenticates (legacy or user-based)
+4. Station selection (if multiple stations)
+5. Redirect to admin with station context
 ```
 
-### PHP AJAX Handler Pattern
+### Station Access Control
 ```php
-// Handle AJAX requests FIRST, before any HTML output
-if (isset($_GET['ajax'])) {
-    header('Content-Type: application/json');
-    // Process request
-    echo json_encode($response);
-    exit;
-}
+// Standard pattern for station-aware pages
+include_once('auth.php');
+$station = requireStation(); // Ensures auth + station context
+// Page now has guaranteed station access
 ```
 
-## User Feedback Integration
-- **Filtering Request**: User wanted truck/locker filtering - implemented with real-time updates
-- **Add Item Enhancement**: User wanted guided truck/locker selection - implemented with dynamic dropdowns
-- **Audit Request**: User wants deletion tracking - ready for implementation
+### Database Relationships
+```
+stations (1) → trucks (many) → lockers (many) → items (many)
+users (many) ←→ stations (many) [via user_stations]
+users (1) → user_sessions (many)
+```
 
-## Development Workflow
-1. **Authentication First**: Always ensure proper login checks
-2. **AJAX Before HTML**: Handle AJAX requests before any output
-3. **Error Handling**: Comprehensive logging and user feedback
-4. **Mobile Consideration**: Touch-friendly interfaces
-5. **Performance**: Minimize database queries and page reloads
+## Security Enhancements
 
-## Code Quality Standards
-- **Prepared Statements**: All database queries use PDO prepared statements
-- **HTML Escaping**: All user output properly escaped
-- **Consistent Styling**: Shared CSS classes and patterns
-- **Documentation**: Clear comments and memory bank maintenance
+### Session Security
+- **Token-based authentication**: Cryptographically secure session tokens
+- **Session validation**: Automatic token validation and renewal
+- **IP tracking**: Session tied to IP address for security
+- **Expiration handling**: Automatic cleanup of expired sessions
+
+### Access Control
+- **Role-based permissions**: Superuser vs station admin roles
+- **Station isolation**: Users only see their assigned stations
+- **Data scoping**: All operations respect station boundaries
+- **Audit trails**: Enhanced logging with user and station context
+
+## User Experience Improvements
+
+### Station Selection
+- **Visual interface**: Card-based station selection with statistics
+- **Persistent preferences**: Long-term station preference cookies
+- **Quick switching**: Easy station change from main interface
+- **Auto-selection**: Single station users skip selection
+
+### Authentication
+- **Adaptive interface**: Shows appropriate login options
+- **Clear feedback**: Helpful error messages and guidance
+- **Mobile optimization**: Touch-friendly forms and buttons
+- **Backward compatibility**: Existing users unaffected
+
+## Development Standards
+
+### Code Patterns Established
+- **Authentication**: Consistent auth checking across all pages
+- **Station Context**: Standard station requirement patterns
+- **AJAX Handling**: Proper JSON responses with error handling
+- **Database Operations**: Station-aware queries with proper filtering
+- **Error Handling**: Comprehensive logging and user feedback
+
+### File Organization
+- **auth.php**: Central authentication and session management
+- **V4Changes.sql**: Database upgrade script
+- **merge_database.sql**: Database merge utility
+- **manage_stations.php**: Station management interface
+- **select_station.php**: Station selection interface
+
+## Migration Notes
+
+### For Existing Installations
+1. **Backup database**: Essential before running V4Changes.sql
+2. **Run V4Changes.sql**: Upgrades schema and creates default data
+3. **Update config**: No changes needed to config.php
+4. **Test authentication**: Both legacy and new auth should work
+5. **Assign users**: Create station admins as needed
+
+### For New Installations
+1. **Run V4Changes.sql**: After initial setup.sql
+2. **Create superuser**: Use default admin account initially
+3. **Create stations**: Add stations via manage_stations.php
+4. **Create users**: Assign station admins as needed
+5. **Assign trucks**: Update trucks to belong to stations
+
+This represents a major milestone in the TruckChecks evolution, introducing enterprise-level multi-tenancy while maintaining full backward compatibility.

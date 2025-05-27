@@ -1,10 +1,5 @@
 <?php
-include('config.php');
-include('db.php');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include_once('auth.php');
 
 // Function to get real IP address
 function getRealIpAddr() {
@@ -109,7 +104,7 @@ function getBrowserInfo($userAgent) {
 }
 
 // Function to log login attempt
-function logLoginAttempt($success) {
+function logLoginAttempt($success, $userId = null) {
     try {
         $pdo = get_db_connection();
         
@@ -124,8 +119,8 @@ function logLoginAttempt($success) {
         
         $stmt = $pdo->prepare("
             INSERT INTO login_log 
-            (ip_address, user_agent, success, session_id, referer, accept_language, country, city, browser_info) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (ip_address, user_agent, success, session_id, referer, accept_language, country, city, browser_info, user_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
@@ -137,7 +132,8 @@ function logLoginAttempt($success) {
             $acceptLanguage,
             $location['country'],
             $location['city'],
-            $browserInfo
+            $browserInfo,
+            $userId
         ]);
         
     } catch (Exception $e) {
@@ -147,29 +143,74 @@ function logLoginAttempt($success) {
 }
 
 // Check if the user is already logged in
-if (isset($_COOKIE['logged_in_' . DB_NAME]) && $_COOKIE['logged_in_' . DB_NAME] == 'true') {
-    header('Location: admin.php');
+if ($auth->isAuthenticated()) {
+    // Redirect based on user type
+    $user = $auth->getCurrentUser();
+    if ($user && isset($user['is_legacy']) && $user['is_legacy']) {
+        header('Location: admin.php');
+    } else {
+        // Check if user needs to select a station
+        $station = $auth->getCurrentStation();
+        if (!$station) {
+            header('Location: select_station.php?redirect=admin.php');
+        } else {
+            header('Location: admin.php');
+        }
+    }
     exit;
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if ($_POST['password'] === PASSWORD) {
-        // Log successful login
-        logLoginAttempt(true);
-        
-        // Set a cookie to remember the user for 90 days
-        setcookie('logged_in_' . DB_NAME, 'true', time() + (90 * 24 * 60 * 60), "/");
+$error = '';
+$loginMode = 'auto'; // auto, legacy, user
 
-        // Redirect to a protected page
-        header('Location: admin.php');
-        exit;
-    } else {
-        // Log failed login attempt
-        logLoginAttempt(false);
+// Detect login mode based on form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['username']) && isset($_POST['password'])) {
+        // User-based authentication
+        $username = trim($_POST['username']);
+        $password = $_POST['password'];
         
-        $error = "Incorrect password.";
+        if ($auth->authenticateUser($username, $password)) {
+            $user = $auth->getCurrentUser();
+            logLoginAttempt(true, $user['id']);
+            
+            // Redirect to station selection or admin
+            $station = $auth->getCurrentStation();
+            if (!$station) {
+                header('Location: select_station.php?redirect=admin.php');
+            } else {
+                header('Location: admin.php');
+            }
+            exit;
+        } else {
+            logLoginAttempt(false);
+            $error = "Invalid username or password.";
+        }
+    } elseif (isset($_POST['password'])) {
+        // Legacy password authentication
+        $password = $_POST['password'];
+        
+        if ($auth->authenticateLegacy($password)) {
+            logLoginAttempt(true);
+            header('Location: admin.php');
+            exit;
+        } else {
+            logLoginAttempt(false);
+            $error = "Incorrect password.";
+        }
     }
+}
+
+// Check if we should show user login form (if users table exists)
+$showUserLogin = false;
+try {
+    $db = get_db_connection();
+    $stmt = $db->query("SELECT COUNT(*) FROM users WHERE is_active = 1");
+    $userCount = $stmt->fetchColumn();
+    $showUserLogin = $userCount > 0;
+} catch (Exception $e) {
+    // Users table doesn't exist, use legacy mode only
+    $showUserLogin = false;
 }
 
 include 'templates/header.php';
@@ -177,7 +218,7 @@ include 'templates/header.php';
 
 <style>
     .login-container {
-        max-width: 400px;
+        max-width: 450px;
         margin: 40px auto;
         padding: 20px;
         background-color: #f9f9f9;
@@ -189,6 +230,34 @@ include 'templates/header.php';
         text-align: center;
         margin-bottom: 20px;
         color: #12044C;
+    }
+
+    .login-tabs {
+        display: flex;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .login-tab {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        background-color: #e9ecef;
+        border: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .login-tab.active {
+        background-color: white;
+        border-bottom-color: #12044C;
+        color: #12044C;
+        font-weight: bold;
+    }
+
+    .login-tab:hover {
+        background-color: #f8f9fa;
     }
 
     .login-form {
@@ -235,12 +304,33 @@ include 'templates/header.php';
         color: red;
         text-align: center;
         margin-bottom: 15px;
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+    }
+
+    .login-mode {
+        display: none;
+    }
+
+    .login-mode.active {
+        display: block;
+    }
+
+    .login-info {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e9ecef;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #666;
     }
 
     /* Mobile-specific styles */
     @media (max-width: 768px) {
         .login-container {
-            width: 90%;
+            width: 95%;
             margin: 20px auto;
             padding: 15px;
         }
@@ -254,23 +344,90 @@ include 'templates/header.php';
             padding: 18px;
             font-size: 18px;
         }
+
+        .login-tab {
+            font-size: 14px;
+            padding: 8px;
+        }
     }
 </style>
 
 <div class="login-container">
     <h2 class="login-title">Login</h2>
     
-    <?php if (isset($error)): ?>
-        <div class="error-message"><?php echo $error; ?></div>
+    <?php if ($error): ?>
+        <div class="error-message"><?= htmlspecialchars($error) ?></div>
     <?php endif; ?>
     
-    <form method="post" action="" class="login-form">
-        <div class="form-group">
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password" required>
+    <?php if ($showUserLogin): ?>
+        <!-- Login Mode Tabs -->
+        <div class="login-tabs">
+            <button class="login-tab active" onclick="switchLoginMode('user')">User Login</button>
+            <button class="login-tab" onclick="switchLoginMode('legacy')">Legacy Login</button>
         </div>
-        <button type="submit" class="login-button">Login</button>
-    </form>
+        
+        <!-- User Login Form -->
+        <div class="login-mode active" id="userLogin">
+            <form method="post" action="" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" name="username" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_password">Password:</label>
+                    <input type="password" name="password" id="user_password" required>
+                </div>
+                <button type="submit" class="login-button">Login</button>
+            </form>
+        </div>
+        
+        <!-- Legacy Login Form -->
+        <div class="login-mode" id="legacyLogin">
+            <form method="post" action="" class="login-form">
+                <div class="form-group">
+                    <label for="legacy_password">Admin Password:</label>
+                    <input type="password" name="password" id="legacy_password" required>
+                </div>
+                <button type="submit" class="login-button">Login</button>
+            </form>
+            
+            <div class="login-info">
+                <strong>Legacy Mode:</strong> Use the original admin password from your configuration.
+            </div>
+        </div>
+    <?php else: ?>
+        <!-- Legacy Only Login Form -->
+        <form method="post" action="" class="login-form">
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" name="password" id="password" required>
+            </div>
+            <button type="submit" class="login-button">Login</button>
+        </form>
+    <?php endif; ?>
 </div>
+
+<?php if ($showUserLogin): ?>
+<script>
+function switchLoginMode(mode) {
+    // Update tabs
+    document.querySelectorAll('.login-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Update forms
+    document.querySelectorAll('.login-mode').forEach(form => {
+        form.classList.remove('active');
+    });
+    
+    if (mode === 'user') {
+        document.getElementById('userLogin').classList.add('active');
+    } else {
+        document.getElementById('legacyLogin').classList.add('active');
+    }
+}
+</script>
+<?php endif; ?>
 
 <?php include 'templates/footer.php'; ?>
