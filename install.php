@@ -9,52 +9,82 @@ if (!file_exists('config.php')) {
 
 include_once('config.php');
 
-// Function to execute SQL file with proper parsing
+// Function to execute SQL file with proper parsing for MySQL triggers and procedures
 function executeSqlFile($db, $filePath) {
     $sql = file_get_contents($filePath);
     if ($sql === false) {
         throw new Exception("Could not read SQL file: $filePath");
     }
     
-    // Remove comments and split into statements
-    $lines = explode("\n", $sql);
+    // Split by DELIMITER blocks first
+    $parts = preg_split('/DELIMITER\s+(\S+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
+    
     $statements = [];
-    $currentStatement = '';
-    $inDelimiter = false;
+    $currentDelimiter = ';';
     
-    foreach ($lines as $line) {
-        $line = trim($line);
-        
-        // Skip empty lines and comments
-        if (empty($line) || strpos($line, '--') === 0) {
+    for ($i = 0; $i < count($parts); $i++) {
+        if ($i % 2 == 1) {
+            // This is a delimiter definition
+            $currentDelimiter = trim($parts[$i]);
             continue;
         }
         
-        // Handle DELIMITER statements
-        if (strpos($line, 'DELIMITER') === 0) {
-            if ($currentStatement) {
-                $statements[] = trim($currentStatement);
-                $currentStatement = '';
+        $content = trim($parts[$i]);
+        if (empty($content)) {
+            continue;
+        }
+        
+        // Split content by current delimiter
+        if ($currentDelimiter === ';') {
+            // Standard semicolon delimiter - split by lines and process
+            $lines = explode("\n", $content);
+            $currentStatement = '';
+            
+            foreach ($lines as $line) {
+                $line = trim($line);
+                
+                // Skip empty lines and comments
+                if (empty($line) || strpos($line, '--') === 0) {
+                    continue;
+                }
+                
+                $currentStatement .= $line . "\n";
+                
+                // Check for statement end
+                if (substr($line, -1) === ';') {
+                    $stmt = trim($currentStatement);
+                    if (!empty($stmt)) {
+                        $statements[] = $stmt;
+                    }
+                    $currentStatement = '';
+                }
             }
-            $inDelimiter = !$inDelimiter;
-            continue;
+            
+            // Add any remaining statement
+            if (trim($currentStatement)) {
+                $statements[] = trim($currentStatement);
+            }
+        } else {
+            // Custom delimiter (like $$) - split by the delimiter
+            $parts_custom = explode($currentDelimiter, $content);
+            foreach ($parts_custom as $part) {
+                $part = trim($part);
+                if (!empty($part)) {
+                    // Remove comments from the part
+                    $lines = explode("\n", $part);
+                    $cleanLines = [];
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if (!empty($line) && strpos($line, '--') !== 0) {
+                            $cleanLines[] = $line;
+                        }
+                    }
+                    if (!empty($cleanLines)) {
+                        $statements[] = implode("\n", $cleanLines);
+                    }
+                }
+            }
         }
-        
-        $currentStatement .= $line . "\n";
-        
-        // Check for statement end
-        if (!$inDelimiter && (substr($line, -1) === ';')) {
-            $statements[] = trim($currentStatement);
-            $currentStatement = '';
-        } elseif ($inDelimiter && (substr($line, -2) === '$$')) {
-            $statements[] = trim($currentStatement);
-            $currentStatement = '';
-        }
-    }
-    
-    // Add any remaining statement
-    if (trim($currentStatement)) {
-        $statements[] = trim($currentStatement);
     }
     
     // Execute each statement
