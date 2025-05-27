@@ -40,8 +40,8 @@ if (isset($_GET['ajax'])) {
         try {
             $stmt = $db->prepare("
                 SELECT t.id, t.name, t.relief,
-                       COUNT(l.id) as locker_count,
-                       COUNT(i.id) as item_count
+                       COUNT(DISTINCT l.id) as locker_count,
+                       COUNT(DISTINCT i.id) as item_count
                 FROM trucks t
                 LEFT JOIN lockers l ON t.id = l.truck_id
                 LEFT JOIN items i ON l.id = i.locker_id
