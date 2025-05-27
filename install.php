@@ -101,15 +101,23 @@ function executeSqlFile($db, $filePath) {
 }
 
 // Function to import data from source database
-function importDataFromSource($targetDb, $sourceHost, $sourceDb, $sourceUser, $sourcePass) {
+function importDataFromSource($targetDb, $sourceHost, $sourceDb, $sourceUser, $sourcePass, $targetStationId, $createNewStation = false, $newStationName = '') {
     // Connect to source database
     $sourceConn = new PDO("mysql:host=$sourceHost;dbname=$sourceDb", $sourceUser, $sourcePass);
     $sourceConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Create merged station in target database
-    $stmt = $targetDb->prepare("INSERT INTO stations (name, description) VALUES (?, ?)");
-    $stmt->execute(['Merged Station', 'Data imported from ' . $sourceDb]);
-    $mergedStationId = $targetDb->lastInsertId();
+    // Determine which station to use
+    if ($createNewStation) {
+        $stmt = $targetDb->prepare("INSERT INTO stations (name, description) VALUES (?, ?)");
+        $stmt->execute([$newStationName, 'Data imported from ' . $sourceDb]);
+        $stationId = $targetDb->lastInsertId();
+        $stationName = $newStationName;
+    } else {
+        $stationId = $targetStationId;
+        $stmt = $targetDb->prepare("SELECT name FROM stations WHERE id = ?");
+        $stmt->execute([$stationId]);
+        $stationName = $stmt->fetchColumn();
+    }
     
     // Import trucks
     $stmt = $sourceConn->query("SELECT * FROM trucks");
@@ -119,9 +127,9 @@ function importDataFromSource($targetDb, $sourceHost, $sourceDb, $sourceUser, $s
     foreach ($trucks as $truck) {
         $stmt = $targetDb->prepare("INSERT INTO trucks (name, relief, station_id) VALUES (?, ?, ?)");
         $stmt->execute([
-            $truck['name'] . ' (Merged)',
+            $truck['name'] . ($createNewStation ? '' : ' (Imported)'),
             $truck['relief'] ?? 0,
-            $mergedStationId
+            $stationId
         ]);
         $truckMapping[$truck['id']] = $targetDb->lastInsertId();
     }
@@ -210,7 +218,10 @@ function importDataFromSource($targetDb, $sourceHost, $sourceDb, $sourceUser, $s
         // check_notes table might not exist in older versions
     }
     
-    return count($trucks) . ' trucks, ' . count($lockers) . ' lockers, ' . count($items) . ' items, and ' . count($checks) . ' checks';
+    return [
+        'stats' => count($trucks) . ' trucks, ' . count($lockers) . ' lockers, ' . count($items) . ' items, and ' . count($checks) . ' checks',
+        'station' => $stationName
+    ];
 }
 
 // Test database connection
@@ -316,9 +327,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $sourceDb = trim($_POST['source_database']);
             $sourceUser = trim($_POST['source_user']);
             $sourcePass = $_POST['source_pass'];
+            $stationOption = $_POST['station_option'] ?? '';
+            $targetStationId = $_POST['target_station_id'] ?? '';
+            $newStationName = trim($_POST['new_station_name'] ?? '');
             
             if (empty($sourceHost) || empty($sourceDb) || empty($sourceUser)) {
                 throw new Exception("All source database fields are required");
+            }
+            
+            if ($stationOption === 'existing' && empty($targetStationId)) {
+                throw new Exception("Please select a target station");
+            }
+            
+            if ($stationOption === 'new' && empty($newStationName)) {
+                throw new Exception("Please provide a name for the new station");
             }
             
             // Connect to target database
@@ -332,9 +354,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             
             // Import data using PHP-based approach
-            $importStats = importDataFromSource($db, $sourceHost, $sourceDb, $sourceUser, $sourcePass);
+            $createNewStation = ($stationOption === 'new');
+            $result = importDataFromSource($db, $sourceHost, $sourceDb, $sourceUser, $sourcePass, $targetStationId, $createNewStation, $newStationName);
             
-            $success = "Data import completed successfully! Imported: " . $importStats;
+            $success = "Data import completed successfully! Imported " . $result['stats'] . " into station '" . $result['station'] . "'";
             
         } catch (Exception $e) {
             $error = "Import failed: " . $e->getMessage();
@@ -446,9 +469,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-// Get available stations for admin assignment
+// Get available stations for admin assignment and import
 $stations = [];
-if ($step == 'manage_stations' || $step == 'create_admin') {
+if ($step == 'manage_stations' || $step == 'create_admin' || $step == 'import') {
     try {
         $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
         $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -571,6 +594,49 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
             resize: vertical;
         }
         
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .radio-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        
+        .radio-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        .radio-item.selected {
+            border-color: #12044C;
+            background-color: #e7f3ff;
+        }
+        
+        .radio-item input[type="radio"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        
+        .conditional-field {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .conditional-field.show {
+            display: block;
+        }
+        
         .checkbox-group {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -666,6 +732,41 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
             }
         }
     </style>
+    <script>
+        function toggleStationOption() {
+            const existingOption = document.getElementById('existing_station');
+            const newOption = document.getElementById('new_station');
+            const existingField = document.getElementById('existing_station_field');
+            const newField = document.getElementById('new_station_field');
+            
+            if (existingOption.checked) {
+                existingField.classList.add('show');
+                newField.classList.remove('show');
+            } else if (newOption.checked) {
+                newField.classList.add('show');
+                existingField.classList.remove('show');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const radioItems = document.querySelectorAll('.radio-item');
+            radioItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    
+                    // Update visual selection
+                    radioItems.forEach(r => r.classList.remove('selected'));
+                    this.classList.add('selected');
+                    
+                    toggleStationOption();
+                });
+            });
+            
+            // Initialize on page load
+            toggleStationOption();
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -903,7 +1004,6 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
                 <ul>
                     <li>Source database must be accessible from this server</li>
                     <li>Current database must have V4 schema installed</li>
-                    <li>Imported data will be assigned to a new "Merged Station"</li>
                     <li>Source database credentials must have SELECT permissions</li>
                 </ul>
             </div>
@@ -928,6 +1028,36 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
                 <div class="form-group">
                     <label for="source_pass">Source Database Password:</label>
                     <input type="password" name="source_pass" id="source_pass" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Import Destination:</label>
+                    <div class="radio-group">
+                        <?php if (!empty($stations)): ?>
+                            <div class="radio-item" id="existing_option">
+                                <input type="radio" name="station_option" value="existing" id="existing_station" checked>
+                                <label for="existing_station">Import into existing station</label>
+                            </div>
+                            <div class="conditional-field" id="existing_station_field">
+                                <label for="target_station_id">Select Station:</label>
+                                <select name="target_station_id" id="target_station_id">
+                                    <option value="">Choose a station...</option>
+                                    <?php foreach ($stations as $station): ?>
+                                        <option value="<?= $station['id'] ?>"><?= htmlspecialchars($station['name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="radio-item" id="new_option">
+                            <input type="radio" name="station_option" value="new" id="new_station" <?= empty($stations) ? 'checked' : '' ?>>
+                            <label for="new_station">Create new station for imported data</label>
+                        </div>
+                        <div class="conditional-field" id="new_station_field">
+                            <label for="new_station_name">New Station Name:</label>
+                            <input type="text" name="new_station_name" id="new_station_name" placeholder="e.g., Imported Station">
+                        </div>
+                    </div>
                 </div>
                 
                 <button type="submit" name="import_data" class="btn" onclick="return confirm('This will import all data from the source database. Continue?')">
