@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_locker'])) {
             $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
             
             if ($truck_check->fetch()) {
-                $query = $db->prepare('INSERT INTO lockers (locker_name, truck_id) VALUES (:name, :truck_id)');
+                $query = $db->prepare('INSERT INTO lockers (name, truck_id) VALUES (:name, :truck_id)');
                 $query->execute(['name' => $locker_name, 'truck_id' => $truck_id]);
                 $success_message = "Locker '{$locker_name}' added successfully.";
             } else {
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_locker'])) {
                 $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
                 
                 if ($truck_check->fetch()) {
-                    $query = $db->prepare('UPDATE lockers SET locker_name = :name, truck_id = :truck_id WHERE id = :id');
+                    $query = $db->prepare('UPDATE lockers SET name = :name, truck_id = :truck_id WHERE id = :id');
                     $query->execute(['name' => $locker_name, 'truck_id' => $truck_id, 'id' => $locker_id]);
                     $success_message = "Locker updated successfully.";
                 } else {
@@ -92,7 +92,7 @@ if (isset($_GET['delete_locker_id'])) {
             $error_message = "Locker not found or access denied.";
         } else {
             // Check if locker has any items
-            $item_check = $db->prepare('SELECT COUNT(*) FROM locker_items WHERE locker_id = :locker_id');
+            $item_check = $db->prepare('SELECT COUNT(*) FROM items WHERE locker_id = :locker_id');
             $item_check->execute(['locker_id' => $locker_id]);
             $item_count = $item_check->fetchColumn();
             
@@ -145,14 +145,14 @@ try {
 try {
     $lockers_query = $db->prepare('
         SELECT l.*, 
-               t.truck_name,
-               COUNT(li.id) as item_count
+               t.name as truck_name,
+               COUNT(i.id) as item_count
         FROM lockers l 
         JOIN trucks t ON l.truck_id = t.id 
-        LEFT JOIN locker_items li ON l.id = li.locker_id
+        LEFT JOIN items i ON l.id = i.locker_id
         WHERE t.station_id = :station_id 
         GROUP BY l.id 
-        ORDER BY t.truck_name, l.locker_name
+        ORDER BY t.name, l.name
     ');
     $lockers_query->execute(['station_id' => $station['id']]);
     $lockers = $lockers_query->fetchAll(PDO::FETCH_ASSOC);
@@ -429,7 +429,7 @@ include 'templates/header.php';
                 <form method="POST">
                     <input type="hidden" name="locker_id" value="<?= $edit_locker['id'] ?>">
                     <div class="input-container">
-                        <input type="text" name="locker_name" placeholder="Locker Name" value="<?= htmlspecialchars($edit_locker['locker_name']) ?>" required>
+                        <input type="text" name="locker_name" placeholder="Locker Name" value="<?= htmlspecialchars($edit_locker['name']) ?>" required>
                     </div>
                     <div class="input-container">
                         <select name="truck_id" required>
@@ -482,7 +482,7 @@ include 'templates/header.php';
             <?php foreach ($lockers as $locker): ?>
                 <div class="locker-item">
                     <div class="locker-info">
-                        <div class="locker-name"><?= htmlspecialchars($locker['locker_name']) ?></div>
+                        <div class="locker-name"><?= htmlspecialchars($locker['name']) ?></div>
                         <div class="locker-details">
                             Truck: <?= htmlspecialchars($locker['truck_name']) ?> | 
                             <?= $locker['item_count'] ?> item(s)
