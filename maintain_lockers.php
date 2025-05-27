@@ -133,7 +133,7 @@ if (isset($_GET['edit_id'])) {
 
 // Fetch all trucks for current station for the dropdown
 try {
-    $trucks_query = $db->prepare('SELECT * FROM trucks WHERE station_id = :station_id ORDER BY truck_name');
+    $trucks_query = $db->prepare('SELECT * FROM trucks WHERE station_id = :station_id ORDER BY name');
     $trucks_query->execute(['station_id' => $station['id']]);
     $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -436,7 +436,7 @@ include 'templates/header.php';
                             <option value="">Select Truck</option>
                             <?php foreach ($trucks as $truck): ?>
                                 <option value="<?= $truck['id'] ?>" <?= $truck['id'] == $edit_locker['truck_id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($truck['truck_name']) ?>
+                                    <?= htmlspecialchars($truck['name']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -458,7 +458,7 @@ include 'templates/header.php';
                         <select name="truck_id" required>
                             <option value="">Select Truck</option>
                             <?php foreach ($trucks as $truck): ?>
-                                <option value="<?= $truck['id'] ?>"><?= htmlspecialchars($truck['truck_name']) ?></option>
+                                <option value="<?= $truck['id'] ?>"><?= htmlspecialchars($truck['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

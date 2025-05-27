@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
     $truck_name = trim($_POST['truck_name']);
     if (!empty($truck_name)) {
         try {
-            $query = $db->prepare('INSERT INTO trucks (truck_name, station_id) VALUES (:name, :station_id)');
+            $query = $db->prepare('INSERT INTO trucks (name, station_id) VALUES (:name, :station_id)');
             $query->execute(['name' => $truck_name, 'station_id' => $station['id']]);
             $success_message = "Truck '{$truck_name}' added successfully.";
         } catch (Exception $e) {
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck'])) {
             $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
             
             if ($check_query->fetch()) {
-                $query = $db->prepare('UPDATE trucks SET truck_name = :name WHERE id = :id AND station_id = :station_id');
+                $query = $db->prepare('UPDATE trucks SET name = :name WHERE id = :id AND station_id = :station_id');
                 $query->execute(['name' => $truck_name, 'id' => $truck_id, 'station_id' => $station['id']]);
                 $success_message = "Truck updated successfully.";
             } else {
@@ -107,7 +107,7 @@ try {
         LEFT JOIN lockers l ON t.id = l.truck_id 
         WHERE t.station_id = :station_id 
         GROUP BY t.id 
-        ORDER BY t.truck_name
+        ORDER BY t.name
     ');
     $trucks_query->execute(['station_id' => $station['id']]);
     $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
@@ -382,7 +382,7 @@ include 'templates/header.php';
             <form method="POST">
                 <input type="hidden" name="truck_id" value="<?= $edit_truck['id'] ?>">
                 <div class="input-container">
-                    <input type="text" name="truck_name" placeholder="Truck Name" value="<?= htmlspecialchars($edit_truck['truck_name']) ?>" required>
+                    <input type="text" name="truck_name" placeholder="Truck Name" value="<?= htmlspecialchars($edit_truck['name']) ?>" required>
                 </div>
                 <div class="button-container">
                     <button type="submit" name="edit_truck" class="button">Update Truck</button>
@@ -416,7 +416,7 @@ include 'templates/header.php';
             <?php foreach ($trucks as $truck): ?>
                 <div class="truck-item">
                     <div class="truck-info">
-                        <div class="truck-name"><?= htmlspecialchars($truck['truck_name']) ?></div>
+                        <div class="truck-name"><?= htmlspecialchars($truck['name']) ?></div>
                         <div class="truck-details">
                             <?= $truck['locker_count'] ?> locker(s)
                             <?php if ($truck['locker_count'] > 0): ?>
