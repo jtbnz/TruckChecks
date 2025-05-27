@@ -282,6 +282,22 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <div class="role-badge role-<?= str_replace('_', '-', $userRole) ?>">
                         <?= ucfirst(str_replace('_', ' ', $userRole)) ?>
                     </div>
+                    <?php if ($userRole === 'superuser'): ?>
+                        <?php 
+                        $currentStation = getCurrentStation();
+                        $allStations = getUserStations();
+                        ?>
+                        <div style="margin-top: 10px;">
+                            <select id="station-selector" onchange="changeStation()" style="width: 100%; padding: 5px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white;">
+                                <option value="">Select Station...</option>
+                                <?php foreach ($allStations as $station): ?>
+                                    <option value="<?= $station['id'] ?>" <?= ($currentStation && $currentStation['id'] == $station['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($station['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
             
@@ -407,6 +423,13 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                             Logged in as <?= htmlspecialchars($userName) ?> (<?= ucfirst(str_replace('_', ' ', $userRole)) ?>)
                             <?php if ($userRole === 'station_admin' && !empty($userStations)): ?>
                                 - Managing <?= count($userStations) ?> station(s)
+                            <?php elseif ($userRole === 'superuser'): ?>
+                                <?php $currentStation = getCurrentStation(); ?>
+                                <?php if ($currentStation): ?>
+                                    - Current Station: <?= htmlspecialchars($currentStation['name']) ?>
+                                <?php else: ?>
+                                    - No station selected
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -523,6 +546,34 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             // Redirect to dashboard
             window.location.href = '?page=dashboard';
         });
+        
+        // Handle station change for superusers
+        function changeStation() {
+            const stationId = document.getElementById('station-selector').value;
+            if (stationId) {
+                // Send AJAX request to change station
+                fetch('station_settings.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'action=change_station&station_id=' + encodeURIComponent(stationId)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to reflect the station change
+                        window.location.reload();
+                    } else {
+                        alert('Failed to change station: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to change station');
+                });
+            }
+        }
     </script>
 </body>
 </html>

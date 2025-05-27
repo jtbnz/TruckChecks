@@ -1,6 +1,35 @@
 <?php
 include_once('auth.php');
 
+// Handle AJAX station change request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_station') {
+    header('Content-Type: application/json');
+    
+    try {
+        requireAuth();
+        $user = getCurrentUser();
+        
+        if ($user['role'] !== 'superuser') {
+            throw new Exception('Only superusers can change stations');
+        }
+        
+        $stationId = $_POST['station_id'] ?? '';
+        if (empty($stationId)) {
+            throw new Exception('Station ID is required');
+        }
+        
+        if (setCurrentStation($stationId)) {
+            echo json_encode(['success' => true]);
+        } else {
+            throw new Exception('Failed to set station');
+        }
+        
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 // Require authentication and station context
 $station = requireStation();
 $user = $auth->getCurrentUser();

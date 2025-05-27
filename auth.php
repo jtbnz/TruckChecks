@@ -534,4 +534,44 @@ function getStationSetting($settingKey, $defaultValue = null) {
     
     return $auth->getStationSetting($station['id'], $settingKey, $defaultValue);
 }
+
+/**
+ * Get current user
+ */
+function getCurrentUser() {
+    global $auth;
+    return $auth->getCurrentUser();
+}
+
+/**
+ * Get user stations
+ */
+function getUserStations($userId = null) {
+    global $auth;
+    return $auth->getUserStations($userId);
+}
+
+/**
+ * Set current station
+ */
+function setCurrentStation($stationId) {
+    global $auth;
+    return $auth->setCurrentStation($stationId);
+}
+
+/**
+ * Get current station
+ */
+function getCurrentStation() {
+    global $auth;
+    return $auth->getCurrentStation();
+}
+
+/**
+ * Check if user has station access
+ */
+function hasStationAccess($stationId) {
+    global $auth;
+    return $auth->hasStationAccess($stationId);
+}
 ?>
