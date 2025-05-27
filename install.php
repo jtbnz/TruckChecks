@@ -100,6 +100,119 @@ function executeSqlFile($db, $filePath) {
     }
 }
 
+// Function to import data from source database
+function importDataFromSource($targetDb, $sourceHost, $sourceDb, $sourceUser, $sourcePass) {
+    // Connect to source database
+    $sourceConn = new PDO("mysql:host=$sourceHost;dbname=$sourceDb", $sourceUser, $sourcePass);
+    $sourceConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Create merged station in target database
+    $stmt = $targetDb->prepare("INSERT INTO stations (name, description) VALUES (?, ?)");
+    $stmt->execute(['Merged Station', 'Data imported from ' . $sourceDb]);
+    $mergedStationId = $targetDb->lastInsertId();
+    
+    // Import trucks
+    $stmt = $sourceConn->query("SELECT * FROM trucks");
+    $trucks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $truckMapping = [];
+    
+    foreach ($trucks as $truck) {
+        $stmt = $targetDb->prepare("INSERT INTO trucks (name, relief, station_id) VALUES (?, ?, ?)");
+        $stmt->execute([
+            $truck['name'] . ' (Merged)',
+            $truck['relief'] ?? 0,
+            $mergedStationId
+        ]);
+        $truckMapping[$truck['id']] = $targetDb->lastInsertId();
+    }
+    
+    // Import lockers
+    $stmt = $sourceConn->query("SELECT * FROM lockers");
+    $lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $lockerMapping = [];
+    
+    foreach ($lockers as $locker) {
+        if (isset($truckMapping[$locker['truck_id']])) {
+            $stmt = $targetDb->prepare("INSERT INTO lockers (name, truck_id, notes) VALUES (?, ?, ?)");
+            $stmt->execute([
+                $locker['name'],
+                $truckMapping[$locker['truck_id']],
+                $locker['notes'] ?? ''
+            ]);
+            $lockerMapping[$locker['id']] = $targetDb->lastInsertId();
+        }
+    }
+    
+    // Import items
+    $stmt = $sourceConn->query("SELECT * FROM items");
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $itemMapping = [];
+    
+    foreach ($items as $item) {
+        if (isset($lockerMapping[$item['locker_id']])) {
+            $stmt = $targetDb->prepare("INSERT INTO items (name, locker_id) VALUES (?, ?)");
+            $stmt->execute([
+                $item['name'],
+                $lockerMapping[$item['locker_id']]
+            ]);
+            $itemMapping[$item['id']] = $targetDb->lastInsertId();
+        }
+    }
+    
+    // Import checks
+    $stmt = $sourceConn->query("SELECT * FROM checks");
+    $checks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $checkMapping = [];
+    
+    foreach ($checks as $check) {
+        if (isset($lockerMapping[$check['locker_id']])) {
+            $stmt = $targetDb->prepare("INSERT INTO checks (locker_id, check_date, checked_by, ignore_check) VALUES (?, ?, ?, ?)");
+            $stmt->execute([
+                $lockerMapping[$check['locker_id']],
+                $check['check_date'],
+                $check['checked_by'],
+                $check['ignore_check'] ?? 0
+            ]);
+            $checkMapping[$check['id']] = $targetDb->lastInsertId();
+        }
+    }
+    
+    // Import check_items
+    $stmt = $sourceConn->query("SELECT * FROM check_items");
+    $checkItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($checkItems as $checkItem) {
+        if (isset($checkMapping[$checkItem['check_id']]) && isset($itemMapping[$checkItem['item_id']])) {
+            $stmt = $targetDb->prepare("INSERT INTO check_items (check_id, item_id, is_present) VALUES (?, ?, ?)");
+            $stmt->execute([
+                $checkMapping[$checkItem['check_id']],
+                $itemMapping[$checkItem['item_id']],
+                $checkItem['is_present']
+            ]);
+        }
+    }
+    
+    // Import check_notes if they exist
+    try {
+        $stmt = $sourceConn->query("SELECT * FROM check_notes");
+        $checkNotes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($checkNotes as $note) {
+            if (isset($checkMapping[$note['check_id']])) {
+                $stmt = $targetDb->prepare("INSERT INTO check_notes (check_id, note) VALUES (?, ?)");
+                $stmt->execute([
+                    $checkMapping[$note['check_id']],
+                    $note['note']
+                ]);
+            }
+        }
+    } catch (Exception $e) {
+        // check_notes table might not exist in older versions
+    }
+    
+    return count($trucks) . ' trucks, ' . count($lockers) . ' lockers, ' . count($items) . ' items, and ' . count($checks) . ' checks';
+}
+
 // Test database connection
 try {
     $testDb = new PDO("mysql:host=" . DB_HOST, DB_USER, DB_PASS);
@@ -208,30 +321,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 throw new Exception("All source database fields are required");
             }
             
-            // Test source connection
-            $sourceConn = new PDO("mysql:host=$sourceHost;dbname=$sourceDb", $sourceUser, $sourcePass);
-            $sourceConn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
-            // Read merge script and replace placeholder
-            $mergeSql = file_get_contents('merge_database.sql');
-            if ($mergeSql === false) {
-                throw new Exception("Could not read merge_database.sql file");
-            }
-            
-            // Replace source_db placeholder with actual database name
-            $mergeSql = str_replace('source_db.', "`$sourceDb`.", $mergeSql);
-            
-            // Execute on target database
+            // Connect to target database
             $db = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
-            // Write temporary file and execute
-            $tempFile = tempnam(sys_get_temp_dir(), 'merge_sql');
-            file_put_contents($tempFile, $mergeSql);
-            executeSqlFile($db, $tempFile);
-            unlink($tempFile);
+            // Check if target database has V4 schema
+            $stmt = $db->query("SHOW TABLES LIKE 'stations'");
+            if ($stmt->rowCount() == 0) {
+                throw new Exception("Target database must have V4 schema installed. Please run fresh installation or upgrade first.");
+            }
             
-            $success = "Data import completed successfully!";
+            // Import data using PHP-based approach
+            $importStats = importDataFromSource($db, $sourceHost, $sourceDb, $sourceUser, $sourcePass);
+            
+            $success = "Data import completed successfully! Imported: " . $importStats;
             
         } catch (Exception $e) {
             $error = "Import failed: " . $e->getMessage();
@@ -792,15 +895,16 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
         <?php elseif ($step == 'import'): ?>
             <div class="info-box">
                 <h3>Import Data from Existing Installation</h3>
-                <p>Import trucks, lockers, items, and check history from another TruckChecks database on the same server.</p>
+                <p>Import trucks, lockers, items, and check history from another TruckChecks database.</p>
             </div>
 
             <div class="alert alert-info">
                 <strong>Requirements:</strong>
                 <ul>
-                    <li>Source database must be on the same MySQL server</li>
+                    <li>Source database must be accessible from this server</li>
                     <li>Current database must have V4 schema installed</li>
                     <li>Imported data will be assigned to a new "Merged Station"</li>
+                    <li>Source database credentials must have SELECT permissions</li>
                 </ul>
             </div>
 
@@ -817,7 +921,8 @@ if ($step == 'manage_stations' || $step == 'create_admin') {
                 
                 <div class="form-group">
                     <label for="source_user">Source Database Username:</label>
-                    <input type="text" name="source_user" id="source_user" value="<?= DB_USER ?>" required>
+                    <input type="text" name="source_user" id="source_user" value="" required>
+                    <small>Username with SELECT permissions on the source database</small>
                 </div>
                 
                 <div class="form-group">
