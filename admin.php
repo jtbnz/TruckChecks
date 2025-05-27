@@ -307,6 +307,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <a href="?page=dashboard" class="nav-item <?= $currentPage === 'dashboard' ? 'active' : '' ?>">
                         <i>🏠</i> Dashboard
                     </a>
+                    <a href="index.php" class="nav-item" target="content-frame">
+                        <i>📊</i> Status Page
+                    </a>
                 </div>
                 
                 <div class="nav-section">
