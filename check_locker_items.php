@@ -1,9 +1,47 @@
 <?php
+include_once('auth.php');
 
+// Auto-detect station based on truck/locker parameters if user is authenticated but no station is set
+if ($auth->isAuthenticated() && !$auth->getCurrentStation()) {
+    $truck_id = isset($_GET['truck_id']) ? (int)$_GET['truck_id'] : null;
+    $locker_id = isset($_GET['locker_id']) ? (int)$_GET['locker_id'] : null;
+    
+    if ($truck_id || $locker_id) {
+        try {
+            $db = get_db_connection();
+            
+            if ($locker_id) {
+                // Get station from locker -> truck -> station
+                $stmt = $db->prepare("
+                    SELECT t.station_id 
+                    FROM lockers l 
+                    JOIN trucks t ON l.truck_id = t.id 
+                    WHERE l.id = ? AND t.station_id IS NOT NULL
+                ");
+                $stmt->execute([$locker_id]);
+                $station_id = $stmt->fetchColumn();
+            } elseif ($truck_id) {
+                // Get station directly from truck
+                $stmt = $db->prepare("SELECT station_id FROM trucks WHERE id = ? AND station_id IS NOT NULL");
+                $stmt->execute([$truck_id]);
+                $station_id = $stmt->fetchColumn();
+            }
+            
+            if ($station_id && $auth->hasStationAccess($station_id)) {
+                $auth->setCurrentStation($station_id);
+                // Redirect to same page to refresh with station context
+                $redirect_url = $_SERVER['REQUEST_URI'];
+                header("Location: $redirect_url");
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log("Auto station detection error: " . $e->getMessage());
+        }
+    }
+}
 
-//session_start();
-include 'db.php';
-//include 'templates/header.php';
+// Get current station for settings (if available)
+$current_station = $auth->getCurrentStation();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -24,9 +62,9 @@ if (!isset($_SESSION['version'])) {
 // Read the cookie value
 $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
 
-
-
-//IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
+// Get station-specific settings or use defaults
+$RANDORDER = $current_station ? getStationSetting('randomize_order', RANDORDER) : RANDORDER;
+$IS_DEMO = $current_station ? getStationSetting('is_demo', IS_DEMO) : IS_DEMO;
 
 $db = get_db_connection();
 
@@ -63,7 +101,6 @@ function process_words($text, $max_length = 12, $reduce_font_threshold = 9) {
     // Join the words back into a single string
     return implode(' ', $words);
 }
-
 
 // Handle form submission to update the checks and check_items tables
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
@@ -104,8 +141,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['check_items'])) {
     }
 }
 
-// Fetch all trucks
-$trucks = $db->query('SELECT * FROM trucks')->fetchAll(PDO::FETCH_ASSOC);
+// Fetch trucks - filter by station if available
+if ($current_station) {
+    $trucks_query = $db->prepare('SELECT * FROM trucks WHERE station_id = ? ORDER BY name');
+    $trucks_query->execute([$current_station['id']]);
+    $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Check if a truck has been selected
 $selected_truck_id = isset($_GET['truck_id']) ? $_GET['truck_id'] : null;
@@ -120,7 +163,7 @@ if ($selected_truck_id) {
 
     if ($selected_locker_id) {
         // Fetch items for the selected locker
-        if (RANDORDER) {
+        if ($RANDORDER) {
             $query = $db->prepare('SELECT * FROM items WHERE locker_id = :locker_id ORDER BY RAND()');
             echo "<!-- Random order -->";
         } else {
@@ -281,7 +324,16 @@ if ($selected_truck_id) {
         }
     </script>
 </head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+<body class="<?php echo $IS_DEMO ? 'demo-mode' : ''; ?>">
+
+<?php if ($current_station): ?>
+    <div style="text-align: center; background-color: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+        <strong>Station:</strong> <?= htmlspecialchars($current_station['name']) ?>
+        <?php if ($auth->isAuthenticated()): ?>
+            | <a href="select_station.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>" style="color: #12044C;">Change Station</a>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <h1>Check Locker Items</h1>
 
@@ -369,14 +421,15 @@ if ($selected_truck_id) {
     <p><a href="index.php" class="button touch-button">Return to Home</a></p>
 
     <!-- Display the last 5 checks -->
-    <div style="color: grey; font-size: small;">
-        <h3>Last 5 Checks:</h3>
-
+    <?php if (!empty($last_five_checks)): ?>
+        <div style="color: grey; font-size: small;">
+            <h3>Last 5 Checks:</h3>
             <?php foreach ($last_five_checks as $check): ?>
                 <?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?><br>
             <?php endforeach; ?>
-
-    </div>
+        </div>
+    <?php endif; ?>
+    
     <p id="last-refreshed" style="margin-top: 10px;"></p>
     <div class="version-number">
         Version: <?php echo htmlspecialchars($version); ?>
