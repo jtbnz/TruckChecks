@@ -1,4 +1,11 @@
 <?php
+require 'vendor/autoload.php';
+
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Encoding\Encoding;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
+
 include 'db.php';
 include_once('auth.php');
 
@@ -176,6 +183,52 @@ include 'templates/header.php';
         <p style="color: #666;">No security code is currently set.</p>
     <?php endif; ?>
 </div>
+
+<?php if ($current_code && !empty($current_code)): ?>
+<div class="info-section" style="background-color: #f0f8ff; border: 1px solid #b3d9ff; text-align: center;">
+    <h2>Security Code QR Code</h2>
+    <p>Scan this QR code with a mobile device to store the security code for 3 years:</p>
+    
+    <?php
+    // Create QR code data that will set a cookie on the mobile device
+    $current_directory = dirname($_SERVER['REQUEST_URI']);
+    $qr_data = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/set_security_cookie.php?code=' . urlencode($current_code);
+    
+    // Generate the QR code
+    $result = Builder::create()
+        ->writer(new PngWriter())
+        ->data($qr_data)
+        ->encoding(new Encoding('UTF-8'))
+        ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+        ->size(300)
+        ->margin(10)
+        ->build();
+
+    // Get the QR code as a Base64-encoded string
+    $qrcode_base64 = base64_encode($result->getString());
+    ?>
+    
+    <div style="margin: 20px 0;">
+        <img src="data:image/png;base64,<?= $qrcode_base64 ?>" alt="Security Code QR Code" style="border: 1px solid #ccc; border-radius: 5px;">
+    </div>
+    
+    <div style="margin: 15px 0;">
+        <a href="data:image/png;base64,<?= $qrcode_base64 ?>" download="security_code_qr.png" class="button touch-button" style="background-color: #28a745;">
+            📱 Download QR Code
+        </a>
+    </div>
+    
+    <div style="font-size: 14px; color: #666; margin-top: 15px;">
+        <p><strong>Instructions:</strong></p>
+        <ol style="text-align: left; display: inline-block;">
+            <li>Download and print this QR code</li>
+            <li>Scan with mobile device camera or QR code app</li>
+            <li>The security code will be stored on the device for 3 years</li>
+            <li>Use the mobile device to complete truck checks</li>
+        </ol>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php if (!isset($error_message) || strpos($error_message, 'Settings table not found') === false): ?>
 <div class="form-section">
