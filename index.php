@@ -229,13 +229,13 @@ function convertToNZST($utcDate) {
 
 <?php if ($currentStation && count($stations) > 1): ?>
     <!-- Station Indicator and Change Option -->
-    <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+<!--     <div style="text-align: center; margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
         <strong>Current Station: <?= htmlspecialchars($currentStation['name']) ?></strong>
         <br>
         <a href="index.php" onclick="return changeStation()" style="color: #12044C; text-decoration: none; font-size: 14px;">
             Change Station
         </a>
-    </div>
+    </div> -->
     
     <script>
     function changeStation() {
