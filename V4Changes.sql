@@ -209,4 +209,26 @@ INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `s
 SELECT s.id, 'ip_api_key', '', 'string', 'IP Geolocation API key for ipgeolocation.io'
 FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
 
+-- Create settings table for global system settings
+CREATE TABLE `settings` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `setting_name` VARCHAR(100) NOT NULL UNIQUE,
+    `setting_value` TEXT,
+    `setting_type` ENUM('string', 'integer', 'boolean', 'json') NOT NULL DEFAULT 'string',
+    `description` TEXT,
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_settings_name` (`setting_name`)
+);
+
+-- Insert default global settings
+INSERT INTO `settings` (`setting_name`, `setting_value`, `setting_type`, `description`) VALUES 
+('security_code', '', 'string', 'Global security code for additional verification'),
+('system_name', 'TruckChecks', 'string', 'System name displayed in headers'),
+('maintenance_mode', 'false', 'boolean', 'Enable maintenance mode to restrict access'),
+('backup_retention_days', '30', 'integer', 'Number of days to retain backup files'),
+('session_timeout', '3600', 'integer', 'Session timeout in seconds'),
+('max_login_attempts', '5', 'integer', 'Maximum login attempts before lockout'),
+('lockout_duration', '900', 'integer', 'Account lockout duration in seconds');
+
 COMMIT;
