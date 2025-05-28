@@ -1,6 +1,20 @@
 <?php
 
-    include 'db.php';
+include 'db.php';
+include_once('auth.php');
+
+// Get current station context (no authentication required for public view)
+$stations = [];
+$currentStation = null;
+
+try {
+    $db = get_db_connection();
+    $stmt = $db->prepare("SELECT * FROM stations ORDER BY name");
+    $stmt->execute();
+    $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log("Stations table not found, using legacy mode: " . $e->getMessage());
+}
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -19,7 +33,44 @@ if (!isset($_SESSION['version'])) {
     $version = $_SESSION['version'];
 }
 
-$db = get_db_connection();
+// Handle station selection from dropdown
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['selected_station'])) {
+    $stationId = (int)$_POST['selected_station'];
+    
+    setcookie('preferred_station', $stationId, time() + (365 * 24 * 60 * 60), "/");
+    $_SESSION['current_station_id'] = $stationId;
+    
+    header('Location: changeover.php');
+    exit;
+}
+
+// Get current station for filtering
+if (!empty($stations)) {
+    if (isset($_SESSION['current_station_id'])) {
+        foreach ($stations as $station) {
+            if ($station['id'] == $_SESSION['current_station_id']) {
+                $currentStation = $station;
+                break;
+            }
+        }
+    }
+    
+    if (!$currentStation && isset($_COOKIE['preferred_station'])) {
+        foreach ($stations as $station) {
+            if ($station['id'] == $_COOKIE['preferred_station']) {
+                $currentStation = $station;
+                $_SESSION['current_station_id'] = $station['id'];
+                break;
+            }
+        }
+    }
+    
+    if (!$currentStation && count($stations) === 1) {
+        $currentStation = $stations[0];
+        $_SESSION['current_station_id'] = $currentStation['id'];
+        setcookie('preferred_station', $currentStation['id'], time() + (365 * 24 * 60 * 60), "/");
+    }
+}
 
 // Check if relief_items table exists, if not create it
 $result = $db->query("SHOW TABLES LIKE 'relief_items'");
@@ -34,8 +85,14 @@ if ($result->rowCount() == 0) {
     )");
 }
 
-// Fetch all trucks
-$trucks_query = $db->query('SELECT id, name, relief FROM trucks');
+// Fetch trucks filtered by current station
+if ($currentStation) {
+    $trucks_query = $db->prepare('SELECT id, name, relief FROM trucks WHERE station_id = ? ORDER BY name');
+    $trucks_query->execute([$currentStation['id']]);
+} else {
+    // Legacy behavior - show all trucks
+    $trucks_query = $db->query('SELECT id, name, relief FROM trucks ORDER BY name');
+}
 $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Check if a truck has been selected
@@ -47,6 +104,16 @@ $truck_relief_state = false;
 if (isset($_POST['toggle_relief'])) {
     $truck_id = $_POST['truck_id'];
     $new_state = $_POST['relief_state'] == '1' ? 1 : 0;
+    
+    // Verify truck belongs to current station (if stations are enabled)
+    if ($currentStation) {
+        $verify_query = $db->prepare('SELECT id FROM trucks WHERE id = ? AND station_id = ?');
+        $verify_query->execute([$truck_id, $currentStation['id']]);
+        if (!$verify_query->fetch()) {
+            header('Location: changeover.php');
+            exit;
+        }
+    }
     
     $update_query = $db->prepare('UPDATE trucks SET relief = ? WHERE id = ?');
     $update_query->execute([$new_state, $truck_id]);
@@ -126,53 +193,64 @@ if (isset($_POST['action']) && $_POST['action'] == 'update_item_relief') {
 
 // Get selected truck details if one is selected
 if ($selected_truck_id) {
-    $truck_query = $db->prepare('SELECT name, relief FROM trucks WHERE id = ?');
-    $truck_query->execute([$selected_truck_id]);
-    $selected_truck = $truck_query->fetch(PDO::FETCH_ASSOC);
-    $truck_relief_state = $selected_truck['relief'];
-    
-    // Get lockers for this truck
-    $lockers_query = $db->prepare("
-        SELECT l.id, l.name
-        FROM lockers l
-        WHERE l.truck_id = ?
-        ORDER BY l.name
-    ");
-    $lockers_query->execute([$selected_truck_id]);
-    $lockers = $lockers_query->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Get items for each locker
-    $items_by_locker = [];
-    $relief_items = [];
-    
-    if ($truck_relief_state) {
-        // Get relief status for each item
-        $relief_query = $db->prepare("
-            SELECT item_id, relief
-            FROM relief_items
-            WHERE truck_name = ?
-        ");
-        $relief_query->execute([$selected_truck['name']]);
-        
-        while ($row = $relief_query->fetch(PDO::FETCH_ASSOC)) {
-            $relief_items[$row['item_id']] = $row['relief'];
-        }
+    if ($currentStation) {
+        // Verify truck belongs to current station
+        $truck_query = $db->prepare('SELECT name, relief FROM trucks WHERE id = ? AND station_id = ?');
+        $truck_query->execute([$selected_truck_id, $currentStation['id']]);
+    } else {
+        // Legacy behavior
+        $truck_query = $db->prepare('SELECT name, relief FROM trucks WHERE id = ?');
+        $truck_query->execute([$selected_truck_id]);
     }
     
-    foreach ($lockers as $locker) {
-        $items_query = $db->prepare("
-            SELECT i.id, i.name
-            FROM items i
-            WHERE i.locker_id = ?
-            ORDER BY i.name
-        ");
-        $items_query->execute([$locker['id']]);
-        $items = $items_query->fetchAll(PDO::FETCH_ASSOC);
+    $selected_truck = $truck_query->fetch(PDO::FETCH_ASSOC);
+    
+    if ($selected_truck) {
+        $truck_relief_state = $selected_truck['relief'];
         
-        $items_by_locker[$locker['id']] = [
-            'locker_name' => $locker['name'],
-            'items' => $items
-        ];
+        // Get lockers for this truck
+        $lockers_query = $db->prepare("
+            SELECT l.id, l.name
+            FROM lockers l
+            WHERE l.truck_id = ?
+            ORDER BY l.name
+        ");
+        $lockers_query->execute([$selected_truck_id]);
+        $lockers = $lockers_query->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get items for each locker
+        $items_by_locker = [];
+        $relief_items = [];
+        
+        if ($truck_relief_state) {
+            // Get relief status for each item
+            $relief_query = $db->prepare("
+                SELECT item_id, relief
+                FROM relief_items
+                WHERE truck_name = ?
+            ");
+            $relief_query->execute([$selected_truck['name']]);
+            
+            while ($row = $relief_query->fetch(PDO::FETCH_ASSOC)) {
+                $relief_items[$row['item_id']] = $row['relief'];
+            }
+        }
+        
+        foreach ($lockers as $locker) {
+            $items_query = $db->prepare("
+                SELECT i.id, i.name
+                FROM items i
+                WHERE i.locker_id = ?
+                ORDER BY i.name
+            ");
+            $items_query->execute([$locker['id']]);
+            $items = $items_query->fetchAll(PDO::FETCH_ASSOC);
+            
+            $items_by_locker[$locker['id']] = [
+                'locker_name' => $locker['name'],
+                'items' => $items
+            ];
+        }
     }
 }
 
@@ -200,9 +278,56 @@ if ($selected_truck_id) {
         h1, h2 {
             color: #333;
         }
+        
+        .station-info {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .station-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #12044C;
+        }
+
+        .station-selection {
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .station-dropdown {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
         .truck-selection {
             margin-bottom: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        
+        .truck-selection select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
         .locker-section {
             background-color: #fff;
             border-radius: 8px;
@@ -231,7 +356,7 @@ if ($selected_truck_id) {
         }
         .truck-relief-toggle {
             margin: 20px 0;
-            padding: 10px;
+            padding: 20px;
             background-color: #e9f5fd;
             border-radius: 8px;
             border: 1px solid #b8daff;
@@ -324,16 +449,43 @@ if ($selected_truck_id) {
         }
         
         .submit-button {
-            background-color: #0088cc;
+            background-color: #12044C;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            transition: background-color 0.3s;
         }
         .submit-button:hover {
-            background-color: #006699;
+            background-color: #0056b3;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #12044C;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .button.secondary {
+            background-color: #6c757d;
+        }
+
+        .button.secondary:hover {
+            background-color: #545b62;
         }
     </style>
 </head>
@@ -341,79 +493,132 @@ if ($selected_truck_id) {
     <div class="container">
         <h1>Relief Truck Management</h1>
         
-        <div class="truck-selection">
-            <h2>Select a Truck</h2>
-            <form method="GET" action="changeover.php">
-                <select name="truck_id" id="truck_id" onchange="this.form.submit()">
-                    <option value="">-- Select Truck --</option>
-                    <?php foreach ($trucks as $truck): ?>
-                        <option value="<?= $truck['id'] ?>" <?= $selected_truck_id == $truck['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($truck['name']) ?> <?= $truck['relief'] ? '(Relief)' : '' ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </form>
-        </div>
-        
-        <?php if ($selected_truck): ?>
-            <div class="truck-relief-toggle">
-                <h2>Truck Status</h2>
-                <p>Current Status: <?= $truck_relief_state ? 'Relief Truck' : 'Normal' ?></p>
+        <?php if (!empty($stations) && !$currentStation && count($stations) > 1): ?>
+            <!-- Station Selection -->
+            <div class="station-selection">
+                <h2>Select Station</h2>
+                <p>Please select a station to manage relief trucks:</p>
                 
-                <form method="POST" action="changeover.php">
-                    <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
-                    <input type="hidden" name="relief_state" value="<?= $truck_relief_state ? '0' : '1' ?>">
-                    <button type="submit" name="toggle_relief" class="submit-button">
-                        Set <?= htmlspecialchars($selected_truck['name']) ?> to <?= $truck_relief_state ? 'Normal' : 'Relief Truck' ?>
-                    </button>
+                <form method="post" action="">
+                    <select name="selected_station" class="station-dropdown" required>
+                        <option value="">-- Select a Station --</option>
+                        <?php foreach ($stations as $station): ?>
+                            <option value="<?= $station['id'] ?>"><?= htmlspecialchars($station['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    
+                    <button type="submit" class="submit-button">Select Station</button>
                 </form>
             </div>
-            
-            <?php if ($truck_relief_state): ?>
-                <div class="relief-instructions">
-                    <p>This truck is in Relief mode. Toggle the switches below to indicate which items have been moved to the relief truck.</p>
-                    <p>Don't forget non tracked items such as Station keys, Door remotes, tablets etc.</p> 
+        <?php else: ?>
+            <?php if ($currentStation): ?>
+                <div class="station-info">
+                    <div class="station-name"><?= htmlspecialchars($currentStation['name']) ?></div>
+                    <?php if ($currentStation['description']): ?>
+                        <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($currentStation['description']) ?></div>
+                    <?php endif; ?>
+                    <?php if (count($stations) > 1): ?>
+                        <div style="margin-top: 10px;">
+                            <a href="changeover.php" onclick="return changeStation()" style="color: #12044C; text-decoration: none; font-size: 14px;">
+                                Change Station
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             
-            <?php foreach ($items_by_locker as $locker_id => $locker_data): ?>
-                <div class="locker-section">
-                    <div class="locker-header">
-                        <h3><?= htmlspecialchars($locker_data['locker_name']) ?></h3>
-                    </div>
+            <div class="truck-selection">
+                <h2>Select a Truck</h2>
+                <form method="GET" action="changeover.php">
+                    <select name="truck_id" id="truck_id" onchange="this.form.submit()">
+                        <option value="">-- Select Truck --</option>
+                        <?php foreach ($trucks as $truck): ?>
+                            <option value="<?= $truck['id'] ?>" <?= $selected_truck_id == $truck['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($truck['name']) ?> <?= $truck['relief'] ? '(Relief)' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
+                
+                <?php if (empty($trucks)): ?>
+                    <p style="color: #666; margin-top: 15px;">
+                        No trucks found for this station. Please add trucks in the admin panel.
+                    </p>
+                <?php endif; ?>
+            </div>
+            
+            <?php if ($selected_truck): ?>
+                <div class="truck-relief-toggle">
+                    <h2>Truck Status</h2>
+                    <p>Current Status: <?= $truck_relief_state ? 'Relief Truck' : 'Normal' ?></p>
                     
-                    <?php foreach ($locker_data['items'] as $item): ?>
-                        <div class="item-row">
-                            <div class="item-name"><?= htmlspecialchars($item['name']) ?></div>
-                            <div class="relief-status">
-                                <?php if ($truck_relief_state): ?>
-                                    <?php 
-                                    $is_relief = isset($relief_items[$item['id']]) ? $relief_items[$item['id']] : false;
-                                    ?>
-                                    <label class="switch switch-flat">
-                                        <input class="switch-input item-toggle" type="checkbox" 
-                                               data-item-id="<?= $item['id'] ?>" 
-                                               data-truck-name="<?= htmlspecialchars($selected_truck['name']) ?>" 
-                                               <?= $is_relief ? 'checked' : '' ?> />
-                                        <span class="switch-label" data-on="Relief" data-off="<?= htmlspecialchars($selected_truck['name']) ?>"></span> 
-                                        <span class="switch-handle"></span> 
-                                    </label>
-                                <?php else: ?>
-                                    <span>On <?= htmlspecialchars($selected_truck['name']) ?></span>
-                                <?php endif; ?>
+                    <form method="POST" action="changeover.php">
+                        <input type="hidden" name="truck_id" value="<?= $selected_truck_id ?>">
+                        <input type="hidden" name="relief_state" value="<?= $truck_relief_state ? '0' : '1' ?>">
+                        <button type="submit" name="toggle_relief" class="submit-button">
+                            Set <?= htmlspecialchars($selected_truck['name']) ?> to <?= $truck_relief_state ? 'Normal' : 'Relief Truck' ?>
+                        </button>
+                    </form>
+                </div>
+                
+                <?php if ($truck_relief_state): ?>
+                    <div class="relief-instructions" style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+                        <p>This truck is in Relief mode. Toggle the switches below to indicate which items have been moved to the relief truck.</p>
+                        <p>Don't forget non tracked items such as Station keys, Door remotes, tablets etc.</p> 
+                    </div>
+                <?php endif; ?>
+                
+                <?php if (isset($items_by_locker)): ?>
+                    <?php foreach ($items_by_locker as $locker_id => $locker_data): ?>
+                        <div class="locker-section">
+                            <div class="locker-header">
+                                <h3><?= htmlspecialchars($locker_data['locker_name']) ?></h3>
                             </div>
+                            
+                            <?php foreach ($locker_data['items'] as $item): ?>
+                                <div class="item-row">
+                                    <div class="item-name"><?= htmlspecialchars($item['name']) ?></div>
+                                    <div class="relief-status">
+                                        <?php if ($truck_relief_state): ?>
+                                            <?php 
+                                            $is_relief = isset($relief_items[$item['id']]) ? $relief_items[$item['id']] : false;
+                                            ?>
+                                            <label class="switch switch-flat">
+                                                <input class="switch-input item-toggle" type="checkbox" 
+                                                       data-item-id="<?= $item['id'] ?>" 
+                                                       data-truck-name="<?= htmlspecialchars($selected_truck['name']) ?>" 
+                                                       <?= $is_relief ? 'checked' : '' ?> />
+                                                <span class="switch-label" data-on="Relief" data-off="<?= htmlspecialchars($selected_truck['name']) ?>"></span> 
+                                                <span class="switch-handle"></span> 
+                                            </label>
+                                        <?php else: ?>
+                                            <span>On <?= htmlspecialchars($selected_truck['name']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     <?php endforeach; ?>
-                </div>
-            <?php endforeach; ?>
+                <?php endif; ?>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
     
-    <footer>
-        <p><a href="index.php" class="button touch-button">Return to Home</a></p>
+    <footer style="text-align: center; margin-top: 40px;">
+        <a href="index.php" class="button secondary">Return to Home</a>
     </footer>
     
     <script>
+    function changeStation() {
+        document.cookie = 'preferred_station=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        
+        if (typeof(Storage) !== "undefined") {
+            sessionStorage.removeItem('current_station_id');
+        }
+        
+        return true;
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         // Get all item toggles
         var toggles = document.querySelectorAll('.item-toggle');
