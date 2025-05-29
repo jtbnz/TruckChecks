@@ -13,12 +13,15 @@ $station_name = isset($_GET['station_name']) ? $_GET['station_name'] : 'Unknown 
 $cookie_duration = 3 * 365 * 24 * 60 * 60;
 $expires = time() + $cookie_duration;
 
+// Determine if we're using HTTPS
+$is_https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+
 // Set the station-specific security code cookie
 $cookie_name = 'security_code_station_' . $station_id;
-setcookie($cookie_name, $security_code, $expires, '/', '', true, true);
+setcookie($cookie_name, $security_code, $expires, '/', '', $is_https, true);
 
 // Also set a general security code cookie for backward compatibility
-setcookie('security_code', $security_code, $expires, '/', '', true, true);
+setcookie('security_code', $security_code, $expires, '/', '', $is_https, true);
 
 // Also set it in session for immediate use
 session_start();
