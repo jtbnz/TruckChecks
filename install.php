@@ -16,27 +16,26 @@ $allowInstaller = false;
 if (defined('ALLOW_INSTALLER') && ALLOW_INSTALLER === true) {
     $allowInstaller = true;
 } else {
-    // Check if user is logged in as superuser
+    // Check if user is properly logged in as superuser (not just security code access)
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
     
-    // Try to use the auth system if available
+    // ONLY allow authenticated superusers, not security code users
     if (file_exists('auth.php')) {
         try {
             include_once('auth.php');
             $user = getCurrentUser();
-            if ($user && $user['role'] === 'superuser') {
+            // Must be a logged-in superuser with valid session token
+            if ($user && $user['role'] === 'superuser' && isset($_SESSION['user_id']) && isset($_SESSION['session_token'])) {
                 $allowInstaller = true;
             }
         } catch (Exception $e) {
-            // Fall back to session check if auth system fails
-            if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
-                $allowInstaller = true;
-            }
+            // No fallback - installer requires proper authentication
+            $allowInstaller = false;
         }
     } else {
-        // Fall back to session check if auth.php doesn't exist
+        // Legacy check - requires both user_id and role in session
         if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
             $allowInstaller = true;
         }
