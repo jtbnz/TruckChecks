@@ -6,17 +6,24 @@ if (!isset($_GET['code']) || empty($_GET['code'])) {
 }
 
 $security_code = $_GET['code'];
+$station_id = isset($_GET['station_id']) ? $_GET['station_id'] : null;
+$station_name = isset($_GET['station_name']) ? $_GET['station_name'] : 'Unknown Station';
 
 // Set cookie for 3 years (3 * 365 * 24 * 60 * 60 seconds)
 $cookie_duration = 3 * 365 * 24 * 60 * 60;
 $expires = time() + $cookie_duration;
 
-// Set the security code cookie
+// Set the station-specific security code cookie
+$cookie_name = 'security_code_station_' . $station_id;
+setcookie($cookie_name, $security_code, $expires, '/', '', true, true);
+
+// Also set a general security code cookie for backward compatibility
 setcookie('security_code', $security_code, $expires, '/', '', true, true);
 
 // Also set it in session for immediate use
 session_start();
 $_SESSION['security_code'] = $security_code;
+$_SESSION['security_code_station_' . $station_id] = $security_code;
 
 // Check if session has not already been started
 if (session_status() === PHP_SESSION_NONE) {
@@ -148,11 +155,12 @@ if (!isset($_SESSION['version'])) {
         <div class="success-title">Security Code Set Successfully!</div>
         
         <div class="success-message">
-            Your security code has been stored on this device and will remain valid for 3 years.
+            Your security code for <strong><?= htmlspecialchars($station_name) ?></strong> has been stored on this device and will remain valid for 3 years.
         </div>
         
         <div class="security-code-display">
-            Security Code: <?= htmlspecialchars($security_code) ?>
+            Security Code: <?= htmlspecialchars($security_code) ?><br>
+            <small style="font-size: 14px; color: #666;">Station: <?= htmlspecialchars($station_name) ?></small>
         </div>
         
         <div class="info-box">

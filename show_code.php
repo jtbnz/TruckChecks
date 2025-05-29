@@ -44,36 +44,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_code'])) {
     $new_code = $_POST['security_code'];
     if (!empty($new_code)) {
         try {
-            // Check if settings table exists and has a security_code entry
-            $stmt = $db->prepare('SELECT COUNT(*) FROM settings WHERE setting_name = "security_code"');
-            $stmt->execute();
+            // Check if station_settings table exists and has a security_code entry for this station
+            $stmt = $db->prepare('SELECT COUNT(*) FROM station_settings WHERE station_id = ? AND setting_key = "security_code"');
+            $stmt->execute([$station['id']]);
             $exists = $stmt->fetchColumn();
             
             if ($exists) {
-                // Update existing code
-                $stmt = $db->prepare('UPDATE settings SET setting_value = ? WHERE setting_name = "security_code"');
-                $stmt->execute([$new_code]);
+                // Update existing code for this station
+                $stmt = $db->prepare('UPDATE station_settings SET setting_value = ? WHERE station_id = ? AND setting_key = "security_code"');
+                $stmt->execute([$new_code, $station['id']]);
             } else {
-                // Insert new code
-                $stmt = $db->prepare('INSERT INTO settings (setting_name, setting_value) VALUES ("security_code", ?)');
-                $stmt->execute([$new_code]);
+                // Insert new code for this station
+                $stmt = $db->prepare('INSERT INTO station_settings (station_id, setting_key, setting_value, setting_type, description) VALUES (?, "security_code", ?, "string", "Station-specific security code for additional verification")');
+                $stmt->execute([$station['id'], $new_code]);
             }
             
-            $success_message = "Security code has been set successfully!";
+            $success_message = "Security code has been set successfully for " . htmlspecialchars($station['name']) . "!";
         } catch (Exception $e) {
             $error_message = "Error setting security code: " . $e->getMessage();
         }
     }
 }
 
-// Get current security code
+// Get current security code for this station
 try {
-    $stmt = $db->prepare('SELECT setting_value FROM settings WHERE setting_name = "security_code"');
-    $stmt->execute();
+    $stmt = $db->prepare('SELECT setting_value FROM station_settings WHERE station_id = ? AND setting_key = "security_code"');
+    $stmt->execute([$station['id']]);
     $current_code = $stmt->fetchColumn();
 } catch (Exception $e) {
     $current_code = null;
-    $error_message = "Settings table not found. Please run the V4Changes.sql script to create the required tables.";
+    $error_message = "Station settings table not found. Please run the V4Changes.sql script to create the required tables.";
 }
 
 include 'templates/header.php';
@@ -190,9 +190,9 @@ include 'templates/header.php';
     <p>Scan this QR code with a mobile device to store the security code for 3 years:</p>
     
     <?php
-    // Create QR code data that will set a cookie on the mobile device
+    // Create QR code data that will set a cookie on the mobile device with station information
     $current_directory = dirname($_SERVER['REQUEST_URI']);
-    $qr_data = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/set_security_cookie.php?code=' . urlencode($current_code);
+    $qr_data = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/set_security_cookie.php?code=' . urlencode($current_code) . '&station_id=' . urlencode($station['id']) . '&station_name=' . urlencode($station['name']);
     
     // Generate the QR code
     $result = Builder::create()
@@ -213,7 +213,7 @@ include 'templates/header.php';
     </div>
     
     <div style="margin: 15px 0;">
-        <a href="data:image/png;base64,<?= $qrcode_base64 ?>" download="security_code_qr.png" class="button touch-button" style="background-color: #28a745;">
+        <a href="data:image/png;base64,<?= $qrcode_base64 ?>" download="security_code_qr_<?= preg_replace('/[^a-zA-Z0-9]/', '_', strtolower($station['name'])) ?>.png" class="button touch-button" style="background-color: #28a745;">
             📱 Download QR Code
         </a>
     </div>
@@ -248,7 +248,7 @@ include 'templates/header.php';
 <div class="info-section" style="background-color: #fff3cd; border: 1px solid #ffeaa7;">
     <h3>About Security Codes</h3>
     <p>Security codes can be used for additional verification when accessing certain features of the system. The code is stored in the database and can be updated as needed.</p>
-    <p><strong>Note:</strong> This is a global security code that applies to all stations in the system.</p>
+    <p><strong>Note:</strong> This security code is specific to <strong><?= htmlspecialchars($station['name']) ?></strong> station only.</p>
 </div>
 
 <div class="button-container" style="margin-top: 20px;">
