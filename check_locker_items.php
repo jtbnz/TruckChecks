@@ -249,7 +249,7 @@ if ($selected_truck_id) {
             const CHECKPROTECT = <?php 
                 // Check if security code is in session as fallback
                 $has_session_code = $current_station && isset($_SESSION['security_code_station_' . $current_station['id']]);
-                echo (CHECKPROTECT && $current_station && !$has_session_code) ? 'true' : 'false'; 
+                echo (CHECKPROTECT && $current_station) ? 'true' : 'false'; 
             ?>;
             console.log('=== SECURITY DEBUG ===');
             console.log('CHECKPROTECT:', CHECKPROTECT);

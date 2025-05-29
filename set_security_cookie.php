@@ -33,6 +33,13 @@ session_start();
 $_SESSION['security_code'] = $security_code;
 $_SESSION['security_code_station_' . $station_id] = $security_code;
 
+// Also store in localStorage as a backup
+echo "<script>
+    localStorage.setItem('security_code_station_" . $station_id . "', '" . $security_code . "');
+    localStorage.setItem('security_code', '" . $security_code . "');
+    console.log('Security code stored in localStorage as backup');
+</script>";
+
 // Check if session has not already been started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

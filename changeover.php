@@ -3,6 +3,11 @@
 include 'db.php';
 include_once('auth.php');
 
+// Define CHECKPROTECT constant if not already defined
+if (!defined('CHECKPROTECT')) {
+    define('CHECKPROTECT', true); // Enable security code protection by default
+}
+
 // Get current station context (no authentication required for public view)
 $stations = [];
 $currentStation = null;
@@ -70,6 +75,27 @@ if (!empty($stations)) {
         $_SESSION['current_station_id'] = $currentStation['id'];
         setcookie('preferred_station', $currentStation['id'], time() + (365 * 24 * 60 * 60), "/");
     }
+}
+
+// Security code validation function
+function is_code_valid($db, $code, $station_id = null) {
+    if ($station_id) {
+        // Check station-specific security code
+        $query = $db->prepare("SELECT COUNT(*) FROM station_settings WHERE station_id = :station_id AND setting_key = 'security_code' AND setting_value = :code");
+        $query->execute(['station_id' => $station_id, 'code' => $code]);
+        return $query->fetchColumn() > 0;
+    }
+    // No station context means no valid code
+    return false;
+}
+
+// Handle security code validation AJAX request
+if (CHECKPROTECT && isset($_GET['validate_code'])) {
+    $code = $_GET['validate_code'];
+    $station_id = $currentStation ? $currentStation['id'] : null;
+    $is_valid = is_code_valid($db, $code, $station_id);
+    echo json_encode(['valid' => $is_valid]);
+    exit;
 }
 
 // Check if relief_items table exists, if not create it
@@ -264,6 +290,64 @@ if ($selected_truck_id) {
     <meta name="description" content="Truck Change Over Relief Mode">
     <link rel="stylesheet" href="styles/styles.css?id=<?php echo $version; ?>">
     <title>Relief Truck Management</title>
+    <script>
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function checkProtection() {
+            const CHECKPROTECT = <?php 
+                // Check if security code is in session as fallback
+                $has_session_code = $currentStation && isset($_SESSION['security_code_station_' . $currentStation['id']]);
+                echo (CHECKPROTECT && $currentStation) ? 'true' : 'false'; 
+            ?>;
+            
+            if (CHECKPROTECT) {
+                let code = null;
+                
+                // First try to get station-specific security code from cookie
+                <?php if ($currentStation): ?>
+                const stationCode = getCookie('security_code_station_<?= $currentStation['id'] ?>');
+                if (stationCode) {
+                    code = stationCode;
+                }
+                <?php endif; ?>
+                
+                // Fallback to general security code cookie
+                if (!code) {
+                    code = getCookie('security_code');
+                }
+                
+                // Fallback to localStorage for backward compatibility
+                if (!code) {
+                    code = localStorage.getItem('protection_code');
+                }
+                
+                if (!code) {
+                    alert('Access denied. Missing security code. Please scan the QR code from your station admin.');
+                    window.location.href = 'index.php';
+                } else {
+                    fetch('changeover.php?validate_code=' + code)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (!data.valid) {
+                                alert('Access denied. Invalid security code. Please scan the QR code from your station admin.');
+                                window.location.href = 'index.php';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Security validation error:', error);
+                            alert('Security validation failed. Please try again.');
+                            window.location.href = 'index.php';
+                        });
+                }
+            }
+        }
+        window.onload = checkProtection;
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
