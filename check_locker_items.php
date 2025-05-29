@@ -49,7 +49,8 @@ function is_code_valid($db, $code, $station_id = null) {
         return $query->fetchColumn() > 0;
     } else {
         // Fallback to old protection_codes table for backward compatibility
-        $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
+        // No fallback - only use station-specific security codes
+        return false; // No station context means no valid code
         $query->execute(['code' => $code]);
         return $query->fetchColumn() > 0;
     }
@@ -245,7 +246,7 @@ if ($selected_truck_id) {
         }
 
         function checkProtection() {
-            const CHECKPROTECT = <?php echo CHECKPROTECT ? 'true' : 'false'; ?>;
+            const CHECKPROTECT = <?php echo (CHECKPROTECT && $current_station) ? 'true' : 'false'; ?>;
             if (CHECKPROTECT) {
                 let code = null;
                 
