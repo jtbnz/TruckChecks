@@ -358,14 +358,14 @@ if ($selected_truck_id) {
 </head>
 <body class="<?php echo $IS_DEMO ? 'demo-mode' : ''; ?>">
 
-<?php if ($current_station): ?>
+<!-- <?php if ($current_station): ?>
     <div style="text-align: center; background-color: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
         <strong>Station:</strong> <?= htmlspecialchars($current_station['name']) ?>
         <?php if (function_exists('getCurrentUser') && getCurrentUser()): ?>
             | <a href="select_station.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>" style="color: #12044C;">Change Station</a>
         <?php endif; ?>
     </div>
-<?php endif; ?>
+<?php endif; ?> -->
 
 <h1>Check Locker Items</h1>
 
