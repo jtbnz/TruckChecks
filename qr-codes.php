@@ -115,6 +115,36 @@ $qrcode_base64 = base64_encode($result->getString());
     <!-- <p><a href="<?= $locker_url ?>" target="_blank"><?= $locker_url ?></a></p> -->
 </div>
 
+<?php
+// Generate Security QR Code
+$security_code = getStationSetting('security_code', '');
+if (!empty($security_code)) {
+    $security_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/set_security_cookie.php?code=' . urlencode($security_code) . '&station_id=' . $station['id'] . '&station_name=' . urlencode($station['name']);
+    
+    // Generate the Security QR code
+    $security_result = Builder::create()
+        ->writer(new PngWriter())
+        ->data($security_url)
+        ->encoding(new Encoding('UTF-8'))
+        ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())
+        ->size(300)
+        ->margin(0)
+        ->build();
+    
+    // Get the Security QR code as a Base64-encoded string
+    $security_qrcode_base64 = base64_encode($security_result->getString());
+?>
+
+<div class="locker-item" style="border: 3px solid #dc3545; background-color: #f8d7da;">
+    <p style="color: #721c24; font-weight: bold;">SECURITY - <?= htmlspecialchars($station['name']) ?></p>
+    <a href="<?= $security_url ?>" target="_blank">
+        <img src="data:image/png;base64,<?= $security_qrcode_base64 ?>" alt="Security QR Code for <?= htmlspecialchars($station['name']) ?>">
+    </a>
+    <p style="font-size: 12px; color: #721c24; margin-top: 10px;">Scan to enable security access on this device</p>
+</div>
+
+<?php } ?>
+
 <?php if (empty($trucks)): ?>
     <div style="text-align: center; padding: 40px; color: #666;">
         <h3>No Trucks Found</h3>

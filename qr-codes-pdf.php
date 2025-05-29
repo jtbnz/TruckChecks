@@ -62,7 +62,30 @@ if (empty($lockers)) {
     exit;
 }
 
-foreach ($lockers as $index => $locker) {
+// Generate Security QR Code first
+$security_code = getStationSetting('security_code', '');
+$all_items = [];
+
+if (!empty($security_code)) {
+    $security_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/set_security_cookie.php?code=' . urlencode($security_code) . '&station_id=' . $station['id'] . '&station_name=' . urlencode($station['name']);
+    $all_items[] = [
+        'type' => 'security',
+        'label' => 'SECURITY',
+        'url' => $security_url
+    ];
+}
+
+// Add all lockers to the items array
+foreach ($lockers as $locker) {
+
+    $all_items[] = [
+        'type' => 'locker',
+        'label' => $locker['truck_name'] . ' ' . $locker['locker_name'],
+        'url' => 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/check_locker_items.php?truck_id=' . $locker['truck_id'] . '&locker_id=' . $locker['locker_id']
+    ];
+}
+
+foreach ($all_items as $index => $item) {
     if ($index != 0 && $index % ($labelsPerRow * $labelsPerColumn) == 0) {
         $pdf->AddPage();
         
@@ -83,12 +106,24 @@ foreach ($lockers as $index => $locker) {
 
     $locker_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory . '/check_locker_items.php?truck_id=' . $locker['truck_id'] . '&locker_id=' . $locker['locker_id'];
 
-    $qrCode = QrCode::create($locker_url)
+    $qrCode = QrCode::create($item['url'])
         ->setSize($qrCodeSizeInPixels)
         ->setMargin(0);
 
     $pdf->SetFont('freemono', '', 6);
-    $pdf->Text($x + 6, $y - 3, $locker['truck_name'] . ' ' . $locker['locker_name']);
+    // Special styling for security QR code
+    if ($item['type'] === 'security') {
+        $pdf->SetTextColor(220, 53, 69); // Red color for security
+        $pdf->SetFont('freemono', 'B', 7); // Bold and slightly larger
+    } else {
+        $pdf->SetTextColor(0, 0, 0); // Black color for regular items
+        $pdf->SetFont('freemono', '', 6);
+    }
+    
+    $pdf->Text($x + 6, $y - 3, $item['label']);
+    
+    // Reset text color
+    $pdf->SetTextColor(0, 0, 0);
     $pdf->Image('@' . $writer->write($qrCode)->getString(), $x, $y, $qrCodeSize, $qrCodeSize, 'PNG');
 }
 
