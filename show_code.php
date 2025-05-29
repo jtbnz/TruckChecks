@@ -218,6 +218,22 @@ include 'templates/header.php';
         </a>
     </div>
     
+    <?php
+    // Detect if user is on mobile device
+    $user_agent = $_SERVER['HTTP_USER_AGENT'];
+    $is_mobile = preg_match('/(android|iphone|ipad|ipod|blackberry|windows phone)/i', $user_agent);
+    ?>
+    
+    <?php if (!$is_mobile): ?>
+    <div style="margin: 15px 0; padding: 15px; background-color: #e8f4fd; border: 1px solid #b3d9ff; border-radius: 5px;">
+        <p style="margin-bottom: 10px; font-weight: bold; color: #12044C;">For Desktop Users:</p>
+        <a href="<?= htmlspecialchars($qr_data) ?>" target="_blank" class="button touch-button" style="background-color: #17a2b8; margin-bottom: 10px;">
+            🔗 Click to Register Security Code
+        </a>
+        <p style="font-size: 12px; color: #666; margin: 0;">This link will open in a new tab and register the security code on this device for 3 years.</p>
+    </div>
+    <?php endif; ?>
+    
     <div style="font-size: 14px; color: #666; margin-top: 15px;">
         <p><strong>Instructions:</strong></p>
         <ol style="text-align: left; display: inline-block;">
