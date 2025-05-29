@@ -1,48 +1,11 @@
 <?php
 include_once('auth.php');
 
-// Auto-detect station based on truck/locker parameters if user is authenticated but no station is set
-// Removed auto-detection code that was causing authentication conflicts
-// Station context is now handled by the getCurrentStation() function below
-if (false) {
-    $truck_id = isset($_GET['truck_id']) ? (int)$_GET['truck_id'] : null;
-    $locker_id = isset($_GET['locker_id']) ? (int)$_GET['locker_id'] : null;
-    
-    if ($truck_id || $locker_id) {
-        try {
-            $db = get_db_connection();
-            
-            if ($locker_id) {
-                // Get station from locker -> truck -> station
-                $stmt = $db->prepare("
-                    SELECT t.station_id 
-                    FROM lockers l 
-                    JOIN trucks t ON l.truck_id = t.id 
-                    WHERE l.id = ? AND t.station_id IS NOT NULL
-                ");
-                $stmt->execute([$locker_id]);
-                $station_id = $stmt->fetchColumn();
-            } elseif ($truck_id) {
-                // Get station directly from truck
-                $stmt = $db->prepare("SELECT station_id FROM trucks WHERE id = ? AND station_id IS NOT NULL");
-                $stmt->execute([$truck_id]);
-                $station_id = $stmt->fetchColumn();
-            }
-            
-            if ($station_id && $auth->hasStationAccess($station_id)) {
-                $auth->setCurrentStation($station_id);
-                // Redirect to same page to refresh with station context
-                $redirect_url = $_SERVER['REQUEST_URI'];
-                header("Location: $redirect_url");
-                exit;
-            }
-        } catch (Exception $e) {
-            error_log("Auto station detection error: " . $e->getMessage());
-        }
-    }
+// Define CHECKPROTECT constant if not already defined
+if (!defined('CHECKPROTECT')) {
+    define('CHECKPROTECT', true); // Enable security code protection by default
 }
 
-// Get current station for settings (if available)
 // Get current station for settings (if available)
 $current_station = null;
 try {
