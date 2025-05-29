@@ -198,6 +198,10 @@ if (!isset($_SESSION['version'])) {
             </ul>
         </div>
         
+        <div id="storage-status" style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin: 20px 0; text-align: left;">
+            <h4>Checking storage status...</h4>
+        </div>
+        
         <div class="button-container">
             <a href="index.php" class="button">Go to TruckChecks</a>
             <a href="javascript:window.close();" class="button secondary">Close Window</a>
@@ -213,9 +217,64 @@ if (!isset($_SESSION['version'])) {
         }, 10000);
         
         // Show confirmation that the code was set
+        console.log('=== SECURITY CODE STORAGE DEBUG ===');
         console.log('Security code set successfully for 3 years');
-        console.log('All cookies after setting:', document.cookie);
+        console.log('Station ID: <?= $station_id ?>');
+        console.log('Security Code: <?= $security_code ?>');
+        
+        // Check localStorage storage
+        console.log('\n--- localStorage Storage ---');
+        console.log('Station-specific localStorage:', localStorage.getItem('security_code_station_<?= $station_id ?>'));
+        console.log('General localStorage:', localStorage.getItem('security_code'));
+        
+        // Check cookie storage
+        console.log('\n--- Cookie Storage ---');
+        console.log('All cookies:', document.cookie);
         console.log('Expected station cookie name: security_code_station_<?= $station_id ?>');
+        
+        // Function to get specific cookie
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        
+        console.log('Station cookie value:', getCookie('security_code_station_<?= $station_id ?>'));
+        console.log('General cookie value:', getCookie('security_code'));
+        
+        // Display storage status on page
+        setTimeout(function() {
+            const statusDiv = document.getElementById('storage-status');
+            let statusHTML = '<h4>Storage Status:</h4>';
+            
+            // Check localStorage
+            const stationLocal = localStorage.getItem('security_code_station_<?= $station_id ?>');
+            const generalLocal = localStorage.getItem('security_code');
+            statusHTML += '<p><strong>localStorage (survives browser restart):</strong></p>';
+            statusHTML += '<ul>';
+            statusHTML += '<li>Station-specific: ' + (stationLocal ? '✅ Stored (' + stationLocal.substring(0,8) + '...)' : '❌ Not found') + '</li>';
+            statusHTML += '<li>General: ' + (generalLocal ? '✅ Stored (' + generalLocal.substring(0,8) + '...)' : '❌ Not found') + '</li>';
+            statusHTML += '</ul>';
+            
+            // Check cookies
+            const stationCookie = getCookie('security_code_station_<?= $station_id ?>');
+            const generalCookie = getCookie('security_code');
+            statusHTML += '<p><strong>Cookies (may not persist):</strong></p>';
+            statusHTML += '<ul>';
+            statusHTML += '<li>Station-specific: ' + (stationCookie ? '✅ Stored (' + stationCookie.substring(0,8) + '...)' : '❌ Not found') + '</li>';
+            statusHTML += '<li>General: ' + (generalCookie ? '✅ Stored (' + generalCookie.substring(0,8) + '...)' : '❌ Not found') + '</li>';
+            statusHTML += '</ul>';
+            
+            // Add recommendation
+            if (stationLocal || generalLocal) {
+                statusHTML += '<p style="color: green; font-weight: bold;">✅ Security code should persist across browser restarts!</p>';
+            } else {
+                statusHTML += '<p style="color: red; font-weight: bold;">⚠️ Warning: Security code may not persist across browser restarts!</p>';
+            }
+            
+            statusDiv.innerHTML = statusHTML;
+        }, 100);
         
         // Optional: Show a brief notification
         if ('Notification' in window && Notification.permission === 'granted') {
