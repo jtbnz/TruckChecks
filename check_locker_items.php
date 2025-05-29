@@ -247,6 +247,10 @@ if ($selected_truck_id) {
 
         function checkProtection() {
             const CHECKPROTECT = <?php echo (CHECKPROTECT && $current_station) ? 'true' : 'false'; ?>;
+            console.log('=== SECURITY DEBUG ===');
+            console.log('CHECKPROTECT:', CHECKPROTECT);
+            console.log('Station ID: <?php echo $current_station ? $current_station['id'] : 'null'; ?>');
+            console.log('All cookies:', document.cookie);
             if (CHECKPROTECT) {
                 let code = null;
                 
