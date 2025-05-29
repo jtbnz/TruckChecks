@@ -372,6 +372,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <a href="reports.php" class="nav-item" target="content-frame">
                         <i>📊</i> Reports
                     </a>
+                    <a href="deleted_items_report.php" class="nav-item" target="content-frame">
+                        <i>🗑️</i> Deleted Items Report
+                    </a>
                     <a href="backups.php" class="nav-item" target="content-frame">
                         <i>💾</i> Download Backup
                     </a>
@@ -482,6 +485,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                             <p>Generate comprehensive reports, view check history, and analyze fleet performance data.</p>
                             <div class="card-buttons">
                                 <a href="reports.php" class="card-button" target="content-frame">View Reports</a>
+                                <a href="deleted_items_report.php" class="card-button" target="content-frame">Deleted Items</a>
                                 <a href="login_logs.php" class="card-button secondary" target="content-frame">Login Logs</a>
                             </div>
                         </div>

@@ -1,13 +1,17 @@
 <?php
-include('config.php');
-include('db.php');
+include_once('auth.php');
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Require authentication and get user context
+$user = requireAuth();
+$station = null;
+
+// Get user's station context if they're a station admin
+if ($user['role'] === 'station_admin') {
+    $station = requireStation();
 }
 
-// Check if the user is logged in
-if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
+// Check if user has permission to view login logs
+if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
     header('Location: login.php');
     exit;
 }
@@ -32,23 +36,42 @@ try {
     $where_conditions = [];
     $params = [];
     
+    // Role-based filtering
+    if ($user['role'] === 'station_admin' && $station) {
+        // Station admins can only see logs for users from their station(s)
+        $user_stations = getUserStations($user['id']);
+        $station_ids = array_column($user_stations, 'id');
+        
+        if (!empty($station_ids)) {
+            $placeholders = implode(',', array_fill(0, count($station_ids), '?'));
+            $where_conditions[] = "ll.user_id IN (
+                SELECT DISTINCT u.id 
+                FROM users u 
+                LEFT JOIN user_stations us ON u.id = us.user_id 
+                WHERE us.station_id IN ($placeholders) OR u.role = 'superuser'
+            )";
+            $params = array_merge($params, $station_ids);
+        }
+    }
+    // Superusers see all logs (no additional filtering needed)
+    
     if ($filter_success !== '') {
-        $where_conditions[] = "success = ?";
+        $where_conditions[] = "ll.success = ?";
         $params[] = $filter_success;
     }
     
     if ($filter_ip !== '') {
-        $where_conditions[] = "ip_address LIKE ?";
+        $where_conditions[] = "ll.ip_address LIKE ?";
         $params[] = "%$filter_ip%";
     }
     
     if ($date_from !== '') {
-        $where_conditions[] = "login_time >= ?";
+        $where_conditions[] = "ll.login_time >= ?";
         $params[] = $date_from . ' 00:00:00';
     }
     
     if ($date_to !== '') {
-        $where_conditions[] = "login_time <= ?";
+        $where_conditions[] = "ll.login_time <= ?";
         $params[] = $date_to . ' 23:59:59';
     }
     
@@ -58,20 +81,43 @@ try {
     }
     
     // Get total count for pagination
-    $count_sql = "SELECT COUNT(*) FROM login_log $where_clause";
+    $count_sql = "SELECT COUNT(*) FROM login_log ll $where_clause";
     $count_stmt = $pdo->prepare($count_sql);
     $count_stmt->execute($params);
     $total_records = $count_stmt->fetchColumn();
     $total_pages = ceil($total_records / $records_per_page);
     
-    // Get login logs
-    $sql = "SELECT * FROM login_log $where_clause ORDER BY login_time DESC LIMIT ? OFFSET ?";
+    // Get login logs with user information
+    $sql = "SELECT ll.*, u.username, u.role,
+                   GROUP_CONCAT(DISTINCT s.name ORDER BY s.name SEPARATOR ', ') as station_names
+            FROM login_log ll
+            LEFT JOIN users u ON ll.user_id = u.id
+            LEFT JOIN user_stations us ON u.id = us.user_id
+            LEFT JOIN stations s ON us.station_id = s.id
+            $where_clause
+            GROUP BY ll.id
+            ORDER BY ll.login_time DESC 
+            LIMIT ? OFFSET ?";
     $params[] = $records_per_page;
     $params[] = $offset;
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $login_logs = $stmt->fetchAll();
+    
+    // Get statistics with role-based filtering
+    $stats_where = $where_clause;
+    $stats_params = array_slice($params, 0, -2); // Remove LIMIT and OFFSET params
+    
+    $stats_sql = "SELECT 
+        COUNT(*) as total_attempts,
+        SUM(ll.success) as successful_logins,
+        COUNT(DISTINCT ll.ip_address) as unique_ips,
+        COUNT(CASE WHEN ll.login_time >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as last_24h
+        FROM login_log ll $stats_where";
+    $stats_stmt = $pdo->prepare($stats_sql);
+    $stats_stmt->execute($stats_params);
+    $stats = $stats_stmt->fetch();
     
 } catch (Exception $e) {
     $error = "Error fetching login logs: " . $e->getMessage();
@@ -83,6 +129,14 @@ try {
         max-width: 1200px;
         margin: 20px auto;
         padding: 20px;
+    }
+    
+    .access-info {
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
     }
     
     .filters {
@@ -147,6 +201,30 @@ try {
     .failed {
         color: red;
         font-weight: bold;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .role-superuser {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .role-station_admin {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .role-user {
+        background-color: #6c757d;
+        color: white;
     }
     
     .pagination {
@@ -235,25 +313,25 @@ try {
 <div class="login-logs-container">
     <h1>Login Logs</h1>
     
+    <!-- Access Level Information -->
+    <div class="access-info">
+        <strong>Access Level:</strong> 
+        <?php if ($user['role'] === 'superuser'): ?>
+            <span class="role-badge role-superuser">Superuser</span> - Viewing all login logs across all stations
+        <?php elseif ($user['role'] === 'station_admin'): ?>
+            <span class="role-badge role-station_admin">Station Admin</span> - Viewing login logs for your assigned stations
+            <?php if ($station): ?>
+                <br><strong>Current Station:</strong> <?= htmlspecialchars($station['name']) ?>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
+    
     <?php if (isset($error)): ?>
         <div style="color: red; margin-bottom: 20px;"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
     
     <!-- Statistics -->
     <?php if (!isset($error)): ?>
-        <?php
-        // Get some quick stats
-        $stats_sql = "SELECT 
-            COUNT(*) as total_attempts,
-            SUM(success) as successful_logins,
-            COUNT(DISTINCT ip_address) as unique_ips,
-            COUNT(CASE WHEN login_time >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as last_24h
-            FROM login_log";
-        $stats_stmt = $pdo->prepare($stats_sql);
-        $stats_stmt->execute();
-        $stats = $stats_stmt->fetch();
-        ?>
-        
         <div class="stats">
             <div class="stats-row">
                 <div class="stat-item">
@@ -325,13 +403,15 @@ try {
             <thead>
                 <tr>
                     <th>Date/Time</th>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Stations</th>
                     <th>IP Address</th>
                     <th>Status</th>
                     <th>Location</th>
                     <th>Browser</th>
                     <th>OS</th>
                     <th>Mobile</th>
-                    <th>Session ID</th>
                 </tr>
             </thead>
             <tbody>
@@ -344,6 +424,17 @@ try {
                     ?>
                     <tr>
                         <td><?php echo date('Y-m-d H:i:s', strtotime($log['login_time'])); ?></td>
+                        <td><?php echo htmlspecialchars($log['username'] ?? 'Unknown'); ?></td>
+                        <td>
+                            <?php if ($log['role']): ?>
+                                <span class="role-badge role-<?php echo $log['role']; ?>">
+                                    <?php echo ucfirst(str_replace('_', ' ', $log['role'])); ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="role-badge role-user">Unknown</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo htmlspecialchars($log['station_names'] ?: 'None'); ?></td>
                         <td><?php echo htmlspecialchars($log['ip_address']); ?></td>
                         <td class="<?php echo $log['success'] ? 'success' : 'failed'; ?>">
                             <?php echo $log['success'] ? 'SUCCESS' : 'FAILED'; ?>
@@ -362,7 +453,6 @@ try {
                         <td><?php echo htmlspecialchars($browser); ?></td>
                         <td><?php echo htmlspecialchars($os); ?></td>
                         <td><?php echo $is_mobile ? 'Yes' : 'No'; ?></td>
-                        <td><?php echo htmlspecialchars(substr($log['session_id'], 0, 8)) . '...'; ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

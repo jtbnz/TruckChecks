@@ -381,7 +381,7 @@ include 'templates/header.php';
                            class="setting-input"
                            <?= $key === 'refresh_interval' ? 'min="5000" step="1000"' : '' ?>>
                     <?php if ($key === 'refresh_interval'): ?>
-                        <div class="help-text">Minimum 5000ms (5 seconds). Current value refreshes every <?= number_format($settings[$key]['setting_value'] / 1000, 1) ?> seconds.</div>
+                        <div class="help-text">Minimum 5000ms (5 seconds). Current value refreshes the Status page every <?= number_format($settings[$key]['setting_value'] / 1000, 1) ?> seconds.</div>
                     <?php endif; ?>
                 <?php else: ?>
                     <input type="text" 

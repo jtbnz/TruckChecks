@@ -3,11 +3,77 @@ include('config.php');
 include 'db.php';
 include_once('auth.php');
 
-// Require authentication and station context
-$station = requireStation();
-$user = getCurrentUser();
+// Require authentication
+$user = requireAuth();
+$station = null;
+
+// Check if user has permission to manage email settings
+if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
+    header('Location: login.php');
+    exit;
+}
+
+// Get station context
+if ($user['role'] === 'station_admin') {
+    $station = requireStation();
+} elseif ($user['role'] === 'superuser') {
+    $station = getCurrentStation();
+    if (!$station) {
+        header('Location: select_station.php?redirect=email_admin.php');
+        exit;
+    }
+}
 
 $db = get_db_connection();
+
+// Handle test email sending
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email'])) {
+    $test_email = $_POST['test_email'];
+    if (!empty($test_email) && filter_var($test_email, FILTER_VALIDATE_EMAIL)) {
+        try {
+            // Check if email configuration is available
+            if (!defined('EMAIL_HOST') || !defined('EMAIL_USER') || !defined('EMAIL_PASS')) {
+                throw new Exception('Email configuration is not set up in config.php');
+            }
+            
+            require_once 'vendor/autoload.php';
+            
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = EMAIL_HOST;
+            $mail->SMTPAuth = true;
+            $mail->Username = EMAIL_USER;
+            $mail->Password = EMAIL_PASS;
+            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = EMAIL_PORT;
+            
+            // Recipients
+            $mail->setFrom(EMAIL_USER, 'TruckChecks System');
+            $mail->addAddress($test_email);
+            
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = 'TruckChecks Test Email - ' . $station['name'];
+            $mail->Body = '
+                <h2>TruckChecks Test Email</h2>
+                <p>This is a test email from the TruckChecks system.</p>
+                <p><strong>Station:</strong> ' . htmlspecialchars($station['name']) . '</p>
+                <p><strong>Sent by:</strong> ' . htmlspecialchars($user['username']) . ' (' . htmlspecialchars($user['role']) . ')</p>
+                <p><strong>Date/Time:</strong> ' . date('Y-m-d H:i:s') . '</p>
+                <p>If you received this email, your email configuration is working correctly!</p>
+            ';
+            
+            $mail->send();
+            $test_success_message = "Test email sent successfully to " . htmlspecialchars($test_email) . "!";
+        } catch (Exception $e) {
+            $test_error_message = "Failed to send test email: " . $e->getMessage();
+        }
+    } else {
+        $test_error_message = "Please enter a valid email address for testing.";
+    }
+}
 
 // Handle form submission for setting email
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email'])) {
@@ -47,6 +113,9 @@ try {
     $current_email = null;
 }
 
+// Check if email configuration is available
+$email_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined('EMAIL_PASS') && defined('EMAIL_PORT');
+
 include 'templates/header.php';
 ?>
 
@@ -66,6 +135,14 @@ include 'templates/header.php';
     .page-title {
         color: #12044C;
         margin: 0;
+    }
+
+    .access-info {
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
     }
 
     .station-info {
@@ -96,6 +173,11 @@ include 'templates/header.php';
     .help-section {
         background-color: #fff3cd;
         border: 1px solid #ffeaa7;
+    }
+
+    .test-email-section {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
     }
 
     .form-section {
@@ -163,6 +245,20 @@ include 'templates/header.php';
         background-color: #545b62;
     }
 
+    .button.test {
+        background-color: #28a745;
+    }
+
+    .button.test:hover {
+        background-color: #218838;
+    }
+
+    .button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
     .success-message {
         color: #155724;
         margin: 20px 0;
@@ -181,6 +277,15 @@ include 'templates/header.php';
         border-radius: 5px;
     }
 
+    .warning-message {
+        color: #856404;
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+    }
+
     .current-email-display {
         font-size: 18px;
         font-weight: bold;
@@ -191,6 +296,25 @@ include 'templates/header.php';
     .no-email-text {
         color: #666;
         font-style: italic;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .role-superuser {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .role-station_admin {
+        background-color: #28a745;
+        color: white;
     }
 
     /* Mobile responsive */
@@ -206,12 +330,34 @@ include 'templates/header.php';
         <h1 class="page-title">Manage Admin Email Address</h1>
     </div>
 
+    <!-- Access Level Information -->
+    <div class="access-info">
+        <strong>Access Level:</strong> 
+        <?php if ($user['role'] === 'superuser'): ?>
+            <span class="role-badge role-superuser">Superuser</span> - Managing email settings for selected station
+        <?php elseif ($user['role'] === 'station_admin'): ?>
+            <span class="role-badge role-station_admin">Station Admin</span> - Managing email settings for your station
+        <?php endif; ?>
+    </div>
+
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
         <?php if ($station['description']): ?>
             <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
         <?php endif; ?>
     </div>
+
+    <?php if (!$email_configured): ?>
+        <div class="warning-message">
+            <strong>Warning:</strong> Email configuration is not set up in config.php. Email functionality will not work until you configure the following settings:
+            <ul>
+                <li><strong>EMAIL_HOST</strong> - SMTP server hostname</li>
+                <li><strong>EMAIL_USER</strong> - Email username</li>
+                <li><strong>EMAIL_PASS</strong> - Email password</li>
+                <li><strong>EMAIL_PORT</strong> - SMTP port number</li>
+            </ul>
+        </div>
+    <?php endif; ?>
 
     <?php if (isset($success_message)): ?>
         <div class="success-message">
@@ -222,6 +368,18 @@ include 'templates/header.php';
     <?php if (isset($error_message)): ?>
         <div class="error-message">
             <?= htmlspecialchars($error_message) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($test_success_message)): ?>
+        <div class="success-message">
+            <?= htmlspecialchars($test_success_message) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($test_error_message)): ?>
+        <div class="error-message">
+            <?= htmlspecialchars($test_error_message) ?>
         </div>
     <?php endif; ?>
 
@@ -248,6 +406,30 @@ include 'templates/header.php';
             </div>
         </form>
     </div>
+
+    <?php if ($email_configured): ?>
+    <div class="form-section test-email-section">
+        <h2>Test Email Configuration</h2>
+        <p>Send a test email to verify that your email configuration is working correctly.</p>
+        <form method="POST">
+            <div class="input-container">
+                <label for="test_email">Test Email Address:</label>
+                <input type="email" name="test_email" id="test_email" placeholder="test@example.com" value="<?= htmlspecialchars($current_email ?? '') ?>" required>
+            </div>
+            <div class="button-container">
+                <button type="submit" name="send_test_email" class="button test">Send Test Email</button>
+            </div>
+        </form>
+    </div>
+    <?php else: ?>
+    <div class="form-section test-email-section">
+        <h2>Test Email Configuration</h2>
+        <p>Email testing is not available because email configuration is not set up in config.php.</p>
+        <div class="button-container">
+            <button type="button" class="button test" disabled>Send Test Email (Disabled)</button>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="info-section help-section">
         <h3>About Admin Email</h3>

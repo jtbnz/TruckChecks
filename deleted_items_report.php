@@ -1,162 +1,378 @@
 <?php
-// Include password file
-include('config.php');
-include 'db.php';
-include 'templates/header.php';
+include_once('auth.php');
 
-// Check if the user is logged in
-if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
+// Require authentication and get user context
+$user = requireAuth();
+$station = null;
+
+// Get user's station context if they're a station admin
+if ($user['role'] === 'station_admin') {
+    $station = requireStation();
+}
+
+// Check if user has permission to view deleted items report
+if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
     header('Location: login.php');
     exit;
 }
 
-$db = get_db_connection();
+include 'templates/header.php';
 
 // Get filter parameters
-$table_filter = $_GET['table'] ?? '';
-$date_from = $_GET['date_from'] ?? '';
-$date_to = $_GET['date_to'] ?? '';
-
-// Build query
-$query = "SELECT * FROM audit_log WHERE 1=1";
-$params = [];
-
-if (!empty($table_filter)) {
-    $query .= " AND table_name = ?";
-    $params[] = $table_filter;
-}
-
-if (!empty($date_from)) {
-    $query .= " AND deleted_at >= ?";
-    $params[] = $date_from . ' 00:00:00';
-}
-
-if (!empty($date_to)) {
-    $query .= " AND deleted_at <= ?";
-    $params[] = $date_to . ' 23:59:59';
-}
-
-$query .= " ORDER BY deleted_at DESC";
+$truck_filter = isset($_GET['truck_filter']) ? $_GET['truck_filter'] : '';
+$locker_filter = isset($_GET['locker_filter']) ? $_GET['locker_filter'] : '';
+$date_from = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+$date_to = isset($_GET['date_to']) ? $_GET['date_to'] : '';
 
 try {
-    $stmt = $db->prepare($query);
+    $db = get_db_connection();
+    
+    // Build WHERE clause with role-based filtering
+    $where_conditions = [];
+    $params = [];
+    
+    // Role-based filtering
+    if ($user['role'] === 'station_admin' && $station) {
+        // Station admins can only see deleted items from their station(s)
+        $user_stations = getUserStations($user['id']);
+        $station_ids = array_column($user_stations, 'id');
+        
+        if (!empty($station_ids)) {
+            $placeholders = implode(',', array_fill(0, count($station_ids), '?'));
+            $where_conditions[] = "t.station_id IN ($placeholders)";
+            $params = array_merge($params, $station_ids);
+        }
+    }
+    // Superusers see all deleted items (no additional filtering needed)
+    
+    // Apply user filters
+    if ($truck_filter !== '') {
+        $where_conditions[] = "t.id = ?";
+        $params[] = $truck_filter;
+    }
+    
+    if ($locker_filter !== '') {
+        $where_conditions[] = "l.id = ?";
+        $params[] = $locker_filter;
+    }
+    
+    if ($date_from !== '') {
+        $where_conditions[] = "i.deleted_at >= ?";
+        $params[] = $date_from . ' 00:00:00';
+    }
+    
+    if ($date_to !== '') {
+        $where_conditions[] = "i.deleted_at <= ?";
+        $params[] = $date_to . ' 23:59:59';
+    }
+    
+    $where_clause = '';
+    if (!empty($where_conditions)) {
+        $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
+    }
+    
+    // Get deleted items with role-based filtering
+    $sql = "SELECT i.*, t.name as truck_name, l.name as locker_name, s.name as station_name
+            FROM items i
+            JOIN lockers l ON i.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            LEFT JOIN stations s ON t.station_id = s.id
+            $where_clause
+            AND i.deleted_at IS NOT NULL
+            ORDER BY i.deleted_at DESC";
+    
+    $stmt = $db->prepare($sql);
     $stmt->execute($params);
-    $audit_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $deleted_items = $stmt->fetchAll();
+    
+    // Get available trucks for filter dropdown (role-based)
+    if ($user['role'] === 'station_admin' && $station) {
+        $user_stations = getUserStations($user['id']);
+        $station_ids = array_column($user_stations, 'id');
+        
+        if (!empty($station_ids)) {
+            $placeholders = implode(',', array_fill(0, count($station_ids), '?'));
+            $trucks_sql = "SELECT * FROM trucks WHERE station_id IN ($placeholders) ORDER BY name";
+            $trucks_stmt = $db->prepare($trucks_sql);
+            $trucks_stmt->execute($station_ids);
+            $trucks = $trucks_stmt->fetchAll();
+        } else {
+            $trucks = [];
+        }
+    } else {
+        // Superuser sees all trucks
+        $trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll();
+    }
+    
+    // Get available lockers for filter dropdown (role-based)
+    if ($truck_filter) {
+        $lockers_stmt = $db->prepare('SELECT * FROM lockers WHERE truck_id = ? ORDER BY name');
+        $lockers_stmt->execute([$truck_filter]);
+        $lockers = $lockers_stmt->fetchAll();
+    } else {
+        $lockers = [];
+    }
+    
 } catch (Exception $e) {
-    $error_message = "Error fetching audit records: " . $e->getMessage();
-    $audit_records = [];
+    $error = "Error fetching deleted items: " . $e->getMessage();
 }
-
-// Get available tables for filter
-$available_tables = ['items', 'lockers', 'trucks', 'checks'];
 ?>
 
-<h1>Deleted Items Report</h1>
+<style>
+    .deleted-items-container {
+        max-width: 1200px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .access-info {
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .filters {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .filter-group label {
+        font-weight: bold;
+        font-size: 12px;
+    }
+    
+    .filter-group input, .filter-group select {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+    
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    
+    .items-table th, .items-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    
+    .items-table th {
+        background-color: #12044C;
+        color: white;
+        font-weight: bold;
+    }
+    
+    .items-table tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+    
+    .button {
+        background-color: #12044C;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .button:hover {
+        background-color: #0056b3;
+    }
+    
+    .button.secondary {
+        background-color: #6c757d;
+    }
+    
+    .button.secondary:hover {
+        background-color: #545b62;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .role-superuser {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .role-station_admin {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .items-table {
+            font-size: 12px;
+        }
+        
+        .filter-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
 
-<?php if (isset($error_message)): ?>
-    <div class="error-message" style="color: red; margin: 20px 0; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px;">
-        <?= htmlspecialchars($error_message) ?>
+<div class="deleted-items-container">
+    <h1>Deleted Items Report</h1>
+    
+    <!-- Access Level Information -->
+    <div class="access-info">
+        <strong>Access Level:</strong> 
+        <?php if ($user['role'] === 'superuser'): ?>
+            <span class="role-badge role-superuser">Superuser</span> - Viewing deleted items from all stations
+        <?php elseif ($user['role'] === 'station_admin'): ?>
+            <span class="role-badge role-station_admin">Station Admin</span> - Viewing deleted items from your assigned stations
+            <?php if ($station): ?>
+                <br><strong>Current Station:</strong> <?= htmlspecialchars($station['name']) ?>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
-<?php endif; ?>
-
-<div class="filter-section" style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px;">
-    <h2>Filter Options</h2>
-    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
-        <div>
-            <label for="table">Table:</label>
-            <select name="table" id="table">
-                <option value="">All Tables</option>
-                <?php foreach ($available_tables as $table): ?>
-                    <option value="<?= $table ?>" <?= $table_filter === $table ? 'selected' : '' ?>>
-                        <?= ucfirst($table) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        
-        <div>
-            <label for="date_from">From Date:</label>
-            <input type="date" name="date_from" id="date_from" value="<?= htmlspecialchars($date_from) ?>">
-        </div>
-        
-        <div>
-            <label for="date_to">To Date:</label>
-            <input type="date" name="date_to" id="date_to" value="<?= htmlspecialchars($date_to) ?>">
-        </div>
-        
-        <div>
-            <button type="submit" class="button touch-button">Apply Filter</button>
-            <a href="deleted_items_report.php" class="button touch-button" style="background-color: #6c757d;">Clear</a>
-        </div>
-    </form>
-</div>
-
-<div class="stats-section" style="margin: 20px 0; padding: 15px; background-color: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 5px;">
-    <h2>Summary</h2>
-    <p><strong>Total Records:</strong> <?= count($audit_records) ?></p>
-    <?php if (!empty($table_filter)): ?>
-        <p><strong>Filtered by Table:</strong> <?= htmlspecialchars(ucfirst($table_filter)) ?></p>
+    
+    <?php if (isset($error)): ?>
+        <div style="color: red; margin-bottom: 20px;"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
-    <?php if (!empty($date_from) || !empty($date_to)): ?>
-        <p><strong>Date Range:</strong> 
-            <?= !empty($date_from) ? htmlspecialchars($date_from) : 'Beginning' ?> 
-            to 
-            <?= !empty($date_to) ? htmlspecialchars($date_to) : 'Now' ?>
-        </p>
-    <?php endif; ?>
-</div>
-
-<?php if (!empty($audit_records)): ?>
-    <div class="audit-records">
-        <h2>Audit Records</h2>
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                <thead>
-                    <tr style="background-color: #f8f9fa;">
-                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">ID</th>
-                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Table</th>
-                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Record ID</th>
-                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Deleted At</th>
-                        <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">Data</th>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <form method="GET" action="">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Truck:</label>
+                    <select name="truck_filter" onchange="this.form.submit()">
+                        <option value="">All Trucks</option>
+                        <?php foreach ($trucks as $truck): ?>
+                            <option value="<?= $truck['id'] ?>" <?= $truck_filter == $truck['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($truck['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <?php if (!empty($lockers)): ?>
+                <div class="filter-group">
+                    <label>Locker:</label>
+                    <select name="locker_filter">
+                        <option value="">All Lockers</option>
+                        <?php foreach ($lockers as $locker): ?>
+                            <option value="<?= $locker['id'] ?>" <?= $locker_filter == $locker['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($locker['name']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                
+                <div class="filter-group">
+                    <label>Date From:</label>
+                    <input type="date" name="date_from" value="<?= htmlspecialchars($date_from) ?>">
+                </div>
+                
+                <div class="filter-group">
+                    <label>Date To:</label>
+                    <input type="date" name="date_to" value="<?= htmlspecialchars($date_to) ?>">
+                </div>
+                
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="button">Apply Filter</button>
+                </div>
+                
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <a href="deleted_items_report.php" class="button secondary">Clear</a>
+                </div>
+            </div>
+            
+            <!-- Hidden fields to preserve truck filter when changing locker -->
+            <?php if ($truck_filter): ?>
+                <input type="hidden" name="truck_filter" value="<?= htmlspecialchars($truck_filter) ?>">
+            <?php endif; ?>
+        </form>
+    </div>
+    
+    <!-- Results -->
+    <?php if (!isset($error) && !empty($deleted_items)): ?>
+        <p>Found <?= count($deleted_items) ?> deleted items</p>
+        
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Item Name</th>
+                    <th>Description</th>
+                    <th>Truck</th>
+                    <th>Locker</th>
+                    <?php if ($user['role'] === 'superuser'): ?>
+                        <th>Station</th>
+                    <?php endif; ?>
+                    <th>Deleted Date</th>
+                    <th>Deleted By</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($deleted_items as $item): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($item['name']) ?></td>
+                        <td><?= htmlspecialchars($item['description'] ?: 'No description') ?></td>
+                        <td><?= htmlspecialchars($item['truck_name']) ?></td>
+                        <td><?= htmlspecialchars($item['locker_name']) ?></td>
+                        <?php if ($user['role'] === 'superuser'): ?>
+                            <td><?= htmlspecialchars($item['station_name'] ?: 'No station') ?></td>
+                        <?php endif; ?>
+                        <td><?= date('Y-m-d H:i:s', strtotime($item['deleted_at'])) ?></td>
+                        <td><?= htmlspecialchars($item['deleted_by'] ?: 'Unknown') ?></td>
                     </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($audit_records as $record): ?>
-                        <tr>
-                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['id']) ?></td>
-                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars(ucfirst($record['table_name'])) ?></td>
-                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['record_id']) ?></td>
-                            <td style="border: 1px solid #dee2e6; padding: 8px;"><?= htmlspecialchars($record['deleted_at']) ?></td>
-                            <td style="border: 1px solid #dee2e6; padding: 8px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
-                                <?php
-                                $data = json_decode($record['row_data'], true);
-                                if ($data) {
-                                    $display_data = [];
-                                    foreach ($data as $key => $value) {
-                                        if ($key !== 'id') { // Skip ID as it's already shown
-                                            $display_data[] = $key . ': ' . $value;
-                                        }
-                                    }
-                                    echo htmlspecialchars(implode(', ', $display_data));
-                                } else {
-                                    echo htmlspecialchars($record['row_data']);
-                                }
-                                ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        
+    <?php elseif (!isset($error)): ?>
+        <p>No deleted items found matching your criteria.</p>
+    <?php endif; ?>
+    
+    <div style="margin-top: 30px;">
+        <a href="admin.php" class="button">Back to Admin</a>
     </div>
-<?php else: ?>
-    <div class="no-records" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-        <p>No audit records found matching the current filters.</p>
-    </div>
-<?php endif; ?>
-
-<div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">Back to Admin</a>
 </div>
+
+<script>
+// Auto-submit form when truck selection changes to update locker dropdown
+document.querySelector('select[name="truck_filter"]').addEventListener('change', function() {
+    // Clear locker filter when truck changes
+    const lockerSelect = document.querySelector('select[name="locker_filter"]');
+    if (lockerSelect) {
+        lockerSelect.value = '';
+    }
+    this.form.submit();
+});
+</script>
 
 <?php include 'templates/footer.php'; ?>
