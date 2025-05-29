@@ -1,4 +1,6 @@
 <?php
+include('config.php');
+include 'db.php';
 include_once('auth.php');
 
 // Require authentication and get user context
