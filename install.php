@@ -17,9 +17,29 @@ if (defined('ALLOW_INSTALLER') && ALLOW_INSTALLER === true) {
     $allowInstaller = true;
 } else {
     // Check if user is logged in as superuser
-    session_start();
-    if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
-        $allowInstaller = true;
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Try to use the auth system if available
+    if (file_exists('auth.php')) {
+        try {
+            include_once('auth.php');
+            $user = getCurrentUser();
+            if ($user && $user['role'] === 'superuser') {
+                $allowInstaller = true;
+            }
+        } catch (Exception $e) {
+            // Fall back to session check if auth system fails
+            if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
+                $allowInstaller = true;
+            }
+        }
+    } else {
+        // Fall back to session check if auth.php doesn't exist
+        if (isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'superuser') {
+            $allowInstaller = true;
+        }
     }
 }
 
