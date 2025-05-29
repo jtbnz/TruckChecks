@@ -260,7 +260,12 @@ if ($selected_truck_id) {
                 
                 // First try to get station-specific security code from cookie
                 <?php if ($current_station): ?>
-                const stationCode = getCookie('security_code_station_<?= $current_station['id'] ?>');
+                // First try localStorage (persists across browser restarts)
+                let stationCode = localStorage.getItem('security_code_station_<?= $current_station['id'] ?>');
+                if (!stationCode) {
+                    // Fallback to cookie
+                    stationCode = getCookie('security_code_station_<?= $current_station['id'] ?>');
+                }
                 if (stationCode) {
                     code = stationCode;
                 }
@@ -268,7 +273,12 @@ if ($selected_truck_id) {
                 
                 // Fallback to general security code cookie
                 if (!code) {
-                    code = getCookie('security_code');
+                    // Try localStorage first
+                    code = localStorage.getItem('security_code');
+                    if (!code) {
+                        // Fallback to cookie
+                        code = getCookie('security_code');
+                    }
                 }
                 
                 // Fallback to localStorage for backward compatibility

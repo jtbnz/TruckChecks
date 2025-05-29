@@ -310,7 +310,12 @@ if ($selected_truck_id) {
                 
                 // First try to get station-specific security code from cookie
                 <?php if ($currentStation): ?>
-                const stationCode = getCookie('security_code_station_<?= $currentStation['id'] ?>');
+                // First try localStorage (persists across browser restarts)
+                let stationCode = localStorage.getItem('security_code_station_<?= $currentStation['id'] ?>');
+                if (!stationCode) {
+                    // Fallback to cookie
+                    stationCode = getCookie('security_code_station_<?= $currentStation['id'] ?>');
+                }
                 if (stationCode) {
                     code = stationCode;
                 }
