@@ -11,6 +11,11 @@ requireAuth();
 
 // Get user information
 $user = getCurrentUser();
+if (!$user) {
+    header('Location: login.php');
+    exit;
+}
+
 $userRole = $user['role'];
 $userId = $user['id'];
 
@@ -22,9 +27,23 @@ if ($userRole !== 'superuser' && $userRole !== 'station_admin') {
 // Get user's stations if station admin
 $userStations = [];
 if ($userRole === 'station_admin') {
-    $userStations = getUserStations($userId);
-    if (empty($userStations)) {
-        die('Access denied. No stations assigned.');
+    // Get stations directly from database to avoid potential redirect loops
+    try {
+        $stmt = $pdo->prepare("
+            SELECT s.* 
+            FROM stations s 
+            JOIN user_stations us ON s.id = us.station_id 
+            WHERE us.user_id = ? 
+            ORDER BY s.name
+        ");
+        $stmt->execute([$userId]);
+        $userStations = $stmt->fetchAll();
+        
+        if (empty($userStations)) {
+            die('Access denied. No stations assigned.');
+        }
+    } catch (Exception $e) {
+        die('Database error: ' . $e->getMessage());
     }
 }
 
