@@ -68,15 +68,24 @@ $IS_DEMO = $current_station ? getStationSetting('is_demo', IS_DEMO) : IS_DEMO;
 
 $db = get_db_connection();
 
-function is_code_valid($db, $code) {
-    $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
-    $query->execute(['code' => $code]);
-    return $query->fetchColumn() > 0;
+function is_code_valid($db, $code, $station_id = null) {
+    if ($station_id) {
+        // Check station-specific security code
+        $query = $db->prepare("SELECT COUNT(*) FROM station_settings WHERE station_id = :station_id AND setting_key = 'security_code' AND setting_value = :code");
+        $query->execute(['station_id' => $station_id, 'code' => $code]);
+        return $query->fetchColumn() > 0;
+    } else {
+        // Fallback to old protection_codes table for backward compatibility
+        $query = $db->prepare("SELECT COUNT(*) FROM protection_codes WHERE code = :code");
+        $query->execute(['code' => $code]);
+        return $query->fetchColumn() > 0;
+    }
 }
 
 if (CHECKPROTECT && isset($_GET['validate_code'])) {
     $code = $_GET['validate_code'];
-    $is_valid = is_code_valid($db, $code);
+    $station_id = $current_station ? $current_station['id'] : null;
+    $is_valid = is_code_valid($db, $code, $station_id);
     echo json_encode(['valid' => $is_valid]);
     exit;
 }
@@ -255,21 +264,52 @@ if ($selected_truck_id) {
     <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php echo $version; ?>">
     <link rel="stylesheet" href="styles/styles.css?id=<?php echo $version; ?>">
     <script>
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
         function checkProtection() {
             const CHECKPROTECT = <?php echo CHECKPROTECT ? 'true' : 'false'; ?>;
             if (CHECKPROTECT) {
-                const code = localStorage.getItem('protection_code');
+                let code = null;
+                
+                // First try to get station-specific security code from cookie
+                <?php if ($current_station): ?>
+                const stationCode = getCookie('security_code_station_<?= $current_station['id'] ?>');
+                if (stationCode) {
+                    code = stationCode;
+                }
+                <?php endif; ?>
+                
+                // Fallback to general security code cookie
                 if (!code) {
-                    alert('Access denied. Missing protection code.');
+                    code = getCookie('security_code');
+                }
+                
+                // Fallback to localStorage for backward compatibility
+                if (!code) {
+                    code = localStorage.getItem('protection_code');
+                }
+                
+                if (!code) {
+                    alert('Access denied. Missing security code. Please scan the QR code from your station admin.');
                     window.location.href = 'index.php';
                 } else {
                     fetch('check_locker_items.php?validate_code=' + code)
                         .then(response => response.json())
                         .then(data => {
                             if (!data.valid) {
-                                alert('Access denied. Invalid protection code.');
+                                alert('Access denied. Invalid security code. Please scan the QR code from your station admin.');
                                 window.location.href = 'index.php';
                             }
+                        })
+                        .catch(error => {
+                            console.error('Security validation error:', error);
+                            alert('Security validation failed. Please try again.');
+                            window.location.href = 'index.php';
                         });
                 }
             }
