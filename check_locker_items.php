@@ -2,7 +2,9 @@
 include_once('auth.php');
 
 // Auto-detect station based on truck/locker parameters if user is authenticated but no station is set
-if ($auth->isAuthenticated() && !$auth->getCurrentStation()) {
+// Removed auto-detection code that was causing authentication conflicts
+// Station context is now handled by the getCurrentStation() function below
+if (false) {
     $truck_id = isset($_GET['truck_id']) ? (int)$_GET['truck_id'] : null;
     $locker_id = isset($_GET['locker_id']) ? (int)$_GET['locker_id'] : null;
     
@@ -41,7 +43,15 @@ if ($auth->isAuthenticated() && !$auth->getCurrentStation()) {
 }
 
 // Get current station for settings (if available)
-$current_station = $auth->getCurrentStation();
+// Get current station for settings (if available)
+$current_station = null;
+try {
+    // Try to get station context if user is authenticated
+    $current_station = getCurrentStation();
+} catch (Exception $e) {
+    // Continue without station context for backward compatibility
+    error_log("Station context error: " . $e->getMessage());
+}
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -369,7 +379,7 @@ if ($selected_truck_id) {
 <?php if ($current_station): ?>
     <div style="text-align: center; background-color: #f8f9fa; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
         <strong>Station:</strong> <?= htmlspecialchars($current_station['name']) ?>
-        <?php if ($auth->isAuthenticated()): ?>
+        <?php if (function_exists('getCurrentUser') && getCurrentUser()): ?>
             | <a href="select_station.php?redirect=<?= urlencode($_SERVER['REQUEST_URI']) ?>" style="color: #12044C;">Change Station</a>
         <?php endif; ?>
     </div>

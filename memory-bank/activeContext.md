@@ -103,6 +103,19 @@ The system is undergoing a major architectural upgrade to introduce the Station 
 - **API Compatibility**: Existing maintenance pages will work (need updates)
 - **Configuration**: Original config.php structure unchanged
 
+## Recent Fixes
+
+### Security Code Authentication Issue (RESOLVED)
+- **Problem**: Users getting "access denied invalid security code" when checking locker items after scanning QR code
+- **Root Cause**: Mixed authentication patterns in `check_locker_items.php` causing conflicts between old `$auth` object methods and new auth functions
+- **Solution**: 
+  - Fixed station context retrieval to use `getCurrentStation()` function consistently
+  - Removed problematic auto-detection code that used old `$auth` object
+  - Updated authentication checks to use proper function-based approach
+  - Maintained backward compatibility for both station-specific and general security codes
+- **Files Modified**: `check_locker_items.php`
+- **Status**: ✅ RESOLVED - Security code validation now works correctly with station settings
+
 ## Next Steps & Pending Work
 
 ### 1. Update Maintenance Pages (High Priority)
