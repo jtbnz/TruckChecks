@@ -3,6 +3,9 @@ include('config.php');
 include('db.php');
 include('auth.php');
 
+// Get database connection
+$pdo = get_db_connection();
+
 // Ensure user is authenticated
 requireAuth();
 
