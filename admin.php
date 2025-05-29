@@ -43,11 +43,6 @@ if ($userRole === 'station_admin') {
     }
 }
 
-// Check if the user is logged in (legacy check for backward compatibility)
-if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
-    header('Location: login.php');
-    exit;
-}
 
 $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 

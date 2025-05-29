@@ -293,11 +293,34 @@ class AuthManager {
             }
         }
         
-        // Default to first accessible station
-        $stations = $this->getUserStations();
-        if (!empty($stations)) {
-            $this->setCurrentStation($stations[0]['id']);
-            return $stations[0];
+        // Default to first accessible station - use direct query to avoid redirect loops
+        $user = $this->getCurrentUser();
+        if ($user && $user['role'] === 'station_admin') {
+            try {
+                $stmt = $this->db->prepare("
+                    SELECT s.* 
+                    FROM stations s 
+                    JOIN user_stations us ON s.id = us.station_id 
+                    WHERE us.user_id = ? 
+                    ORDER BY s.name 
+                    LIMIT 1
+                ");
+                $stmt->execute([$user['id']]);
+                $station = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($station) {
+                    $this->setCurrentStation($station['id']);
+                    return $station;
+                }
+            } catch (Exception $e) {
+                error_log('Error getting station admin default station: ' . $e->getMessage());
+            }
+        } else {
+            // For superusers, get all stations
+            $stations = $this->getUserStations();
+            if (!empty($stations)) {
+                $this->setCurrentStation($stations[0]['id']);
+                return $stations[0];
+            }
         }
         
         return null;

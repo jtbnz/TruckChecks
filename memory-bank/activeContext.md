@@ -116,6 +116,20 @@ The system is undergoing a major architectural upgrade to introduce the Station 
 - **Files Modified**: `check_locker_items.php`
 - **Status**: ✅ RESOLVED - Security code validation now works correctly with station settings
 
+### Station Admin Redirect Loop Issue (RESOLVED)
+- **Problem**: Station admins getting "ERR_TOO_MANY_REDIRECTS" when accessing admin.php and manage_users.php
+- **Root Cause**: Multiple circular redirect issues in authentication system:
+  1. `getUserStations()` function causing internal redirects to station selection
+  2. Legacy authentication check conflicting with V4 user authentication
+  3. `getCurrentStation()` calling `getUserStations()` creating circular dependency
+- **Solution**: 
+  - Replaced `getUserStations()` calls with direct database queries in admin.php and manage_users.php
+  - Removed problematic legacy authentication check from admin.php
+  - Modified `getCurrentStation()` in auth.php to use direct query for station admins
+  - Station admins now automatically get their first assigned station without manual selection
+- **Files Modified**: `admin.php`, `manage_users.php`, `auth.php`
+- **Status**: ✅ RESOLVED - Station admins can now access admin interface without redirect loops
+
 ## Next Steps & Pending Work
 
 ### 1. Update Maintenance Pages (High Priority)
