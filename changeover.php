@@ -650,6 +650,10 @@ if ($selected_truck_id) {
                     </form>
                 </div>
                 
+                <!-- Home Button -->
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="index.php" class="button secondary">🏠 Home</a>
+                </div>
                 <?php if ($truck_relief_state): ?>
                     <div class="relief-instructions" style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
                         <p>This truck is in Relief mode. Toggle the switches below to indicate which items have been moved to the relief truck.</p>
