@@ -25,7 +25,22 @@ $userName = $user['username'];
 // Get user's stations if station admin
 $userStations = [];
 if ($userRole === 'station_admin') {
-    $userStations = getUserStations($user['id']);
+    // Use direct database query to avoid redirect loops
+    try {
+        $pdo = get_db_connection();
+        $stmt = $pdo->prepare("
+            SELECT s.* 
+            FROM stations s 
+            JOIN user_stations us ON s.id = us.station_id 
+            WHERE us.user_id = ? 
+            ORDER BY s.name
+        ");
+        $stmt->execute([$user['id']]);
+        $userStations = $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log('Error getting user stations: ' . $e->getMessage());
+        $userStations = [];
+    }
 }
 
 // Check if the user is logged in (legacy check for backward compatibility)
@@ -285,7 +300,16 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <?php if ($userRole === 'superuser'): ?>
                         <?php 
                         $currentStation = getCurrentStation();
-                        $allStations = getUserStations();
+                        // Get all stations for superuser - use direct query to avoid redirect loops
+                        try {
+                            $pdo = get_db_connection();
+                            $stmt = $pdo->prepare("SELECT * FROM stations ORDER BY name");
+                            $stmt->execute();
+                            $allStations = $stmt->fetchAll();
+                        } catch (Exception $e) {
+                            error_log('Error getting all stations: ' . $e->getMessage());
+                            $allStations = [];
+                        }
                         ?>
                         <div style="margin-top: 10px;">
                             <select id="station-selector" onchange="changeStation()" style="width: 100%; padding: 5px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white;">
