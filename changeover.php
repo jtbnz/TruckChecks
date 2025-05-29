@@ -601,7 +601,7 @@ if ($selected_truck_id) {
             </div>
         <?php else: ?>
             <?php if ($currentStation): ?>
-                <div class="station-info">
+<!--                 <div class="station-info">
                     <div class="station-name"><?= htmlspecialchars($currentStation['name']) ?></div>
                     <?php if ($currentStation['description']): ?>
                         <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($currentStation['description']) ?></div>
@@ -613,7 +613,7 @@ if ($selected_truck_id) {
                             </a>
                         </div>
                     <?php endif; ?>
-                </div>
+                </div> -->
             <?php endif; ?>
             
             <div class="truck-selection">
