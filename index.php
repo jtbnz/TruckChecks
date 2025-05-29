@@ -272,7 +272,7 @@ function convertToNZST($utcDate) {
         <?php if (!empty($lockers)): ?>
             <div class="locker-container">
                 <?php if ($truck['relief']): ?>
-                    <div class="relief-truck-indicator" onclick="window.location.href='changeover.php'" style="cursor: pointer;" title="Click to go to Relief Change Over">
+                    <div class="relief-truck-indicator" onclick="window.location.href='changeover.php?truck_id=<?= $truck['id'] ?>'" style="cursor: pointer;" title="Click to go to Relief Change Over">
                         Relief Truck - Click for Change Over
                     </div>
                 <?php endif; ?>
