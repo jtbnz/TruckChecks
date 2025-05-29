@@ -304,7 +304,7 @@ include 'templates/header.php';
         </div>
     <?php else: ?>
         <?php if ($currentStation): ?>
-            <div class="station-info">
+<!--             <div class="station-info">
                 <div class="station-name"><?= htmlspecialchars($currentStation['name']) ?></div>
                 <?php if ($currentStation['description']): ?>
                     <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($currentStation['description']) ?></div>
@@ -316,7 +316,7 @@ include 'templates/header.php';
                         </a>
                     </div>
                 <?php endif; ?>
-            </div>
+            </div> -->
         <?php endif; ?>
 
         <!-- Search Form -->
