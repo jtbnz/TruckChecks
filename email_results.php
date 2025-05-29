@@ -18,6 +18,7 @@ include_once('auth.php');
 // Require authentication
 $user = requireAuth();
 $station = null;
+$no_station_selected = false;
 
 // Check if user has permission to send email results
 if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
@@ -31,8 +32,8 @@ if ($user['role'] === 'station_admin') {
 } elseif ($user['role'] === 'superuser') {
     $station = getCurrentStation();
     if (!$station) {
-        header('Location: select_station.php?redirect=email_results.php');
-        exit;
+        // For superusers without a station selected, show a message instead of redirecting
+        $no_station_selected = true;
     }
 }
 
@@ -45,114 +46,124 @@ $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/inde
 // Check if email configuration is available
 $email_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined('EMAIL_PASS') && defined('EMAIL_PORT');
 
-// Fetch the latest check date for this station
-$latestCheckQuery = "
-    SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date 
-    FROM checks c
-    JOIN lockers l ON c.locker_id = l.id
-    JOIN trucks t ON l.truck_id = t.id
-    WHERE t.station_id = :station_id
-    ORDER BY c.check_date DESC 
-    LIMIT 1
-";
-$latestCheckStmt = $pdo->prepare($latestCheckQuery);
-$latestCheckStmt->execute(['station_id' => $station['id']]);
-$latestCheckResult = $latestCheckStmt->fetch(PDO::FETCH_ASSOC);
-$latestCheckDate = $latestCheckResult ? $latestCheckResult['the_date'] : 'No checks found';
+// Initialize variables
+$latestCheckDate = 'No checks found';
+$checks = [];
+$deletedItems = [];
+$emails = [];
+$emailContent = '';
 
-// Fetch the latest check data for this station
-$checksQuery = "
-    WITH LatestChecks AS (
-        SELECT 
-            c.locker_id, 
-            MAX(c.id) AS latest_check_id
+// Only process data if station is selected
+if ($station) {
+    // Fetch the latest check date for this station
+    $latestCheckQuery = "
+        SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date 
         FROM checks c
         JOIN lockers l ON c.locker_id = l.id
         JOIN trucks t ON l.truck_id = t.id
-        WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
-        AND t.station_id = :station_id
-        GROUP BY c.locker_id
-    )
-    SELECT 
-        t.name as truck_name, 
-        l.name as locker_name, 
-        i.name as item_name, 
-        ci.is_present as checked, 
-        CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
-        cn.note as notes,
-        c.checked_by,
-        c.id as check_id
-    FROM checks c
-    JOIN LatestChecks lc ON c.id = lc.latest_check_id
-    JOIN check_items ci ON c.id = ci.check_id
-    JOIN lockers l ON c.locker_id = l.id
-    JOIN trucks t ON l.truck_id = t.id
-    JOIN items i ON ci.item_id = i.id
-    JOIN check_notes cn on ci.check_id = cn.check_id
-    WHERE ci.is_present = 0
-    AND t.station_id = :station_id2
-    ORDER BY t.name, l.name
-";
-                
-$checksStmt = $pdo->prepare($checksQuery);
-$checksStmt->execute(['station_id' => $station['id'], 'station_id2' => $station['id']]);
-$checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+        WHERE t.station_id = :station_id
+        ORDER BY c.check_date DESC 
+        LIMIT 1
+    ";
+    $latestCheckStmt = $pdo->prepare($latestCheckQuery);
+    $latestCheckStmt->execute(['station_id' => $station['id']]);
+    $latestCheckResult = $latestCheckStmt->fetch(PDO::FETCH_ASSOC);
+    $latestCheckDate = $latestCheckResult ? $latestCheckResult['the_date'] : 'No checks found';
 
-// Query for deleted items in the last 7 days for this station
-$deletedItemsQuery = $pdo->prepare("
-    SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at
-    FROM locker_item_deletion_log
-    WHERE deleted_at >= NOW() - INTERVAL 7 DAY
-    AND station_id = :station_id
-    ORDER BY deleted_at DESC
-");
-$deletedItemsQuery->execute(['station_id' => $station['id']]);
-$deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
+    // Fetch the latest check data for this station
+    $checksQuery = "
+        WITH LatestChecks AS (
+            SELECT 
+                c.locker_id, 
+                MAX(c.id) AS latest_check_id
+            FROM checks c
+            JOIN lockers l ON c.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+            AND t.station_id = :station_id
+            GROUP BY c.locker_id
+        )
+        SELECT 
+            t.name as truck_name, 
+            l.name as locker_name, 
+            i.name as item_name, 
+            ci.is_present as checked, 
+            CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+            cn.note as notes,
+            c.checked_by,
+            c.id as check_id
+        FROM checks c
+        JOIN LatestChecks lc ON c.id = lc.latest_check_id
+        JOIN check_items ci ON c.id = ci.check_id
+        JOIN lockers l ON c.locker_id = l.id
+        JOIN trucks t ON l.truck_id = t.id
+        JOIN items i ON ci.item_id = i.id
+        JOIN check_notes cn on ci.check_id = cn.check_id
+        WHERE ci.is_present = 0
+        AND t.station_id = :station_id2
+        ORDER BY t.name, l.name
+    ";
+                    
+    $checksStmt = $pdo->prepare($checksQuery);
+    $checksStmt->execute(['station_id' => $station['id'], 'station_id2' => $station['id']]);
+    $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch email addresses for this station
-$emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id";
-$emailStmt = $pdo->prepare($emailQuery);
-$emailStmt->execute(['station_id' => $station['id']]);
-$emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
+    // Query for deleted items in the last 7 days for this station
+    $deletedItemsQuery = $pdo->prepare("
+        SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at
+        FROM locker_item_deletion_log
+        WHERE deleted_at >= NOW() - INTERVAL 7 DAY
+        AND station_id = :station_id
+        ORDER BY deleted_at DESC
+    ");
+    $deletedItemsQuery->execute(['station_id' => $station['id']]);
+    $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// Also get admin email for this station
-$adminEmailQuery = "SELECT setting_value FROM settings WHERE setting_name = 'admin_email' AND station_id = :station_id";
-$adminEmailStmt = $pdo->prepare($adminEmailQuery);
-$adminEmailStmt->execute(['station_id' => $station['id']]);
-$adminEmail = $adminEmailStmt->fetchColumn();
+    // Fetch email addresses for this station
+    $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id";
+    $emailStmt = $pdo->prepare($emailQuery);
+    $emailStmt->execute(['station_id' => $station['id']]);
+    $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 
-if ($adminEmail) {
-    $emails[] = $adminEmail;
+    // Also get admin email for this station
+    $adminEmailQuery = "SELECT setting_value FROM settings WHERE setting_name = 'admin_email' AND station_id = :station_id";
+    $adminEmailStmt = $pdo->prepare($adminEmailQuery);
+    $adminEmailStmt->execute(['station_id' => $station['id']]);
+    $adminEmail = $adminEmailStmt->fetchColumn();
+
+    if ($adminEmail) {
+        $emails[] = $adminEmail;
+    }
+
+    // Remove duplicates
+    $emails = array_unique($emails);
+
+    // Prepare email content
+    $emailContent = "Latest Missing Items Report for " . $station['name'] . "\n\n";
+    $emailContent .= "These are the lockers that have missing items recorded in the last 7 days:\n\n";
+    $emailContent .= "The last check was recorded: {$latestCheckDate}\n\n";
+
+    if (!empty($checks)) {
+        foreach ($checks as $check) {
+            $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n";
+        } 
+    } else {
+        $emailContent .= "No missing items found in the last 7 days\n";
+    }
+
+    $emailContent .= "\nThe following items have been deleted in the last 7 days:\n";
+    if (!empty($deletedItems)) {
+        foreach ($deletedItems as $deletedItem) {
+            $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n";
+        }       
+    } else {
+        $emailContent .= "No items have been deleted in the last 7 days\n";
+    }
+
+    $emailContent .= "\nAccess the system: " . $current_url . "\n\n";
+    $emailContent .= "This report is for station: " . $station['name'] . "\n";
+    $emailContent .= "Generated by: " . $user['username'] . " (" . $user['role'] . ")\n";
 }
-
-// Remove duplicates
-$emails = array_unique($emails);
-
-// Prepare email content
-$emailContent = "Latest Missing Items Report for " . $station['name'] . "\n\n";
-$emailContent .= "These are the lockers that have missing items recorded in the last 7 days:\n\n";
-$emailContent .= "The last check was recorded: {$latestCheckDate}\n\n";
-
-if (!empty($checks)) {
-    foreach ($checks as $check) {
-        $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}, Notes: {$check['notes']}, Checked by {$check['checked_by']}, at {$check['check_date']}\n";
-    } 
-} else {
-    $emailContent .= "No missing items found in the last 7 days\n";
-}
-
-$emailContent .= "\nThe following items have been deleted in the last 7 days:\n";
-if (!empty($deletedItems)) {
-    foreach ($deletedItems as $deletedItem) {
-        $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n";
-    }       
-} else {
-    $emailContent .= "No items have been deleted in the last 7 days\n";
-}
-
-$emailContent .= "\nAccess the system: " . $current_url . "\n\n";
-$emailContent .= "This report is for station: " . $station['name'] . "\n";
-$emailContent .= "Generated by: " . $user['username'] . " (" . $user['role'] . ")\n";
 
 include 'templates/header.php';
 ?>
@@ -195,6 +206,15 @@ include 'templates/header.php';
         font-size: 18px;
         font-weight: bold;
         color: #12044C;
+    }
+
+    .no-station-message {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
     }
 
     .email-preview {
@@ -307,6 +327,17 @@ include 'templates/header.php';
         <?php endif; ?>
     </div>
 
+    <?php if ($no_station_selected): ?>
+        <div class="no-station-message">
+            <h2>No Station Selected</h2>
+            <p>You need to select a station before you can send email results.</p>
+            <p>Please go back to the admin page and select a station first.</p>
+            <div class="button-container">
+                <a href="admin.php" class="button">← Back to Admin</a>
+            </div>
+        </div>
+    <?php else: ?>
+
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
         <?php if ($station['description']): ?>
@@ -387,6 +418,8 @@ include 'templates/header.php';
         <a href="email_admin.php" class="button">Manage Email Settings</a>
         <a href="admin.php" class="button secondary">← Back to Admin</a>
     </div>
+
+    <?php endif; ?>
 </div>
 
 <?php include 'templates/footer.php'; ?>

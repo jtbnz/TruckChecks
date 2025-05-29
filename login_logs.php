@@ -10,6 +10,9 @@ $station = null;
 // Get user's station context if they're a station admin
 if ($user['role'] === 'station_admin') {
     $station = requireStation();
+} elseif ($user['role'] === 'superuser') {
+    // For superusers, station is optional for login logs
+    $station = getCurrentStation();
 }
 
 // Check if user has permission to view login logs
@@ -320,6 +323,11 @@ try {
         <strong>Access Level:</strong> 
         <?php if ($user['role'] === 'superuser'): ?>
             <span class="role-badge role-superuser">Superuser</span> - Viewing all login logs across all stations
+            <?php if ($station): ?>
+                <br><strong>Current Station Context:</strong> <?= htmlspecialchars($station['name']) ?>
+            <?php else: ?>
+                <br><strong>Station Context:</strong> All stations (no specific station selected)
+            <?php endif; ?>
         <?php elseif ($user['role'] === 'station_admin'): ?>
             <span class="role-badge role-station_admin">Station Admin</span> - Viewing login logs for your assigned stations
             <?php if ($station): ?>

@@ -6,6 +6,7 @@ include_once('auth.php');
 // Require authentication
 $user = requireAuth();
 $station = null;
+$no_station_selected = false;
 
 // Check if user has permission to manage email settings
 if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
@@ -19,15 +20,15 @@ if ($user['role'] === 'station_admin') {
 } elseif ($user['role'] === 'superuser') {
     $station = getCurrentStation();
     if (!$station) {
-        header('Location: select_station.php?redirect=email_admin.php');
-        exit;
+        // For superusers without a station selected, show a message instead of redirecting
+        $no_station_selected = true;
     }
 }
 
 $db = get_db_connection();
 
-// Handle test email sending
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email'])) {
+// Handle test email sending (only if station is selected)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && $station) {
     $test_email = $_POST['test_email'];
     if (!empty($test_email) && filter_var($test_email, FILTER_VALIDATE_EMAIL)) {
         try {
@@ -75,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email'])) {
     }
 }
 
-// Handle form submission for setting email
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email'])) {
+// Handle form submission for setting email (only if station is selected)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email']) && $station) {
     $admin_email = $_POST['admin_email'];
     if (!empty($admin_email) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         try {
@@ -104,13 +105,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email'])) {
     }
 }
 
-// Get current admin email for this station
-try {
-    $stmt = $db->prepare('SELECT setting_value FROM settings WHERE setting_name = "admin_email" AND station_id = ?');
-    $stmt->execute([$station['id']]);
-    $current_email = $stmt->fetchColumn();
-} catch (Exception $e) {
-    $current_email = null;
+// Get current admin email for this station (only if station is selected)
+$current_email = null;
+if ($station) {
+    try {
+        $stmt = $db->prepare('SELECT setting_value FROM settings WHERE setting_name = "admin_email" AND station_id = ?');
+        $stmt->execute([$station['id']]);
+        $current_email = $stmt->fetchColumn();
+    } catch (Exception $e) {
+        $current_email = null;
+    }
 }
 
 // Check if email configuration is available
@@ -157,6 +161,15 @@ include 'templates/header.php';
         font-size: 18px;
         font-weight: bold;
         color: #12044C;
+    }
+
+    .no-station-message {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
     }
 
     .info-section {
@@ -340,6 +353,17 @@ include 'templates/header.php';
         <?php endif; ?>
     </div>
 
+    <?php if ($no_station_selected): ?>
+        <div class="no-station-message">
+            <h2>No Station Selected</h2>
+            <p>You need to select a station before you can manage email settings.</p>
+            <p>Please go back to the admin page and select a station first.</p>
+            <div class="button-container">
+                <a href="admin.php" class="button">← Back to Admin</a>
+            </div>
+        </div>
+    <?php else: ?>
+
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
         <?php if ($station['description']): ?>
@@ -447,6 +471,8 @@ include 'templates/header.php';
     <div class="button-container">
         <a href="admin.php" class="button secondary">← Back to Admin</a>
     </div>
+
+    <?php endif; ?>
 </div>
 
 <?php include 'templates/footer.php'; ?>
