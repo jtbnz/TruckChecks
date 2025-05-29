@@ -16,12 +16,17 @@ $expires = time() + $cookie_duration;
 // Determine if we're using HTTPS
 $is_https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
 
+// Debug logging
+error_log("Setting security cookie - HTTPS: " . ($is_https ? 'true' : 'false') . ", Station ID: $station_id, Code: $security_code");
+
 // Set the station-specific security code cookie
 $cookie_name = 'security_code_station_' . $station_id;
-setcookie($cookie_name, $security_code, $expires, '/', '', $is_https, true);
+$cookie_set = setcookie($cookie_name, $security_code, $expires, '/', '', $is_https, true);
+error_log("Station cookie ($cookie_name) set result: " . ($cookie_set ? 'success' : 'failed'));
 
 // Also set a general security code cookie for backward compatibility
-setcookie('security_code', $security_code, $expires, '/', '', $is_https, true);
+$general_cookie_set = setcookie('security_code', $security_code, $expires, '/', '', $is_https, true);
+error_log("General cookie set result: " . ($general_cookie_set ? 'success' : 'failed'));
 
 // Also set it in session for immediate use
 session_start();
@@ -202,6 +207,8 @@ if (!isset($_SESSION['version'])) {
         
         // Show confirmation that the code was set
         console.log('Security code set successfully for 3 years');
+        console.log('All cookies after setting:', document.cookie);
+        console.log('Expected station cookie name: security_code_station_<?= $station_id ?>');
         
         // Optional: Show a brief notification
         if ('Notification' in window && Notification.permission === 'granted') {
