@@ -1,5 +1,5 @@
 <?php
-include('config.php');
+include('config.php');          
 require '../vendor/autoload.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -131,7 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
             // Enable verbose debug output to console
             $mail->SMTPDebug = 2;
             $mail->Debugoutput = function($str, $level) {
-                echo '<script>console.log("PHPMailer DEBUG [' . $level . ']: ' . addslashes($str) . '");</script>';
+                // Properly escape for JavaScript and handle special characters
+                $escaped_str = json_encode($str, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                echo '<script>console.log("PHPMailer DEBUG [' . $level . ']: " + ' . $escaped_str . ');</script>';
             };
             echo '<script>console.log("PHPMailer debug output enabled");</script>';
             
