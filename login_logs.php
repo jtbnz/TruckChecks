@@ -474,11 +474,25 @@ try {
                     ?>
                     <tr>
                         <td><?php echo date('Y-m-d H:i:s', strtotime($log['login_time'])); ?></td>
-                        <td><?php echo htmlspecialchars($log['username'] ?? 'Unknown'); ?></td>
                         <td>
-                            <?php if ($log['role']): ?>
-                                <span class="role-badge role-<?php echo $log['role']; ?>">
-                                    <?php echo ucfirst(str_replace('_', ' ', $log['role'])); ?>
+                            <?php 
+                            $display_username = $log['username'] ?? 'Unknown';
+                            $display_role = $log['role'];
+                            
+                            // If both username and role are unknown, assume it's site_admin with superuser role
+                            if (($display_username === 'Unknown' || $display_username === '') && 
+                                (!$display_role || $display_role === 'unknown' || $display_role === '')) {
+                                $display_username = 'site_admin';
+                                $display_role = 'superuser';
+                            }
+                            
+                            echo htmlspecialchars($display_username);
+                            ?>
+                        </td>
+                        <td>
+                            <?php if ($display_role): ?>
+                                <span class="role-badge role-<?php echo $display_role; ?>">
+                                    <?php echo ucfirst(str_replace('_', ' ', $display_role)); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="role-badge role-user">Unknown</span>
