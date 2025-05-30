@@ -698,7 +698,9 @@ if ($selected_truck_id) {
     </div>
     
     <footer style="text-align: center; margin-top: 40px;">
-        <a href="index.php" class="button secondary">Return to Home</a>
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="index.php" class="button secondary">🏠 Home</a>
+                </div>
     </footer>
     
     <script>
