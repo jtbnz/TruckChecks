@@ -115,27 +115,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
                 throw new Exception('Email configuration is not set up in config.php');
             }
             
-            // Debug: Show email configuration being used
-            // Output debug info to browser console
-            echo '<script>console.log("=== EMAIL DEBUG INFO ===");</script>';
-            echo '<script>console.log("EMAIL_HOST: ' . addslashes(defined('EMAIL_HOST') ? EMAIL_HOST : 'NOT DEFINED') . '");</script>';
-            echo '<script>console.log("EMAIL_USER: ' . addslashes(defined('EMAIL_USER') ? EMAIL_USER : 'NOT DEFINED') . '");</script>';
-            echo '<script>console.log("EMAIL_PASS: ' . addslashes(defined('EMAIL_PASS') ? (EMAIL_PASS ? '[SET - ' . strlen(EMAIL_PASS) . ' chars]' : '[EMPTY]') : 'NOT DEFINED') . '");</script>';
-            echo '<script>console.log("EMAIL_PORT: ' . addslashes(defined('EMAIL_PORT') ? EMAIL_PORT : 'NOT DEFINED') . '");</script>';
-            echo '<script>console.log("From Email (calculated): ' . addslashes(filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST']) . '");</script>';
-            echo '<script>console.log("Test Email To: ' . addslashes($test_email) . '");</script>';
-            echo '<script>console.log("========================");</script>';
+            // Debug: Show email configuration being used (only if DEBUG is enabled)
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("=== EMAIL DEBUG INFO ===");</script>';
+                echo '<script>console.log("EMAIL_HOST: ' . addslashes(defined('EMAIL_HOST') ? EMAIL_HOST : 'NOT DEFINED') . '");</script>';
+                echo '<script>console.log("EMAIL_USER: ' . addslashes(defined('EMAIL_USER') ? EMAIL_USER : 'NOT DEFINED') . '");</script>';
+                echo '<script>console.log("EMAIL_PASS: ' . addslashes(defined('EMAIL_PASS') ? (EMAIL_PASS ? '[SET - ' . strlen(EMAIL_PASS) . ' chars]' : '[EMPTY]') : 'NOT DEFINED') . '");</script>';
+                echo '<script>console.log("EMAIL_PORT: ' . addslashes(defined('EMAIL_PORT') ? EMAIL_PORT : 'NOT DEFINED') . '");</script>';
+                echo '<script>console.log("From Email (calculated): ' . addslashes(filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST']) . '");</script>';
+                echo '<script>console.log("Test Email To: ' . addslashes($test_email) . '");</script>';
+                echo '<script>console.log("========================");</script>';
+            }
             
             $mail = new PHPMailer(true);
             
-            // Enable verbose debug output to console
-            $mail->SMTPDebug = 2;
-            $mail->Debugoutput = function($str, $level) {
-                // Properly escape for JavaScript and handle special characters
-                $escaped_str = json_encode($str, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-                echo '<script>console.log("PHPMailer DEBUG [' . $level . ']: " + ' . $escaped_str . ');</script>';
-            };
-            echo '<script>console.log("PHPMailer debug output enabled");</script>';
+            // Enable verbose debug output to console (only if DEBUG is enabled)
+            if (defined('DEBUG') && DEBUG) {
+                $mail->SMTPDebug = 2;
+                $mail->Debugoutput = function($str, $level) {
+                    // Properly escape for JavaScript and handle special characters
+                    $escaped_str = json_encode($str, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                    echo '<script>console.log("PHPMailer DEBUG [' . $level . ']: " + ' . $escaped_str . ');</script>';
+                };
+                echo '<script>console.log("PHPMailer debug output enabled");</script>';
+            }
             
             // Server settings - match email_results.php exactly
             $mail->isSMTP();
@@ -149,10 +152,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
             // Recipients
             // Validate EMAIL_USER is a proper email format
             $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST'];
-            echo '<script>console.log("Setting From email to: ' . addslashes($from_email) . '");</script>';
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("Setting From email to: ' . addslashes($from_email) . '");</script>';
+            }
             $mail->setFrom($from_email, 'TruckChecks System');
             
-            echo '<script>console.log("Adding recipient: ' . addslashes($test_email) . '");</script>';
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("Adding recipient: ' . addslashes($test_email) . '");</script>';
+            }
             $mail->addAddress($test_email);
             
             // Content
@@ -167,17 +174,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
                 <p>If you received this email, your email configuration is working correctly!</p>
             ';
             
-            echo '<script>console.log("About to send email...");</script>';
-            echo '<script>console.log("Subject: ' . addslashes($mail->Subject) . '");</script>';
-            echo '<script>console.log("SMTP Host: ' . addslashes($mail->Host) . '");</script>';
-            echo '<script>console.log("SMTP Port: ' . addslashes($mail->Port) . '");</script>';
-            echo '<script>console.log("SMTP Username: ' . addslashes($mail->Username) . '");</script>';
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("About to send email...");</script>';
+                echo '<script>console.log("Subject: ' . addslashes($mail->Subject) . '");</script>';
+                echo '<script>console.log("SMTP Host: ' . addslashes($mail->Host) . '");</script>';
+                echo '<script>console.log("SMTP Port: ' . addslashes($mail->Port) . '");</script>';
+                echo '<script>console.log("SMTP Username: ' . addslashes($mail->Username) . '");</script>';
+            }
             
             $mail->send();
-            echo '<script>console.log("Email sent successfully!");</script>';
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("Email sent successfully!");</script>';
+            }
             $test_success_message = "Test email sent successfully to " . htmlspecialchars($test_email) . "!";
         } catch (Exception $e) {
-            echo '<script>console.log("Email send failed: ' . addslashes($e->getMessage()) . '");</script>';
+            if (defined('DEBUG') && DEBUG) {
+                echo '<script>console.log("Email send failed: ' . addslashes($e->getMessage()) . '");</script>';
+            }
             $test_error_message = "Failed to send test email: " . $e->getMessage();
         }
     } else {
@@ -634,6 +647,11 @@ include 'templates/header.php';
     <div class="form-section test-email-section">
         <h2>Test Email Configuration</h2>
         <p>Send a test email to verify that your email configuration is working correctly.</p>
+        <?php if (defined('DEBUG') && DEBUG): ?>
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                <strong>Debug Mode:</strong> Console debugging is enabled. Check browser console for detailed SMTP debug information.
+            </div>
+        <?php endif; ?>
         <form method="POST">
             <div class="input-container">
                 <label for="test_email">Test Email Address:</label>
@@ -670,6 +688,9 @@ include 'templates/header.php';
             <li><strong>EMAIL_PASS</strong> - Email password</li>
             <li><strong>EMAIL_PORT</strong> - SMTP port number</li>
         </ul>
+        <?php if (defined('DEBUG')): ?>
+            <p><strong>Debug Mode:</strong> Currently <?= DEBUG ? 'ENABLED' : 'DISABLED' ?></p>
+        <?php endif; ?>
     </div>
 
     <div class="button-container">
