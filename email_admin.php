@@ -124,7 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
             $mail->Port = EMAIL_PORT;
             
             // Recipients
-            $mail->setFrom(EMAIL_USER, 'TruckChecks System');
+            // Validate EMAIL_USER is a proper email format
+            $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST'];
+            $mail->setFrom($from_email, 'TruckChecks System');
             $mail->addAddress($test_email);
             
             // Content

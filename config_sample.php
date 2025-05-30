@@ -16,7 +16,7 @@ optional add an .htaccess to further restrict access
  if (!defined('PASSWORD'))  define('PASSWORD' , 'YourSecurePassword'); //Used for access to the Admin pages
 
  if (!defined('EMAIL_HOST'))   define("EMAIL_HOST" ,"smtp host");
- if (!defined('EMAIL_USER')) define('EMAIL_USER', 'email addess');
+ if (!defined('EMAIL_USER')) define('EMAIL_USER', 'email address');
  if (!defined('EMAIL_PASS')) define('EMAIL_PASS', 'email password');
  if (!defined('EMAIL_PORT'))   define('EMAIL_PORT' , 'SMTP outgoing port');
 
