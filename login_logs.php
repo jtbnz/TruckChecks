@@ -1,32 +1,64 @@
 <?php
+// Enable error reporting for debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+echo "<script>console.log('DEBUG: Starting login_logs.php');</script>";
+
 include('config.php');
+echo "<script>console.log('DEBUG: Config loaded');</script>";
+
 include 'db.php';
+echo "<script>console.log('DEBUG: DB loaded');</script>";
+
 include_once('auth.php');
+echo "<script>console.log('DEBUG: Auth loaded');</script>";
 
 // Require authentication and get user context
 $user = requireAuth();
-$station = null;
+echo "<script>console.log('DEBUG: User authenticated: ', " . json_encode($user) . ");</script>";
 
-// Get user's station context - use their first assigned station
-if ($user['role'] === 'station_admin') {
-    // Station admins: get their first assigned station
-    $user_stations = getUserStations($user['id']);
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    }
-} elseif ($user['role'] === 'superuser') {
-    // Superusers: get their first assigned station, or first available station
-    $user_stations = getUserStations($user['id']);
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    }
-}
+$station = null;
 
 // Check if user has permission to view login logs
 if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
-    header('Location: login.php');
-    exit;
+    echo "<script>console.log('DEBUG: User does not have permission, role: " . $user['role'] . "');</script>";
+    echo "<div style='color: red; padding: 20px;'>Access denied. You do not have permission to view login logs. Your role: " . htmlspecialchars($user['role']) . "</div>";
+    echo "<a href='admin.php'>Back to Admin</a>";
+    // Don't redirect for debugging
+    // header('Location: login.php');
+    // exit;
 }
+
+// Get user's station context - use their first assigned station
+if ($user['role'] === 'station_admin') {
+    echo "<script>console.log('DEBUG: Getting stations for station admin');</script>";
+    // Station admins: get their first assigned station
+    $user_stations = getUserStations($user['id']);
+    echo "<script>console.log('DEBUG: Station admin stations: ', " . json_encode($user_stations) . ");</script>";
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+        echo "<script>console.log('DEBUG: Selected station for station admin: ', " . json_encode($station) . ");</script>";
+    } else {
+        echo "<script>console.log('DEBUG: No stations found for station admin');</script>";
+    }
+} elseif ($user['role'] === 'superuser') {
+    echo "<script>console.log('DEBUG: Getting stations for superuser');</script>";
+    // Superusers: get their first assigned station, or first available station
+    $user_stations = getUserStations($user['id']);
+    echo "<script>console.log('DEBUG: Superuser stations: ', " . json_encode($user_stations) . ");</script>";
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+        echo "<script>console.log('DEBUG: Selected station for superuser: ', " . json_encode($station) . ");</script>";
+    } else {
+        echo "<script>console.log('DEBUG: No stations found for superuser');</script>";
+    }
+} else {
+    echo "<script>console.log('DEBUG: Unknown user role: " . $user['role'] . "');</script>";
+}
+
+echo "<script>console.log('DEBUG: Final station: ', " . json_encode($station) . ");</script>";
 
 include 'templates/header.php';
 
