@@ -304,12 +304,18 @@ include 'templates/header.php';
         gap: 10px;
     }
 
-    .locker-actions a {
-        padding: 6px 12px;
+    .locker-actions a,
+    .locker-actions span {
+        padding: 8px 16px;
         text-decoration: none;
-        border-radius: 3px;
+        border-radius: 4px;
         font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+        min-width: 60px;
+        display: inline-block;
         transition: background-color 0.3s;
+        box-sizing: border-box;
     }
 
     .edit-link {
@@ -324,6 +330,7 @@ include 'templates/header.php';
     .delete-link {
         background-color: #dc3545;
         color: white;
+        min-width: 70px;
     }
 
     .delete-link:hover {
@@ -334,6 +341,7 @@ include 'templates/header.php';
         background-color: #6c757d;
         cursor: not-allowed;
         opacity: 0.6;
+        min-width: 70px;
     }
 
     .alert {
