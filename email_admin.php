@@ -4,7 +4,8 @@ include 'db.php';
 include_once('auth.php');
 
 // Require authentication
-$user = requireAuth();
+requireAuth();
+$user = getCurrentUser();
 $station = null;
 $no_station_selected = false;
 

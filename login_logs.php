@@ -16,7 +16,8 @@ include_once('auth.php');
 echo "<script>console.log('DEBUG: Auth loaded');</script>";
 
 // Require authentication and get user context
-$user = requireAuth();
+requireAuth();
+$user = getCurrentUser();
 echo "<script>console.log('DEBUG: User authenticated: ', " . json_encode($user) . ");</script>";
 
 $station = null;
