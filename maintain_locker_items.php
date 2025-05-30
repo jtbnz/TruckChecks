@@ -1,14 +1,13 @@
 <?php
-// Include password file
-include('config.php');
-include 'db.php';
+include_once('auth.php');
+include_once('config.php');
+$station = requireStation();
 
-// Check if the user is logged in
-if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
-    header('Location: login.php');
-    exit;
-}
+// Require authentication and get user context
+requireAuth();
+$user = getCurrentUser();
 
+include('db.php');
 $db = get_db_connection();
 
 // Handle AJAX requests FIRST, before any HTML output

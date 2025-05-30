@@ -150,6 +150,42 @@ include 'templates/header.php';
         border-radius: 5px;
         max-width: 500px;
     }
+
+    .input-with-button {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .input-with-button input {
+        flex: 1;
+    }
+
+    .generate-btn {
+        background-color: #28a745;
+        white-space: nowrap;
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+
+    .generate-btn:hover {
+        background-color: #218838;
+    }
+
+    @media (max-width: 600px) {
+        .input-with-button {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .input-with-button input {
+            width: 100%;
+        }
+        
+        .generate-btn {
+            width: 100%;
+        }
+    }
 </style>
 
 <div class="station-info">
@@ -252,7 +288,13 @@ include 'templates/header.php';
     <form method="POST">
         <div class="input-container">
             <label for="security_code">New Security Code:</label>
-            <input type="text" name="security_code" id="security_code" placeholder="Enter new security code" required>
+            <div class="input-with-button">
+                <input type="text" name="security_code" id="security_code" placeholder="Enter new security code" required>
+                <button type="button" onclick="generateRandomCode()" class="button touch-button generate-btn">🎲 Generate Random</button>
+            </div>
+            <small style="color: #666; margin-top: 5px; display: block;">
+                💡 <strong>Tip:</strong> Click "Generate Random" for a secure 16-character alphanumeric code
+            </small>
         </div>
         <div class="button-container">
             <button type="submit" name="set_code" class="button touch-button">Set Security Code</button>
@@ -265,11 +307,45 @@ include 'templates/header.php';
     <h3>About Security Codes</h3>
     <p>Security codes can be used for additional verification when accessing certain features of the system. The code is stored in the database and can be updated as needed.</p>
     <p><strong>Note:</strong> This security code is specific to <strong><?= htmlspecialchars($station['name']) ?></strong> station only.</p>
+    <p><strong>Security Recommendation:</strong> Use a random 16-character alphanumeric code for maximum security. Avoid using predictable patterns or dictionary words.</p>
 </div>
 
 <div class="button-container" style="margin-top: 20px;">
     <a href="admin.php" class="button touch-button">← Back to Admin</a>
 </div>
+
+<script>
+function generateRandomCode() {
+    // Generate a random 16-character alphanumeric code
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 16; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Set the generated code in the input field
+    document.getElementById('security_code').value = result;
+    
+    // Optional: Show a brief confirmation
+    const button = document.querySelector('.generate-btn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '✅ Generated!';
+    button.style.backgroundColor = '#28a745';
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.backgroundColor = '#28a745';
+    }, 1500);
+}
+
+// Optional: Generate a code automatically when the page loads if no current code exists
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (!$current_code): ?>
+    // Auto-generate a code suggestion for new setups
+    generateRandomCode();
+    <?php endif; ?>
+});
+</script>
 
 <?php include 'templates/footer.php'; ?>
 
