@@ -29,45 +29,43 @@ try {
     
     // Role-based filtering - station admins only see their station's data
     if ($user['role'] === 'station_admin') {
-        $where_conditions[] = "t.station_id = ?";
+        $where_conditions[] = "log.station_id = ?";
         $params[] = $station['id'];
     }
     // Superusers see all deleted items (no additional filtering needed)
     
     // Apply user filters
     if ($truck_filter !== '') {
-        $where_conditions[] = "t.id = ?";
+        $where_conditions[] = "log.truck_name = ?";
         $params[] = $truck_filter;
     }
     
     if ($locker_filter !== '') {
-        $where_conditions[] = "l.id = ?";
+        $where_conditions[] = "log.locker_name = ?";
         $params[] = $locker_filter;
     }
     
     if ($date_from !== '') {
-        $where_conditions[] = "i.deleted_at >= ?";
+        $where_conditions[] = "log.deleted_at >= ?";
         $params[] = $date_from . ' 00:00:00';
     }
     
     if ($date_to !== '') {
-        $where_conditions[] = "i.deleted_at <= ?";
+        $where_conditions[] = "log.deleted_at <= ?";
         $params[] = $date_to . ' 23:59:59';
     }
     
-    // Always filter for deleted items
-    $where_conditions[] = "i.deleted_at IS NOT NULL";
+    $where_clause = '';
+    if (!empty($where_conditions)) {
+        $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
+    }
     
-    $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
-    
-    // Get deleted items with role-based filtering
-    $sql = "SELECT i.*, t.name as truck_name, l.name as locker_name, s.name as station_name
-            FROM items i
-            JOIN lockers l ON i.locker_id = l.id
-            JOIN trucks t ON l.truck_id = t.id
-            LEFT JOIN stations s ON t.station_id = s.id
+    // Get deleted items from locker_item_deletion_log table
+    $sql = "SELECT log.*, s.name as station_name
+            FROM locker_item_deletion_log log
+            LEFT JOIN stations s ON log.station_id = s.id
             $where_clause
-            ORDER BY i.deleted_at DESC";
+            ORDER BY log.deleted_at DESC";
     
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
@@ -75,22 +73,40 @@ try {
     
     // Get available trucks for filter dropdown (role-based)
     if ($user['role'] === 'station_admin') {
-        $trucks_sql = "SELECT * FROM trucks WHERE station_id = ? ORDER BY name";
+        // For station admins, get trucks from deletion log for their station
+        $trucks_sql = "SELECT DISTINCT log.truck_name 
+                      FROM locker_item_deletion_log log 
+                      WHERE log.station_id = ? 
+                      ORDER BY log.truck_name";
         $trucks_stmt = $db->prepare($trucks_sql);
         $trucks_stmt->execute([$station['id']]);
-        $trucks = $trucks_stmt->fetchAll();
+        $trucks = $trucks_stmt->fetchAll(PDO::FETCH_COLUMN);
     } else {
-        // Superuser sees all trucks
-        $trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll();
+        // Superuser sees all trucks from deletion log
+        $trucks_sql = "SELECT DISTINCT truck_name FROM locker_item_deletion_log ORDER BY truck_name";
+        $trucks = $db->query($trucks_sql)->fetchAll(PDO::FETCH_COLUMN);
     }
     
-    // Get available lockers for filter dropdown (role-based)
+    // Get available lockers for filter dropdown (based on selected truck)
+    $lockers = [];
     if ($truck_filter) {
-        $lockers_stmt = $db->prepare('SELECT * FROM lockers WHERE truck_id = ? ORDER BY name');
-        $lockers_stmt->execute([$truck_filter]);
-        $lockers = $lockers_stmt->fetchAll();
-    } else {
-        $lockers = [];
+        if ($user['role'] === 'station_admin') {
+            $lockers_sql = "SELECT DISTINCT log.locker_name 
+                           FROM locker_item_deletion_log log 
+                           WHERE log.truck_name = ? AND log.station_id = ? 
+                           ORDER BY log.locker_name";
+            $lockers_stmt = $db->prepare($lockers_sql);
+            $lockers_stmt->execute([$truck_filter, $station['id']]);
+            $lockers = $lockers_stmt->fetchAll(PDO::FETCH_COLUMN);
+        } else {
+            $lockers_sql = "SELECT DISTINCT locker_name 
+                           FROM locker_item_deletion_log 
+                           WHERE truck_name = ? 
+                           ORDER BY locker_name";
+            $lockers_stmt = $db->prepare($lockers_sql);
+            $lockers_stmt->execute([$truck_filter]);
+            $lockers = $lockers_stmt->fetchAll(PDO::FETCH_COLUMN);
+        }
     }
     
 } catch (Exception $e) {
@@ -267,9 +283,9 @@ try {
                     <label>Truck:</label>
                     <select name="truck_filter" onchange="this.form.submit()">
                         <option value="">All Trucks</option>
-                        <?php foreach ($trucks as $truck): ?>
-                            <option value="<?= $truck['id'] ?>" <?= $truck_filter == $truck['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($truck['name']) ?>
+                        <?php foreach ($trucks as $truck_name): ?>
+                            <option value="<?= htmlspecialchars($truck_name) ?>" <?= $truck_filter == $truck_name ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($truck_name) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -280,9 +296,9 @@ try {
                     <label>Locker:</label>
                     <select name="locker_filter">
                         <option value="">All Lockers</option>
-                        <?php foreach ($lockers as $locker): ?>
-                            <option value="<?= $locker['id'] ?>" <?= $locker_filter == $locker['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($locker['name']) ?>
+                        <?php foreach ($lockers as $locker_name): ?>
+                            <option value="<?= htmlspecialchars($locker_name) ?>" <?= $locker_filter == $locker_name ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($locker_name) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -325,35 +341,42 @@ try {
             <thead>
                 <tr>
                     <th>Item Name</th>
-                    <th>Description</th>
                     <th>Truck</th>
                     <th>Locker</th>
                     <?php if ($user['role'] === 'superuser'): ?>
                         <th>Station</th>
                     <?php endif; ?>
                     <th>Deleted Date</th>
-                    <th>Deleted By</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($deleted_items as $item): ?>
                     <tr>
-                        <td><?= htmlspecialchars($item['name']) ?></td>
-                        <td><?= htmlspecialchars($item['description'] ?: 'No description') ?></td>
+                        <td><?= htmlspecialchars($item['item_name']) ?></td>
                         <td><?= htmlspecialchars($item['truck_name']) ?></td>
                         <td><?= htmlspecialchars($item['locker_name']) ?></td>
                         <?php if ($user['role'] === 'superuser'): ?>
                             <td><?= htmlspecialchars($item['station_name'] ?: 'No station') ?></td>
                         <?php endif; ?>
-                        <td><?= date('Y-m-d H:i:s', strtotime($item['deleted_at'])) ?></td>
-                        <td><?= htmlspecialchars($item['deleted_by'] ?: 'Unknown') ?></td>
+                        <td>
+                            <?php if ($item['deleted_at']): ?>
+                                <span class="utc-time" data-utc="<?= htmlspecialchars($item['deleted_at']) ?>">
+                                    <?= date('Y-m-d H:i:s', strtotime($item['deleted_at'])) ?>
+                                </span>
+                            <?php else: ?>
+                                Unknown
+                            <?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
         
     <?php elseif (!isset($error)): ?>
-        <p>No deleted items found matching your criteria.</p>
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <h3>No Deleted Items Found</h3>
+            <p>No deleted items found matching your criteria.</p>
+        </div>
     <?php endif; ?>
     
     <div style="margin-top: 30px;">
@@ -370,6 +393,18 @@ document.querySelector('select[name="truck_filter"]').addEventListener('change',
         lockerSelect.value = '';
     }
     this.form.submit();
+});
+
+// Convert UTC times to local browser time
+document.addEventListener('DOMContentLoaded', function() {
+    const utcTimes = document.querySelectorAll('.utc-time');
+    utcTimes.forEach(function(element) {
+        const utcDateStr = element.getAttribute('data-utc');
+        if (utcDateStr) {
+            const utcDate = new Date(utcDateStr + ' UTC');
+            element.textContent = utcDate.toLocaleString();
+        }
+    });
 });
 </script>
 
