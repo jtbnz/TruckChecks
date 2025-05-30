@@ -2,14 +2,9 @@
 include_once('auth.php');
 include_once('db.php');
 
-// Require authentication and get user context
-$user = requireAuth();
-$station = null;
-
-// Get user's station context if they're a station admin
-if ($user['role'] === 'station_admin') {
-    $station = requireStation();
-}
+// Require authentication and station context
+$station = requireStation();
+$user = getCurrentUser();
 
 // Check if user has permission to view deleted items report
 if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
@@ -32,17 +27,10 @@ try {
     $where_conditions = [];
     $params = [];
     
-    // Role-based filtering
-    if ($user['role'] === 'station_admin' && $station) {
-        // Station admins can only see deleted items from their station(s)
-        $user_stations = getUserStations($user['id']);
-        $station_ids = array_column($user_stations, 'id');
-        
-        if (!empty($station_ids)) {
-            $placeholders = implode(',', array_fill(0, count($station_ids), '?'));
-            $where_conditions[] = "t.station_id IN ($placeholders)";
-            $params = array_merge($params, $station_ids);
-        }
+    // Role-based filtering - station admins only see their station's data
+    if ($user['role'] === 'station_admin') {
+        $where_conditions[] = "t.station_id = ?";
+        $params[] = $station['id'];
     }
     // Superusers see all deleted items (no additional filtering needed)
     
@@ -67,10 +55,10 @@ try {
         $params[] = $date_to . ' 23:59:59';
     }
     
-    $where_clause = '';
-    if (!empty($where_conditions)) {
-        $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
-    }
+    // Always filter for deleted items
+    $where_conditions[] = "i.deleted_at IS NOT NULL";
+    
+    $where_clause = 'WHERE ' . implode(' AND ', $where_conditions);
     
     // Get deleted items with role-based filtering
     $sql = "SELECT i.*, t.name as truck_name, l.name as locker_name, s.name as station_name
@@ -79,7 +67,6 @@ try {
             JOIN trucks t ON l.truck_id = t.id
             LEFT JOIN stations s ON t.station_id = s.id
             $where_clause
-            AND i.deleted_at IS NOT NULL
             ORDER BY i.deleted_at DESC";
     
     $stmt = $db->prepare($sql);
@@ -87,19 +74,11 @@ try {
     $deleted_items = $stmt->fetchAll();
     
     // Get available trucks for filter dropdown (role-based)
-    if ($user['role'] === 'station_admin' && $station) {
-        $user_stations = getUserStations($user['id']);
-        $station_ids = array_column($user_stations, 'id');
-        
-        if (!empty($station_ids)) {
-            $placeholders = implode(',', array_fill(0, count($station_ids), '?'));
-            $trucks_sql = "SELECT * FROM trucks WHERE station_id IN ($placeholders) ORDER BY name";
-            $trucks_stmt = $db->prepare($trucks_sql);
-            $trucks_stmt->execute($station_ids);
-            $trucks = $trucks_stmt->fetchAll();
-        } else {
-            $trucks = [];
-        }
+    if ($user['role'] === 'station_admin') {
+        $trucks_sql = "SELECT * FROM trucks WHERE station_id = ? ORDER BY name";
+        $trucks_stmt = $db->prepare($trucks_sql);
+        $trucks_stmt->execute([$station['id']]);
+        $trucks = $trucks_stmt->fetchAll();
     } else {
         // Superuser sees all trucks
         $trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll();
@@ -124,6 +103,20 @@ try {
         max-width: 1200px;
         margin: 20px auto;
         padding: 20px;
+    }
+    
+    .station-info {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .station-name {
+        font-size: 18px;
+        font-weight: bold;
+        color: #12044C;
     }
     
     .access-info {
@@ -243,6 +236,13 @@ try {
 </style>
 
 <div class="deleted-items-container">
+    <div class="station-info">
+        <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
+        <?php if ($station['description']): ?>
+            <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
+        <?php endif; ?>
+    </div>
+
     <h1>Deleted Items Report</h1>
     
     <!-- Access Level Information -->
@@ -251,10 +251,7 @@ try {
         <?php if ($user['role'] === 'superuser'): ?>
             <span class="role-badge role-superuser">Superuser</span> - Viewing deleted items from all stations
         <?php elseif ($user['role'] === 'station_admin'): ?>
-            <span class="role-badge role-station_admin">Station Admin</span> - Viewing deleted items from your assigned stations
-            <?php if ($station): ?>
-                <br><strong>Current Station:</strong> <?= htmlspecialchars($station['name']) ?>
-            <?php endif; ?>
+            <span class="role-badge role-station_admin">Station Admin</span> - Viewing deleted items from your assigned station
         <?php endif; ?>
     </div>
     
