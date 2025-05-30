@@ -3,15 +3,21 @@ require_once('vendor/autoload.php');
 use TCPDF;
 
 include('config.php');
-include 'db.php'; 
+include_once('auth.php');
+include_once('db.php');
+
+// Require authentication and station context
+$station = requireStation();
+$user = getCurrentUser();
 
 $db = get_db_connection();
 
 // Clear output buffer to prevent issues with PDF generation
 ob_end_clean();
 
-// Fetch all trucks for the dropdown selection
-$trucks_query = $db->query('SELECT * FROM trucks ORDER BY name');
+// Fetch trucks for the current station only
+$trucks_query = $db->prepare('SELECT * FROM trucks WHERE station_id = :station_id ORDER BY name');
+$trucks_query->execute(['station_id' => $station['id']]);
 $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Check if a truck has been selected
@@ -22,7 +28,27 @@ if (!$selected_truck_id) {
     include 'templates/header.php';
     ?>
     <link rel="stylesheet" href="styles/reports.css">
+    <style>
+        .station-info {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .station-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #12044C;
+        }
+    </style>
     <div class="container">
+        <div class="station-info">
+            <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
+            <?php if ($station['description']): ?>
+                <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
+            <?php endif; ?>
+        </div>
         <h1>Locker Items Report (A3)</h1>
         <p>This report will generate an A3-sized PDF showing all items in each locker for the selected truck.</p>
         <form method="get" action="list_all_items_report_a3.php">
@@ -37,6 +63,9 @@ if (!$selected_truck_id) {
             </div>
             <button type="submit">Generate Report</button>
         </form>
+        <div style="margin-top: 20px; text-align: center;">
+            <a href="admin.php" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">← Back to Admin</a>
+        </div>
     </div>
     <?php
     include 'templates/footer.php';

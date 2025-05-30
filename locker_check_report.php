@@ -68,7 +68,7 @@ if ($selected_date) {
             l.name as locker_name, 
             i.name as item_name, 
             ci.is_present as checked, 
-            CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+            c.check_date,
             cn.note as notes,
             c.checked_by,
             c.id as check_id
