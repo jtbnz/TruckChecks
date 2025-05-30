@@ -1,5 +1,6 @@
 <?php
 include_once('auth.php');
+include_once('db.php');
 
 // Require authentication and get user context
 $user = requireAuth();

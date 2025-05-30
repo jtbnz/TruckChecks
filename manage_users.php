@@ -221,10 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            // Don't allow resetting your own password this way
-            if ($resetUserId == $userId) {
-                throw new Exception("You cannot reset your own password using this method");
-            }
+            // Allow password reset for current user (removed restriction)
             
             // Generate random two-word password
             $newPassword = generateTwoWordPassword();
@@ -234,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
             $stmt->execute([$passwordHash, $resetUserId]);
             
-            $message = "Password reset successfully for user '" . htmlspecialchars($resetUser['username']) . "'. New password: <strong>" . htmlspecialchars($newPassword) . "</strong> (Please share this securely with the user)";
+            $message = "Password reset successfully for user '" . htmlspecialchars($resetUser['username']) . "'. New password: " . htmlspecialchars($newPassword) . " (Please share this securely with the user)";
             
         } elseif (isset($_POST['delete_user'])) {
             $deleteUserId = $_POST['user_id'];
@@ -655,14 +652,13 @@ if ($userRole === 'superuser') {
                                 <td><?= htmlspecialchars($listUser['station_names'] ?? 'None') ?></td>
                                 <td><?= htmlspecialchars($listUser['created_by_username'] ?? 'System') ?></td>
                                 <td>
-                                    <?php if ($listUser['id'] != $userId): ?>
-                                        <button class="btn btn-secondary" onclick="editUser(<?= $listUser['id'] ?>)">Edit</button>
-                                        <button class="btn" onclick="resetPassword(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Reset Password</button>
-                                        <?php if ($userRole === 'superuser' || $listUser['created_by'] == $userId): ?>
-                                            <button class="btn btn-danger" onclick="deleteUser(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Delete</button>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <em>Current User</em>
+                                    <button class="btn btn-secondary" onclick="editUser(<?= $listUser['id'] ?>)">Edit</button>
+                                    <button class="btn" onclick="resetPassword(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Reset Password</button>
+                                    <?php if ($listUser['id'] != $userId && ($userRole === 'superuser' || $listUser['created_by'] == $userId)): ?>
+                                        <button class="btn btn-danger" onclick="deleteUser(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Delete</button>
+                                    <?php endif; ?>
+                                    <?php if ($listUser['id'] == $userId): ?>
+                                        <em style="margin-left: 10px; color: #666;">(Current User)</em>
                                     <?php endif; ?>
                                 </td>
                             </tr>

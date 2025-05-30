@@ -1,5 +1,6 @@
 <?php
 include_once('auth.php');
+include_once('db.php');
 
 // Handle AJAX station change request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_station') {
@@ -32,10 +33,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Require authentication and station context
 $station = requireStation();
-$user = $auth->getCurrentUser();
+$user = getCurrentUser();
 
 // Check if user can manage settings for this station
-if (!$auth->hasStationAccess($station['id'])) {
+if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
     header('Location: select_station.php');
     exit;
 }
