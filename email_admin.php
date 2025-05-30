@@ -1,5 +1,10 @@
 <?php
 include('config.php');
+require '../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 include 'db.php';
 include_once('auth.php');
 
@@ -110,41 +115,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
                 throw new Exception('Email configuration is not set up in config.php');
             }
             
-            require_once 'vendor/autoload.php';
-            
             // Debug: Show email configuration being used
             // Output debug info to browser console
             echo '<script>console.log("=== EMAIL DEBUG INFO ===");</script>';
             echo '<script>console.log("EMAIL_HOST: ' . addslashes(defined('EMAIL_HOST') ? EMAIL_HOST : 'NOT DEFINED') . '");</script>';
             echo '<script>console.log("EMAIL_USER: ' . addslashes(defined('EMAIL_USER') ? EMAIL_USER : 'NOT DEFINED') . '");</script>';
-            error_log('EMAIL_PASS: ' . (defined('EMAIL_PASS') ? (EMAIL_PASS ? '[SET - ' . strlen(EMAIL_PASS) . ' chars]' : '[EMPTY]') : 'NOT DEFINED'));
-            error_log('EMAIL_PORT: ' . (defined('EMAIL_PORT') ? EMAIL_PORT : 'NOT DEFINED'));
-            error_log('From Email (calculated): ' . (filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST']));
-            error_log('Test Email To: ' . $test_email);
-            error_log('========================');
+            echo '<script>console.log("EMAIL_PASS: ' . addslashes(defined('EMAIL_PASS') ? (EMAIL_PASS ? '[SET - ' . strlen(EMAIL_PASS) . ' chars]' : '[EMPTY]') : 'NOT DEFINED') . '");</script>';
+            echo '<script>console.log("EMAIL_PORT: ' . addslashes(defined('EMAIL_PORT') ? EMAIL_PORT : 'NOT DEFINED') . '");</script>';
+            echo '<script>console.log("From Email (calculated): ' . addslashes(filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST']) . '");</script>';
+            echo '<script>console.log("Test Email To: ' . addslashes($test_email) . '");</script>';
+            echo '<script>console.log("========================");</script>';
             
-            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            $mail = new PHPMailer(true);
             
-            // Enable verbose debug output
-            $mail->SMTPDebug = 2; // Enable verbose debug output
+            // Enable verbose debug output to console
+            $mail->SMTPDebug = 2;
             $mail->Debugoutput = function($str, $level) {
-                error_log("PHPMailer DEBUG [$level]: $str");
+                echo '<script>console.log("PHPMailer DEBUG [' . $level . ']: ' . addslashes($str) . '");</script>';
             };
-            error_log('PHPMailer debug output enabled');
+            echo '<script>console.log("PHPMailer debug output enabled");</script>';
             
-            // Server settings
+            // Server settings - match email_results.php exactly
             $mail->isSMTP();
-            $mail->Host = EMAIL_HOST;
+            $mail->Host = EMAIL_HOST; 
             $mail->SMTPAuth = true;
-            $mail->Username = EMAIL_USER;
-            $mail->Password = EMAIL_PASS;
-            $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Username = EMAIL_USER; 
+            $mail->Password = EMAIL_PASS; 
+            $mail->SMTPSecure = "ssl";
             $mail->Port = EMAIL_PORT;
             
             // Recipients
             // Validate EMAIL_USER is a proper email format
             $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST'];
+            echo '<script>console.log("Setting From email to: ' . addslashes($from_email) . '");</script>';
             $mail->setFrom($from_email, 'TruckChecks System');
+            
+            echo '<script>console.log("Adding recipient: ' . addslashes($test_email) . '");</script>';
             $mail->addAddress($test_email);
             
             // Content
@@ -159,9 +165,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
                 <p>If you received this email, your email configuration is working correctly!</p>
             ';
             
+            echo '<script>console.log("About to send email...");</script>';
+            echo '<script>console.log("Subject: ' . addslashes($mail->Subject) . '");</script>';
+            echo '<script>console.log("SMTP Host: ' . addslashes($mail->Host) . '");</script>';
+            echo '<script>console.log("SMTP Port: ' . addslashes($mail->Port) . '");</script>';
+            echo '<script>console.log("SMTP Username: ' . addslashes($mail->Username) . '");</script>';
+            
             $mail->send();
+            echo '<script>console.log("Email sent successfully!");</script>';
             $test_success_message = "Test email sent successfully to " . htmlspecialchars($test_email) . "!";
         } catch (Exception $e) {
+            echo '<script>console.log("Email send failed: ' . addslashes($e->getMessage()) . '");</script>';
             $test_error_message = "Failed to send test email: " . $e->getMessage();
         }
     } else {
