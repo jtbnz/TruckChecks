@@ -23,7 +23,7 @@ $report_query = $db->prepare("
     JOIN lockers l ON i.locker_id = l.id
     JOIN trucks t ON t.id = l.truck_id
     WHERE t.station_id = :station_id
-    AND i.deleted_at IS NULL
+
     ORDER BY t.name, l.name
 ");
 
