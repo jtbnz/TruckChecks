@@ -112,6 +112,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
             
             require_once 'vendor/autoload.php';
             
+            // Debug: Show email configuration being used
+            error_log('=== EMAIL DEBUG INFO ===');
+            error_log('EMAIL_HOST: ' . (defined('EMAIL_HOST') ? EMAIL_HOST : 'NOT DEFINED'));
+            error_log('EMAIL_USER: ' . (defined('EMAIL_USER') ? EMAIL_USER : 'NOT DEFINED'));
+            error_log('EMAIL_PASS: ' . (defined('EMAIL_PASS') ? (EMAIL_PASS ? '[SET - ' . strlen(EMAIL_PASS) . ' chars]' : '[EMPTY]') : 'NOT DEFINED'));
+            error_log('EMAIL_PORT: ' . (defined('EMAIL_PORT') ? EMAIL_PORT : 'NOT DEFINED'));
+            error_log('From Email (calculated): ' . (filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST']));
+            error_log('Test Email To: ' . $test_email);
+            error_log('========================');
+            
             $mail = new PHPMailer\PHPMailer\PHPMailer(true);
             
             // Server settings
