@@ -35,6 +35,12 @@ if (isset($_GET['ajax'])) {
         $ajax_params = [];
         $ajax_where_conditions = [];
 
+        // Always filter by station if available
+        if ($station) {
+            $ajax_where_conditions[] = 't.station_id = ?';
+            $ajax_params[] = $station['id'];
+        }
+
         if (!empty($ajax_truck_filter)) {
             $ajax_where_conditions[] = 't.id = ?';
             $ajax_params[] = $ajax_truck_filter;
@@ -124,11 +130,25 @@ if (isset($_GET['edit_id'])) {
 $truck_filter = $_GET['truck_filter'] ?? '';
 $locker_filter = $_GET['locker_filter'] ?? '';
 
-// Fetch all trucks for the dropdown and filter
-$trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+// Fetch trucks for the current station only
+if ($station) {
+    $trucks_stmt = $db->prepare('SELECT * FROM trucks WHERE station_id = ? ORDER BY name');
+    $trucks_stmt->execute([$station['id']]);
+    $trucks = $trucks_stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // Fallback for legacy mode
+    $trucks = $db->query('SELECT * FROM trucks ORDER BY name')->fetchAll(PDO::FETCH_ASSOC);
+}
 
-// Fetch all lockers for the dropdown
-$lockers = $db->query('SELECT l.*, t.name as truck_name FROM lockers l JOIN trucks t ON l.truck_id = t.id ORDER BY t.name, l.name')->fetchAll(PDO::FETCH_ASSOC);
+// Fetch lockers for the current station only
+if ($station) {
+    $lockers_stmt = $db->prepare('SELECT l.*, t.name as truck_name FROM lockers l JOIN trucks t ON l.truck_id = t.id WHERE t.station_id = ? ORDER BY t.name, l.name');
+    $lockers_stmt->execute([$station['id']]);
+    $lockers = $lockers_stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    // Fallback for legacy mode
+    $lockers = $db->query('SELECT l.*, t.name as truck_name FROM lockers l JOIN trucks t ON l.truck_id = t.id ORDER BY t.name, l.name')->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Fetch lockers for the selected truck (for filter dropdown)
 $filter_lockers = [];
@@ -138,10 +158,16 @@ if (!empty($truck_filter)) {
     $filter_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Fetch items with optional truck and locker filter
+// Fetch items with optional truck and locker filter (station-filtered)
 $items_query = 'SELECT i.*, l.name as locker_name, t.name as truck_name, t.id as truck_id, l.id as locker_id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id';
 $params = [];
 $where_conditions = [];
+
+// Always filter by station if available
+if ($station) {
+    $where_conditions[] = 't.station_id = ?';
+    $params[] = $station['id'];
+}
 
 if (!empty($truck_filter)) {
     $where_conditions[] = 't.id = ?';
@@ -274,7 +300,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <br><strong>Filtered by Locker:</strong> <?= htmlspecialchars($selected_locker['name']) ?>
             <?php endif; ?>
         <?php else: ?>
-            <strong>Showing:</strong> All trucks and lockers
+            <strong>Showing:</strong> All trucks and lockers for <?= htmlspecialchars($station['name']) ?>
         <?php endif; ?>
     </p>
 </div>
@@ -293,7 +319,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </ul>
     <?php else: ?>
         <div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-            <p>No items found<?= !empty($truck_filter) || !empty($locker_filter) ? ' for the selected filters' : '' ?>.</p>
+            <p>No items found<?= !empty($truck_filter) || !empty($locker_filter) ? ' for the selected filters' : '' ?> for <?= htmlspecialchars($station['name']) ?> station.</p>
         </div>
     <?php endif; ?>
 </div>
@@ -415,7 +441,7 @@ function updateItemsList(selectedTruck, selectedLocker) {
                         filterStatus += '<br><strong>Filtered by Locker:</strong> ' + data.locker_name;
                     }
                 } else {
-                    filterStatus = '<strong>Showing:</strong> All trucks and lockers';
+                    filterStatus = '<strong>Showing:</strong> All trucks and lockers for <?= htmlspecialchars($station['name']) ?>';
                 }
                 document.getElementById('filter-status').innerHTML = filterStatus;
                 
@@ -445,7 +471,7 @@ function updateItemsList(selectedTruck, selectedLocker) {
                 } else {
                     const filterText = (selectedTruck || selectedLocker) ? ' for the selected filters' : '';
                     itemsList.innerHTML = '<div class="no-items" style="margin: 20px 0; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">' +
-                                         '<p>No items found' + filterText + '.</p></div>';
+                                         '<p>No items found' + filterText + ' for <?= htmlspecialchars($station['name']) ?> station.</p></div>';
                 }
             } catch (e) {
                 console.error('Error parsing items data:', e);
