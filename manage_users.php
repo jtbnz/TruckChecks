@@ -50,6 +50,25 @@ if ($userRole === 'station_admin') {
 $message = '';
 $error = '';
 
+// Function to generate a random two-word password
+function generateTwoWordPassword() {
+    $words = [
+        'apple', 'banana', 'cherry', 'dragon', 'eagle', 'forest', 'garden', 'happy',
+        'island', 'jungle', 'kitten', 'lemon', 'mountain', 'ocean', 'purple', 'quiet',
+        'rainbow', 'sunset', 'tiger', 'umbrella', 'violet', 'winter', 'yellow', 'zebra',
+        'bridge', 'castle', 'diamond', 'flower', 'guitar', 'hammer', 'iceberg', 'jacket',
+        'keyboard', 'laptop', 'mirror', 'notebook', 'orange', 'pencil', 'rocket', 'silver',
+        'thunder', 'unicorn', 'volcano', 'window', 'crystal', 'dolphin', 'elephant', 'falcon',
+        'giraffe', 'horizon', 'lightning', 'meadow', 'phoenix', 'starfish', 'tornado', 'waterfall'
+    ];
+    
+    $word1 = $words[array_rand($words)];
+    $word2 = $words[array_rand($words)];
+    $number = rand(10, 99);
+    
+    return ucfirst($word1) . ucfirst($word2) . $number;
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
@@ -175,6 +194,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $message = "User updated successfully!";
+            
+        } elseif (isset($_POST['reset_password'])) {
+            $resetUserId = $_POST['user_id'];
+            
+            // Get user to reset password for
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+            $stmt->execute([$resetUserId]);
+            $resetUser = $stmt->fetch();
+            
+            if (!$resetUser) {
+                throw new Exception("User not found");
+            }
+            
+            // Check permissions
+            if ($userRole === 'station_admin') {
+                // Station admin can only reset passwords for users in their stations
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) FROM user_stations us 
+                    JOIN user_stations my_stations ON us.station_id = my_stations.station_id 
+                    WHERE us.user_id = ? AND my_stations.user_id = ?
+                ");
+                $stmt->execute([$resetUserId, $userId]);
+                if ($stmt->fetchColumn() == 0 && $resetUser['created_by'] != $userId) {
+                    throw new Exception("You can only reset passwords for users in your stations");
+                }
+            }
+            
+            // Don't allow resetting your own password this way
+            if ($resetUserId == $userId) {
+                throw new Exception("You cannot reset your own password using this method");
+            }
+            
+            // Generate random two-word password
+            $newPassword = generateTwoWordPassword();
+            
+            // Update password
+            $passwordHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+            $stmt->execute([$passwordHash, $resetUserId]);
+            
+            $message = "Password reset successfully for user '" . htmlspecialchars($resetUser['username']) . "'. New password: <strong>" . htmlspecialchars($newPassword) . "</strong> (Please share this securely with the user)";
             
         } elseif (isset($_POST['delete_user'])) {
             $deleteUserId = $_POST['user_id'];
@@ -597,6 +657,7 @@ if ($userRole === 'superuser') {
                                 <td>
                                     <?php if ($listUser['id'] != $userId): ?>
                                         <button class="btn btn-secondary" onclick="editUser(<?= $listUser['id'] ?>)">Edit</button>
+                                        <button class="btn" onclick="resetPassword(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Reset Password</button>
                                         <?php if ($userRole === 'superuser' || $listUser['created_by'] == $userId): ?>
                                             <button class="btn btn-danger" onclick="deleteUser(<?= $listUser['id'] ?>, '<?= htmlspecialchars($listUser['username']) ?>')">Delete</button>
                                         <?php endif; ?>
@@ -639,6 +700,21 @@ if ($userRole === 'superuser') {
                 
                 <button type="submit" name="update_user" class="btn">Update User</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeResetPasswordModal()">&times;</span>
+            <h2>Reset Password</h2>
+            <p>Are you sure you want to reset the password for user <strong id="reset_username"></strong>?</p>
+            <p>A new random password will be generated and displayed to you.</p>
+            <form method="post" id="resetPasswordForm">
+                <input type="hidden" name="user_id" id="reset_user_id">
+                <button type="submit" name="reset_password" class="btn">Reset Password</button>
+                <button type="button" class="btn btn-secondary" onclick="closeResetPasswordModal()">Cancel</button>
             </form>
         </div>
     </div>
@@ -730,16 +806,30 @@ if ($userRole === 'superuser') {
             document.getElementById('deleteModal').style.display = 'none';
         }
         
+        function resetPassword(userId, username) {
+            document.getElementById('reset_user_id').value = userId;
+            document.getElementById('reset_username').textContent = username;
+            document.getElementById('resetPasswordModal').style.display = 'block';
+        }
+        
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        }
+        
         // Close modals when clicking outside
         window.onclick = function(event) {
             const editModal = document.getElementById('editModal');
             const deleteModal = document.getElementById('deleteModal');
+            const resetPasswordModal = document.getElementById('resetPasswordModal');
             
             if (event.target === editModal) {
                 closeModal();
             }
             if (event.target === deleteModal) {
                 closeDeleteModal();
+            }
+            if (event.target === resetPasswordModal) {
+                closeResetPasswordModal();
             }
         }
         
