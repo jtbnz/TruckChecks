@@ -539,6 +539,11 @@ $currentPage = $_GET['page'] ?? 'dashboard';
     </div>
     
     <script>
+        // Detect if device is mobile
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        }
+        
         // Handle navigation clicks
         document.querySelectorAll('.nav-item[target="content-frame"]').forEach(link => {
             link.addEventListener('click', function(e) {

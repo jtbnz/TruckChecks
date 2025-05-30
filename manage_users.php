@@ -610,6 +610,11 @@ if ($userRole === 'superuser') {
                 </table>
             <?php endif; ?>
         </div>
+        
+        <!-- Back to Admin Section -->
+        <div class="section">
+            <a href="admin.php" class="btn btn-secondary">← Back to Admin</a>
+        </div>
     </div>
 
     <!-- Edit User Modal -->
