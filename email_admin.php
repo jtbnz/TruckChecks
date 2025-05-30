@@ -14,13 +14,21 @@ if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
     exit;
 }
 
-// Get station context
+// Get station context - use their first assigned station
 if ($user['role'] === 'station_admin') {
-    $station = requireStation();
+    // Station admins: get their first assigned station
+    $user_stations = getUserStations($user['id']);
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+    } else {
+        $no_station_selected = true;
+    }
 } elseif ($user['role'] === 'superuser') {
-    $station = getCurrentStation();
-    if (!$station) {
-        // For superusers without a station selected, show a message instead of redirecting
+    // Superusers: get their first assigned station, or first available station
+    $user_stations = getUserStations($user['id']);
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+    } else {
         $no_station_selected = true;
     }
 }
@@ -347,7 +355,7 @@ include 'templates/header.php';
     <div class="access-info">
         <strong>Access Level:</strong> 
         <?php if ($user['role'] === 'superuser'): ?>
-            <span class="role-badge role-superuser">Superuser</span> - Managing email settings for selected station
+            <span class="role-badge role-superuser">Superuser</span> - Managing email settings for assigned station
         <?php elseif ($user['role'] === 'station_admin'): ?>
             <span class="role-badge role-station_admin">Station Admin</span> - Managing email settings for your station
         <?php endif; ?>
@@ -355,9 +363,9 @@ include 'templates/header.php';
 
     <?php if ($no_station_selected): ?>
         <div class="no-station-message">
-            <h2>No Station Selected</h2>
-            <p>You need to select a station before you can manage email settings.</p>
-            <p>Please go back to the admin page and select a station first.</p>
+            <h2>No Station Assigned</h2>
+            <p>You don't have any stations assigned to your account.</p>
+            <p>Please contact your administrator to assign you to a station before you can manage email settings.</p>
             <div class="button-container">
                 <a href="admin.php" class="button">← Back to Admin</a>
             </div>

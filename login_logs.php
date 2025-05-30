@@ -7,12 +7,19 @@ include_once('auth.php');
 $user = requireAuth();
 $station = null;
 
-// Get user's station context if they're a station admin
+// Get user's station context - use their first assigned station
 if ($user['role'] === 'station_admin') {
-    $station = requireStation();
+    // Station admins: get their first assigned station
+    $user_stations = getUserStations($user['id']);
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+    }
 } elseif ($user['role'] === 'superuser') {
-    // For superusers, station is optional for login logs
-    $station = getCurrentStation();
+    // Superusers: get their first assigned station, or first available station
+    $user_stations = getUserStations($user['id']);
+    if (!empty($user_stations)) {
+        $station = $user_stations[0];
+    }
 }
 
 // Check if user has permission to view login logs
