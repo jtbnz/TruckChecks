@@ -129,13 +129,13 @@ if ($station) {
     $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
 
     // Fetch email addresses for this station
-    $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id";
+    $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id OR station_id IS NULL";
     $emailStmt = $pdo->prepare($emailQuery);
     $emailStmt->execute(['station_id' => $station['id']]);
     $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
 
     // Also get admin email for this station
-    $adminEmailQuery = "SELECT setting_value FROM settings WHERE setting_name = 'admin_email' AND station_id = :station_id";
+    $adminEmailQuery = "SELECT setting_value FROM station_settings WHERE setting_key = 'admin_email' AND station_id = :station_id";
     $adminEmailStmt = $pdo->prepare($adminEmailQuery);
     $adminEmailStmt->execute(['station_id' => $station['id']]);
     $adminEmail = $adminEmailStmt->fetchColumn();

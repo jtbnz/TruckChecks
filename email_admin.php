@@ -91,17 +91,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email']) && $stati
     if (!empty($admin_email) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         try {
             // Check if settings table exists and has an admin_email entry for this station
-            $stmt = $db->prepare('SELECT COUNT(*) FROM settings WHERE setting_name = "admin_email" AND station_id = ?');
+            $stmt = $db->prepare('SELECT COUNT(*) FROM station_settings WHERE setting_key = "admin_email" AND station_id = ?');
             $stmt->execute([$station['id']]);
             $exists = $stmt->fetchColumn();
             
             if ($exists) {
                 // Update existing email
-                $stmt = $db->prepare('UPDATE settings SET setting_value = ? WHERE setting_name = "admin_email" AND station_id = ?');
+                $stmt = $db->prepare('UPDATE station_settings SET setting_value = ? WHERE setting_key = "admin_email" AND station_id = ?');
                 $stmt->execute([$admin_email, $station['id']]);
             } else {
                 // Insert new email
-                $stmt = $db->prepare('INSERT INTO settings (setting_name, setting_value, station_id) VALUES ("admin_email", ?, ?)');
+                $stmt = $db->prepare('INSERT INTO station_settings (setting_key, setting_value, station_id, setting_type, description) VALUES ("admin_email", ?, ?, "string", "Admin email address for this station")');
                 $stmt->execute([$admin_email, $station['id']]);
             }
             
@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email']) && $stati
 $current_email = null;
 if ($station) {
     try {
-        $stmt = $db->prepare('SELECT setting_value FROM settings WHERE setting_name = "admin_email" AND station_id = ?');
+        $stmt = $db->prepare('SELECT setting_value FROM station_settings WHERE setting_key = "admin_email" AND station_id = ?');
         $stmt->execute([$station['id']]);
         $current_email = $stmt->fetchColumn();
     } catch (Exception $e) {

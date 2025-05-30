@@ -231,4 +231,14 @@ INSERT INTO `settings` (`setting_name`, `setting_value`, `setting_type`, `descri
 ('max_login_attempts', '5', 'integer', 'Maximum login attempts before lockout'),
 ('lockout_duration', '900', 'integer', 'Account lockout duration in seconds');
 
+-- Add station_id to email_addresses table for per-station email management
+ALTER TABLE `email_addresses` ADD COLUMN `station_id` INT NULL AFTER `email`;
+ALTER TABLE `email_addresses` ADD FOREIGN KEY (`station_id`) REFERENCES `stations`(`id`) ON DELETE SET NULL;
+CREATE INDEX `idx_email_addresses_station_id` ON `email_addresses`(`station_id`);
+
+-- Add station_id to locker_item_deletion_log table for per-station tracking
+ALTER TABLE `locker_item_deletion_log` ADD COLUMN `station_id` INT NULL AFTER `deleted_at`;
+ALTER TABLE `locker_item_deletion_log` ADD FOREIGN KEY (`station_id`) REFERENCES `stations`(`id`) ON DELETE SET NULL;
+CREATE INDEX `idx_locker_item_deletion_log_station_id` ON `locker_item_deletion_log`(`station_id`);
+
 COMMIT;
