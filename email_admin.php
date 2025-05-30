@@ -124,6 +124,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
             
             $mail = new PHPMailer\PHPMailer\PHPMailer(true);
             
+            // Enable verbose debug output
+            $mail->SMTPDebug = 2; // Enable verbose debug output
+            $mail->Debugoutput = function($str, $level) {
+                error_log("PHPMailer DEBUG [$level]: $str");
+            };
+            error_log('PHPMailer debug output enabled');
+            
             // Server settings
             $mail->isSMTP();
             $mail->Host = EMAIL_HOST;
