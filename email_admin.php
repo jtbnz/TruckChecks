@@ -36,6 +36,70 @@ if ($user['role'] === 'station_admin') {
 
 $db = get_db_connection();
 
+// Handle adding multiple email addresses (only if station is selected)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_emails']) && $station) {
+    $email_list = $_POST['email_list'];
+    if (!empty($email_list)) {
+        try {
+            // Parse multiple emails (comma or newline separated)
+            $emails = preg_split('/[,\n\r]+/', $email_list);
+            $valid_emails = [];
+            $invalid_emails = [];
+            
+            foreach ($emails as $email) {
+                $email = trim($email);
+                if (!empty($email)) {
+                    if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                        $valid_emails[] = $email;
+                    } else {
+                        $invalid_emails[] = $email;
+                    }
+                }
+            }
+            
+            if (!empty($valid_emails)) {
+                $added_count = 0;
+                foreach ($valid_emails as $email) {
+                    // Check if email already exists for this station
+                    $stmt = $db->prepare('SELECT COUNT(*) FROM email_addresses WHERE email = ? AND (station_id = ? OR station_id IS NULL)');
+                    $stmt->execute([$email, $station['id']]);
+                    $exists = $stmt->fetchColumn();
+                    
+                    if (!$exists) {
+                        // Insert new email for this station
+                        $stmt = $db->prepare('INSERT INTO email_addresses (email, station_id) VALUES (?, ?)');
+                        $stmt->execute([$email, $station['id']]);
+                        $added_count++;
+                    }
+                }
+                
+                $success_message = "Added {$added_count} email address(es) successfully for " . htmlspecialchars($station['name']) . "!";
+                if (!empty($invalid_emails)) {
+                    $success_message .= " Invalid emails skipped: " . implode(', ', $invalid_emails);
+                }
+            } else {
+                $error_message = "No valid email addresses found. Invalid emails: " . implode(', ', $invalid_emails);
+            }
+        } catch (Exception $e) {
+            $error_message = "Error adding email addresses: " . $e->getMessage();
+        }
+    } else {
+        $error_message = "Please enter at least one email address.";
+    }
+}
+
+// Handle removing email address
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['remove_email']) && $station) {
+    $email_to_remove = $_POST['email_to_remove'];
+    try {
+        $stmt = $db->prepare('DELETE FROM email_addresses WHERE email = ? AND station_id = ?');
+        $stmt->execute([$email_to_remove, $station['id']]);
+        $success_message = "Email address removed successfully!";
+    } catch (Exception $e) {
+        $error_message = "Error removing email address: " . $e->getMessage();
+    }
+}
+
 // Handle test email sending (only if station is selected)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && $station) {
     $test_email = $_POST['test_email'];
@@ -85,8 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email']) && 
     }
 }
 
-// Handle form submission for setting email (only if station is selected)
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email']) && $station) {
+// Handle form submission for setting admin email (only if station is selected)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_admin_email']) && $station) {
     $admin_email = $_POST['admin_email'];
     if (!empty($admin_email) && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         try {
@@ -114,15 +178,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_email']) && $stati
     }
 }
 
-// Get current admin email for this station (only if station is selected)
-$current_email = null;
+// Get current admin email and all email addresses for this station (only if station is selected)
+$current_admin_email = null;
+$current_emails = [];
 if ($station) {
     try {
         $stmt = $db->prepare('SELECT setting_value FROM station_settings WHERE setting_key = "admin_email" AND station_id = ?');
         $stmt->execute([$station['id']]);
-        $current_email = $stmt->fetchColumn();
+        $current_admin_email = $stmt->fetchColumn();
+        
+        // Get all email addresses for this station
+        $stmt = $db->prepare('SELECT email FROM email_addresses WHERE station_id = ? OR station_id IS NULL ORDER BY email');
+        $stmt->execute([$station['id']]);
+        $current_emails = $stmt->fetchAll(PDO::FETCH_COLUMN);
     } catch (Exception $e) {
-        $current_email = null;
+        $current_admin_email = null;
+        $current_emails = [];
     }
 }
 
@@ -227,13 +298,18 @@ include 'templates/header.php';
         color: #333;
     }
 
-    .input-container input {
+    .input-container input, .input-container textarea {
         width: 100%;
         padding: 10px;
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: 16px;
         box-sizing: border-box;
+    }
+
+    .input-container textarea {
+        height: 100px;
+        resize: vertical;
     }
 
     .button-container {
@@ -273,6 +349,14 @@ include 'templates/header.php';
 
     .button.test:hover {
         background-color: #218838;
+    }
+
+    .button.danger {
+        background-color: #dc3545;
+    }
+
+    .button.danger:hover {
+        background-color: #c82333;
     }
 
     .button:disabled {
@@ -339,17 +423,54 @@ include 'templates/header.php';
         color: white;
     }
 
+    .email-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .email-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin: 5px 0;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+    }
+
+    .email-address {
+        font-family: monospace;
+        font-size: 14px;
+    }
+
+    .remove-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+        margin: 0;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
         .email-container {
             padding: 10px;
+        }
+        
+        .email-list li {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .remove-btn {
+            margin-top: 10px;
+            align-self: flex-end;
         }
     }
 </style>
 
 <div class="email-container">
     <div class="page-header">
-        <h1 class="page-title">Manage Admin Email Address</h1>
+        <h1 class="page-title">Manage Email Addresses</h1>
     </div>
 
     <!-- Access Level Information -->
@@ -416,26 +537,59 @@ include 'templates/header.php';
         </div>
     <?php endif; ?>
 
+    <!-- Current Email Addresses -->
     <div class="info-section current-email-section">
-        <h2>Current Admin Email</h2>
-        <?php if ($current_email): ?>
-            <div class="current-email-display">
-                <?= htmlspecialchars($current_email) ?>
-            </div>
+        <h2>Current Email Addresses for <?= htmlspecialchars($station['name']) ?></h2>
+        <?php if (!empty($current_emails)): ?>
+            <ul class="email-list">
+                <?php foreach ($current_emails as $email): ?>
+                    <li>
+                        <span class="email-address"><?= htmlspecialchars($email) ?></span>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="email_to_remove" value="<?= htmlspecialchars($email) ?>">
+                            <button type="submit" name="remove_email" class="button danger remove-btn" 
+                                    onclick="return confirm('Are you sure you want to remove this email address?')">Remove</button>
+                        </form>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
         <?php else: ?>
-            <p class="no-email-text">No admin email is currently set for this station.</p>
+            <p class="no-email-text">No email addresses are currently configured for this station.</p>
         <?php endif; ?>
     </div>
 
+    <!-- Add Multiple Email Addresses -->
     <div class="form-section">
-        <h2>Set Admin Email Address</h2>
+        <h2>Add Email Addresses</h2>
+        <p>Add multiple email addresses for receiving reports and notifications. You can enter multiple emails separated by commas or on separate lines.</p>
         <form method="POST">
             <div class="input-container">
-                <label for="admin_email">Admin Email Address:</label>
-                <input type="email" name="admin_email" id="admin_email" placeholder="admin@example.com" value="<?= htmlspecialchars($current_email ?? '') ?>" required>
+                <label for="email_list">Email Addresses:</label>
+                <textarea name="email_list" id="email_list" placeholder="admin@example.com, manager@example.com&#10;supervisor@example.com" required></textarea>
+                <small style="color: #666;">Enter multiple emails separated by commas or on separate lines</small>
             </div>
             <div class="button-container">
-                <button type="submit" name="set_email" class="button">Set Admin Email</button>
+                <button type="submit" name="add_emails" class="button">Add Email Addresses</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Admin Email (Legacy Support) -->
+    <div class="form-section">
+        <h2>Primary Admin Email</h2>
+        <p>Set a primary admin email address for this station (this is in addition to the email addresses above).</p>
+        <?php if ($current_admin_email): ?>
+            <div class="current-email-display">
+                Current: <?= htmlspecialchars($current_admin_email) ?>
+            </div>
+        <?php endif; ?>
+        <form method="POST">
+            <div class="input-container">
+                <label for="admin_email">Primary Admin Email Address:</label>
+                <input type="email" name="admin_email" id="admin_email" placeholder="admin@example.com" value="<?= htmlspecialchars($current_admin_email ?? '') ?>">
+            </div>
+            <div class="button-container">
+                <button type="submit" name="set_admin_email" class="button">Set Primary Admin Email</button>
             </div>
         </form>
     </div>
@@ -447,7 +601,7 @@ include 'templates/header.php';
         <form method="POST">
             <div class="input-container">
                 <label for="test_email">Test Email Address:</label>
-                <input type="email" name="test_email" id="test_email" placeholder="test@example.com" value="<?= htmlspecialchars($current_email ?? '') ?>" required>
+                <input type="email" name="test_email" id="test_email" placeholder="test@example.com" value="<?= htmlspecialchars($current_admin_email ?? '') ?>" required>
             </div>
             <div class="button-container">
                 <button type="submit" name="send_test_email" class="button test">Send Test Email</button>
@@ -465,8 +619,14 @@ include 'templates/header.php';
     <?php endif; ?>
 
     <div class="info-section help-section">
-        <h3>About Admin Email</h3>
-        <p>This email address will be used to send reports and notifications from the TruckChecks system for <strong><?= htmlspecialchars($station['name']) ?></strong>. Make sure to configure your email settings in the config.php file for email functionality to work properly.</p>
+        <h3>About Email Configuration</h3>
+        <p>Email addresses configured here will receive reports and notifications from the TruckChecks system for <strong><?= htmlspecialchars($station['name']) ?></strong>.</p>
+        <ul>
+            <li><strong>Multiple Email Addresses:</strong> You can add multiple email addresses to receive reports</li>
+            <li><strong>Station-Specific:</strong> Each station can have its own set of email addresses</li>
+            <li><strong>Primary Admin Email:</strong> The primary admin email is used for system notifications</li>
+            <li><strong>Weekly Reports:</strong> All configured emails will receive weekly check reports</li>
+        </ul>
         <p>Required email settings in config.php:</p>
         <ul>
             <li><strong>EMAIL_HOST</strong> - SMTP server hostname</li>
@@ -474,7 +634,6 @@ include 'templates/header.php';
             <li><strong>EMAIL_PASS</strong> - Email password</li>
             <li><strong>EMAIL_PORT</strong> - SMTP port number</li>
         </ul>
-        <p><strong>Note:</strong> Each station can have its own admin email address for receiving station-specific reports and notifications.</p>
     </div>
 
     <div class="button-container">
