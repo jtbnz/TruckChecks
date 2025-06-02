@@ -583,7 +583,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             const stationId = document.getElementById('station-selector').value;
             if (stationId) {
                 // Send AJAX request to change station
-                fetch('station_settings.php', {
+                fetch('admin.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
