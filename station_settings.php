@@ -114,61 +114,79 @@ try {
     $settings = [];
 }
 
-// Define available settings with defaults
+// Define available settings with defaults and categories
 $availableSettings = [
+    // General Settings
     'refresh_interval' => [
         'type' => 'integer',
         'default' => '30000',
         'description' => 'Page auto-refresh interval in milliseconds (minimum 5000)',
-        'label' => 'Auto-Refresh Interval (ms)'
+        'label' => 'Auto-Refresh Interval (ms)',
+        'category' => 'general'
     ],
     'randomize_order' => [
         'type' => 'boolean',
         'default' => 'true',
         'description' => 'Randomize the order of locker items on check pages',
-        'label' => 'Randomize Item Order'
-    ],
-    'is_demo' => [
-        'type' => 'boolean',
-        'default' => 'false',
-        'description' => 'Enable demo mode for this station (shows demo banner)',
-        'label' => 'Demo Mode'
+        'label' => 'Randomize Item Order',
+        'category' => 'general'
     ],
     'ip_api_key' => [
         'type' => 'string',
         'default' => '',
         'description' => 'IP Geolocation API key for ipgeolocation.io (leave empty to disable)',
-        'label' => 'IP Geolocation API Key'
+        'label' => 'IP Geolocation API Key',
+        'category' => 'general'
+    ],
+    
+    // Email Automation Settings (in order)
+    'email_automation_enabled' => [
+        'type' => 'boolean',
+        'default' => 'true',
+        'description' => 'Enable automated email sending for this station',
+        'label' => 'Enable Email Automation',
+        'category' => 'email'
     ],
     'send_email_check_time' => [
         'type' => 'string',
         'default' => '19:30',
         'description' => 'Time of day to send automated email checks (HH:MM format)',
-        'label' => 'Email Check Time'
+        'label' => 'Email Check Time',
+        'category' => 'email',
+        'depends_on' => 'email_automation_enabled'
     ],
     'training_nights' => [
         'type' => 'string',
         'default' => '1,2',
         'description' => 'Training nights as comma-separated day numbers (1=Monday, 7=Sunday)',
-        'label' => 'Training Nights'
-    ],
-    'alternate_training_night' => [
-        'type' => 'string',
-        'default' => '2',
-        'description' => 'Alternate training night when regular night falls on public holiday (1=Monday, 7=Sunday)',
-        'label' => 'Alternate Training Night'
-    ],
-    'email_automation_enabled' => [
-        'type' => 'boolean',
-        'default' => 'true',
-        'description' => 'Enable automated email sending for this station',
-        'label' => 'Enable Email Automation'
+        'label' => 'Training Nights',
+        'category' => 'email',
+        'depends_on' => 'email_automation_enabled'
     ],
     'alternate_training_night_enabled' => [
         'type' => 'boolean',
         'default' => 'true',
         'description' => 'Enable alternate training night for public holidays',
-        'label' => 'Enable Alternate Training Night'
+        'label' => 'Enable Alternate Training Night',
+        'category' => 'email',
+        'depends_on' => 'email_automation_enabled'
+    ],
+    'alternate_training_night' => [
+        'type' => 'string',
+        'default' => '2',
+        'description' => 'Alternate training night when regular night falls on public holiday (1=Monday, 7=Sunday)',
+        'label' => 'Alternate Training Night',
+        'category' => 'email',
+        'depends_on' => 'alternate_training_night_enabled'
+    ],
+    
+    // Super Admin Settings
+    'is_demo' => [
+        'type' => 'boolean',
+        'default' => 'false',
+        'description' => 'Enable demo mode for this station (shows demo banner)',
+        'label' => 'Demo Mode',
+        'category' => 'superadmin'
     ]
 ];
 
@@ -182,6 +200,79 @@ foreach ($availableSettings as $key => $config) {
             'description' => $config['description']
         ];
     }
+}
+
+/**
+ * Render a setting field
+ */
+function renderSettingField($key, $config, $settings) {
+    $dependsOn = $config['depends_on'] ?? null;
+    $dependsClass = $dependsOn ? "depends-on-{$dependsOn}" : '';
+    
+    echo '<div class="setting-group ' . $dependsClass . '">';
+    echo '<label class="setting-label">' . htmlspecialchars($config['label']) . '</label>';
+    echo '<div class="setting-description">' . htmlspecialchars($config['description']) . '</div>';
+    echo '<input type="hidden" name="types[' . $key . ']" value="' . $config['type'] . '">';
+    
+    if ($config['type'] === 'boolean') {
+        echo '<div class="setting-checkbox">';
+        echo '<input type="checkbox" name="settings[' . $key . ']" id="setting_' . $key . '" value="true"';
+        echo ($settings[$key]['setting_value'] === 'true') ? ' checked' : '';
+        echo '>';
+        echo '<label for="setting_' . $key . '">Enable this setting</label>';
+        echo '</div>';
+    } elseif ($config['type'] === 'integer') {
+        echo '<input type="number" name="settings[' . $key . ']" id="setting_' . $key . '"';
+        echo ' value="' . htmlspecialchars($settings[$key]['setting_value']) . '" class="setting-input"';
+        if ($key === 'refresh_interval') {
+            echo ' min="5000" step="1000"';
+        }
+        echo '>';
+        if ($key === 'refresh_interval') {
+            echo '<div class="help-text">Minimum 5000ms (5 seconds). Current value refreshes the Status page every ' . number_format($settings[$key]['setting_value'] / 1000, 1) . ' seconds.</div>';
+        }
+    } elseif ($key === 'send_email_check_time') {
+        echo '<input type="time" name="settings[' . $key . ']" id="setting_' . $key . '"';
+        echo ' value="' . htmlspecialchars($settings[$key]['setting_value']) . '" class="setting-input">';
+        echo '<div class="help-text">Time when automated emails will be sent (24-hour format)</div>';
+    } elseif ($key === 'training_nights') {
+        echo '<div class="checkbox-group">';
+        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
+        $selectedDays = explode(',', $settings[$key]['setting_value']);
+        foreach ($days as $dayNum => $dayName) {
+            echo '<label class="day-checkbox">';
+            echo '<input type="checkbox" name="training_days[]" value="' . $dayNum . '"';
+            echo in_array($dayNum, $selectedDays) ? ' checked' : '';
+            echo '>';
+            echo '<span>' . $dayName . '</span>';
+            echo '</label>';
+        }
+        echo '</div>';
+        echo '<input type="hidden" name="settings[' . $key . ']" id="training_nights_hidden" value="' . htmlspecialchars($settings[$key]['setting_value']) . '">';
+        echo '<div class="help-text">Select which nights are training nights for this station</div>';
+    } elseif ($key === 'alternate_training_night') {
+        echo '<select name="settings[' . $key . ']" id="setting_' . $key . '" class="setting-input">';
+        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
+        foreach ($days as $dayNum => $dayName) {
+            echo '<option value="' . $dayNum . '"';
+            echo ($settings[$key]['setting_value'] == $dayNum) ? ' selected' : '';
+            echo '>' . $dayName . '</option>';
+        }
+        echo '</select>';
+        echo '<div class="help-text">Backup training night when regular training night falls on a public holiday</div>';
+    } else {
+        echo '<input type="text" name="settings[' . $key . ']" id="setting_' . $key . '"';
+        echo ' value="' . htmlspecialchars($settings[$key]['setting_value']) . '" class="setting-input"';
+        if ($key === 'ip_api_key') {
+            echo ' placeholder="Enter your ipgeolocation.io API key"';
+        }
+        echo '>';
+        if ($key === 'ip_api_key') {
+            echo '<div class="help-text">Get your free API key from <a href="https://ipgeolocation.io/" target="_blank">ipgeolocation.io</a></div>';
+        }
+    }
+    
+    echo '</div>';
 }
 
 include 'templates/header.php';
@@ -228,6 +319,25 @@ include 'templates/header.php';
         border-radius: 8px;
         padding: 30px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .settings-section {
+        margin-bottom: 40px;
+        padding-bottom: 30px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .settings-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: #12044C;
+        font-size: 20px;
+        margin: 0 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #dee2e6;
     }
 
     .setting-group {
@@ -442,82 +552,40 @@ include 'templates/header.php';
     </div>
 
     <form method="post" action="" class="settings-form">
-        <?php foreach ($availableSettings as $key => $config): ?>
-            <div class="setting-group">
-                <label class="setting-label"><?= htmlspecialchars($config['label']) ?></label>
-                <div class="setting-description"><?= htmlspecialchars($config['description']) ?></div>
-                
-                <input type="hidden" name="types[<?= $key ?>]" value="<?= $config['type'] ?>">
-                
-                <?php if ($config['type'] === 'boolean'): ?>
-                    <div class="setting-checkbox">
-                        <input type="checkbox" 
-                               name="settings[<?= $key ?>]" 
-                               id="setting_<?= $key ?>"
-                               value="true"
-                               <?= ($settings[$key]['setting_value'] === 'true') ? 'checked' : '' ?>>
-                        <label for="setting_<?= $key ?>">Enable this setting</label>
-                    </div>
-                <?php elseif ($config['type'] === 'integer'): ?>
-                    <input type="number" 
-                           name="settings[<?= $key ?>]" 
-                           id="setting_<?= $key ?>"
-                           value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>"
-                           class="setting-input"
-                           <?= $key === 'refresh_interval' ? 'min="5000" step="1000"' : '' ?>>
-                    <?php if ($key === 'refresh_interval'): ?>
-                        <div class="help-text">Minimum 5000ms (5 seconds). Current value refreshes the Status page every <?= number_format($settings[$key]['setting_value'] / 1000, 1) ?> seconds.</div>
-                    <?php endif; ?>
-                <?php elseif ($key === 'send_email_check_time'): ?>
-                    <input type="time" 
-                           name="settings[<?= $key ?>]" 
-                           id="setting_<?= $key ?>"
-                           value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>"
-                           class="setting-input">
-                    <div class="help-text">Time when automated emails will be sent (24-hour format)</div>
-                <?php elseif ($key === 'training_nights'): ?>
-                    <div class="checkbox-group">
-                        <?php 
-                        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
-                        $selectedDays = explode(',', $settings[$key]['setting_value']);
-                        foreach ($days as $dayNum => $dayName): 
-                        ?>
-                            <label class="day-checkbox">
-                                <input type="checkbox" 
-                                       name="training_days[]" 
-                                       value="<?= $dayNum ?>"
-                                       <?= in_array($dayNum, $selectedDays) ? 'checked' : '' ?>>
-                                <?= $dayName ?>
-                            </label>
-                        <?php endforeach; ?>
-                    </div>
-                    <input type="hidden" name="settings[<?= $key ?>]" id="training_nights_hidden" value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>">
-                    <div class="help-text">Select which nights are training nights for this station</div>
-                <?php elseif ($key === 'alternate_training_night'): ?>
-                    <select name="settings[<?= $key ?>]" id="setting_<?= $key ?>" class="setting-input">
-                        <?php 
-                        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
-                        foreach ($days as $dayNum => $dayName): 
-                        ?>
-                            <option value="<?= $dayNum ?>" <?= $settings[$key]['setting_value'] == $dayNum ? 'selected' : '' ?>>
-                                <?= $dayName ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <div class="help-text">Backup training night when regular training night falls on a public holiday</div>
-                <?php else: ?>
-                    <input type="text" 
-                           name="settings[<?= $key ?>]" 
-                           id="setting_<?= $key ?>"
-                           value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>"
-                           class="setting-input"
-                           <?= $key === 'ip_api_key' ? 'placeholder="Enter your ipgeolocation.io API key"' : '' ?>>
-                    <?php if ($key === 'ip_api_key'): ?>
-                        <div class="help-text">Get your free API key from <a href="https://ipgeolocation.io/" target="_blank">ipgeolocation.io</a></div>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        <?php endforeach; ?>
+        <!-- General Settings Section -->
+        <div class="settings-section">
+            <h3 class="section-title">General Settings</h3>
+            <?php 
+            foreach ($availableSettings as $key => $config) {
+                if ($config['category'] !== 'general') continue;
+                renderSettingField($key, $config, $settings);
+            }
+            ?>
+        </div>
+
+        <!-- Email Automation Settings Section -->
+        <div class="settings-section">
+            <h3 class="section-title">Email Automation</h3>
+            <?php 
+            foreach ($availableSettings as $key => $config) {
+                if ($config['category'] !== 'email') continue;
+                renderSettingField($key, $config, $settings);
+            }
+            ?>
+        </div>
+
+        <!-- Super Admin Settings Section -->
+        <?php if ($user['role'] === 'superuser'): ?>
+        <div class="settings-section">
+            <h3 class="section-title">Super Admin Settings</h3>
+            <?php 
+            foreach ($availableSettings as $key => $config) {
+                if ($config['category'] !== 'superadmin') continue;
+                renderSettingField($key, $config, $settings);
+            }
+            ?>
+        </div>
+        <?php endif; ?>
 
         <div class="form-actions">
             <button type="submit" name="save_settings" class="btn btn-primary">Save Settings</button>
@@ -537,14 +605,47 @@ include 'templates/header.php';
 </div>
 
 <script>
+// Handle email automation enable/disable functionality
+function toggleEmailAutomation() {
+    const emailAutomationCheckbox = document.getElementById('setting_email_automation_enabled');
+    const dependentElements = document.querySelectorAll('.depends-on-email_automation_enabled');
+    
+    if (emailAutomationCheckbox) {
+        const isEnabled = emailAutomationCheckbox.checked;
+        
+        dependentElements.forEach(function(element) {
+            const inputs = element.querySelectorAll('input, select, .day-checkbox input');
+            
+            if (isEnabled) {
+                element.classList.remove('disabled');
+                inputs.forEach(function(input) {
+                    input.disabled = false;
+                });
+            } else {
+                element.classList.add('disabled');
+                inputs.forEach(function(input) {
+                    input.disabled = true;
+                });
+            }
+        });
+        
+        // Also trigger alternate training night toggle
+        toggleAlternateTrainingNight();
+    }
+}
+
 // Handle alternate training night enable/disable functionality
 function toggleAlternateTrainingNight() {
+    const emailAutomationCheckbox = document.getElementById('setting_email_automation_enabled');
     const enableCheckbox = document.getElementById('setting_alternate_training_night_enabled');
     const alternateSelect = document.getElementById('setting_alternate_training_night');
-    const settingGroup = alternateSelect.closest('.setting-group');
+    const settingGroup = alternateSelect ? alternateSelect.closest('.setting-group') : null;
     
-    if (enableCheckbox && alternateSelect) {
-        if (enableCheckbox.checked) {
+    if (enableCheckbox && alternateSelect && settingGroup) {
+        // Check if email automation is enabled first
+        const emailAutomationEnabled = emailAutomationCheckbox ? emailAutomationCheckbox.checked : true;
+        
+        if (emailAutomationEnabled && enableCheckbox.checked) {
             alternateSelect.disabled = false;
             settingGroup.classList.remove('disabled');
         } else {
@@ -556,12 +657,18 @@ function toggleAlternateTrainingNight() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    toggleAlternateTrainingNight();
+    // Initialize email automation toggle
+    toggleEmailAutomation();
     
-    // Add event listener to the checkbox
-    const enableCheckbox = document.getElementById('setting_alternate_training_night_enabled');
-    if (enableCheckbox) {
-        enableCheckbox.addEventListener('change', toggleAlternateTrainingNight);
+    // Add event listeners
+    const emailAutomationCheckbox = document.getElementById('setting_email_automation_enabled');
+    if (emailAutomationCheckbox) {
+        emailAutomationCheckbox.addEventListener('change', toggleEmailAutomation);
+    }
+    
+    const alternateTrainingNightCheckbox = document.getElementById('setting_alternate_training_night_enabled');
+    if (alternateTrainingNightCheckbox) {
+        alternateTrainingNightCheckbox.addEventListener('change', toggleAlternateTrainingNight);
     }
 });
 </script>
