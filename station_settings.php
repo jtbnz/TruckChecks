@@ -163,6 +163,12 @@ $availableSettings = [
         'default' => 'true',
         'description' => 'Enable automated email sending for this station',
         'label' => 'Enable Email Automation'
+    ],
+    'alternate_training_night_enabled' => [
+        'type' => 'boolean',
+        'default' => 'true',
+        'description' => 'Enable alternate training night for public holidays',
+        'label' => 'Enable Alternate Training Night'
     ]
 ];
 
@@ -375,6 +381,22 @@ include 'templates/header.php';
         color: #12044C;
     }
 
+    /* Disabled state styling */
+    .setting-input:disabled {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .setting-group.disabled {
+        opacity: 0.6;
+    }
+
+    .setting-group.disabled .setting-label {
+        color: #6c757d;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
         .settings-container {
@@ -513,5 +535,35 @@ include 'templates/header.php';
         </ul>
     </div>
 </div>
+
+<script>
+// Handle alternate training night enable/disable functionality
+function toggleAlternateTrainingNight() {
+    const enableCheckbox = document.getElementById('setting_alternate_training_night_enabled');
+    const alternateSelect = document.getElementById('setting_alternate_training_night');
+    const settingGroup = alternateSelect.closest('.setting-group');
+    
+    if (enableCheckbox && alternateSelect) {
+        if (enableCheckbox.checked) {
+            alternateSelect.disabled = false;
+            settingGroup.classList.remove('disabled');
+        } else {
+            alternateSelect.disabled = true;
+            settingGroup.classList.add('disabled');
+        }
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAlternateTrainingNight();
+    
+    // Add event listener to the checkbox
+    const enableCheckbox = document.getElementById('setting_alternate_training_night_enabled');
+    if (enableCheckbox) {
+        enableCheckbox.addEventListener('change', toggleAlternateTrainingNight);
+    }
+});
+</script>
 
 <?php include 'templates/footer.php'; ?>

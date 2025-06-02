@@ -391,6 +391,11 @@ function generatePlainContent($station, $latestCheckDate, $checks, $deletedItems
     return $emailContent;
 }
 
+// Include PHPMailer at the top level
+require_once __DIR__ . '/../vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 /**
  * Send emails using PHPMailer
  */
@@ -400,11 +405,6 @@ function sendEmails($emails, $emailContent, $station) {
         logMessage("ERROR: Email configuration not set up in config.php");
         return false;
     }
-
-    require_once __DIR__ . '/../vendor/autoload.php';
-    
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
 
     try {
         $mail = new PHPMailer(true);
@@ -463,12 +463,14 @@ try {
             ss_time.setting_value as send_email_check_time,
             ss_nights.setting_value as training_nights,
             ss_alt.setting_value as alternate_training_night,
-            ss_enabled.setting_value as email_automation_enabled
+            ss_enabled.setting_value as email_automation_enabled,
+            ss_alt_enabled.setting_value as alternate_training_night_enabled
         FROM stations s
         LEFT JOIN station_settings ss_time ON s.id = ss_time.station_id AND ss_time.setting_key = 'send_email_check_time'
         LEFT JOIN station_settings ss_nights ON s.id = ss_nights.station_id AND ss_nights.setting_key = 'training_nights'
         LEFT JOIN station_settings ss_alt ON s.id = ss_alt.station_id AND ss_alt.setting_key = 'alternate_training_night'
         LEFT JOIN station_settings ss_enabled ON s.id = ss_enabled.station_id AND ss_enabled.setting_key = 'email_automation_enabled'
+        LEFT JOIN station_settings ss_alt_enabled ON s.id = ss_alt_enabled.station_id AND ss_alt_enabled.setting_key = 'alternate_training_night_enabled'
         ORDER BY s.name
     ";
     
@@ -500,13 +502,14 @@ try {
         
         logMessage("TIME MATCH: Processing station $stationName at $currentTime");
         
-        // Get training nights and alternate night
+        // Get training nights and alternate night settings
         $trainingNights = $station['training_nights'] ?? '1,2'; // Default to Monday,Tuesday
         $alternateNight = $station['alternate_training_night'] ?? '2'; // Default to Tuesday
+        $alternateNightEnabled = ($station['alternate_training_night_enabled'] ?? 'true') === 'true';
         
         $trainingNightArray = array_map('trim', explode(',', $trainingNights));
         
-        logMessage("Station $stationName - Training nights: $trainingNights, Alternate: $alternateNight");
+        logMessage("Station $stationName - Training nights: $trainingNights, Alternate: $alternateNight, Alternate enabled: " . ($alternateNightEnabled ? 'yes' : 'no'));
         
         // Check if today is a training night
         $isTrainingNight = in_array($currentDay, $trainingNightArray);
@@ -523,6 +526,12 @@ try {
         
         if ($isHoliday) {
             logMessage("HOLIDAY DETECTED: Today is a public holiday");
+            
+            // Check if alternate training night is enabled
+            if (!$alternateNightEnabled) {
+                logMessage("SKIP: Alternate training night is disabled for station $stationName, skipping holiday email");
+                continue;
+            }
             
             // Check if today is the alternate training night
             if ($currentDay != $alternateNight) {

@@ -226,6 +226,10 @@ INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `s
 SELECT s.id, 'email_automation_enabled', 'true', 'boolean', 'Enable automated email sending for this station'
 FROM `stations` s;
 
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'alternate_training_night_enabled', 'true', 'boolean', 'Enable alternate training night for public holidays'
+FROM `stations` s;
+
 -- Create settings table for global system settings
 CREATE TABLE `settings` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
