@@ -209,6 +209,23 @@ INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `s
 SELECT s.id, 'ip_api_key', '', 'string', 'IP Geolocation API key for ipgeolocation.io'
 FROM `stations` s WHERE s.name IN ('North Station', 'South Station', 'East Station');
 
+-- Add email automation settings for all stations
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'send_email_check_time', '19:30', 'string', 'Time of day to send automated email checks (HH:MM format)'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'training_nights', '1,2', 'string', 'Training nights as comma-separated day numbers (1=Monday, 7=Sunday)'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'alternate_training_night', '2', 'string', 'Alternate training night when regular night falls on public holiday (1=Monday, 7=Sunday)'
+FROM `stations` s;
+
+INSERT INTO `station_settings` (`station_id`, `setting_key`, `setting_value`, `setting_type`, `description`)
+SELECT s.id, 'email_automation_enabled', 'true', 'boolean', 'Enable automated email sending for this station'
+FROM `stations` s;
+
 -- Create settings table for global system settings
 CREATE TABLE `settings` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

@@ -1,9 +1,13 @@
 # Active Context
 
 ## Current Work Focus
+**ENHANCED AUTOMATED EMAIL SYSTEM WITH STATION-SPECIFIC CONFIGURATION**
+
+Just completed a comprehensive upgrade to the email automation system, building on the V4 station hierarchy to provide sophisticated, station-specific email automation with advanced scheduling and holiday handling.
+
 **MAJOR VERSION UPGRADE TO V4 - STATION HIERARCHY IMPLEMENTATION**
 
-The system is undergoing a major architectural upgrade to introduce the Station concept, creating a new hierarchy: Stations → Trucks → Lockers → Items. This represents the most significant change to the system since its inception.
+The system has undergone a major architectural upgrade to introduce the Station concept, creating a new hierarchy: Stations → Trucks → Lockers → Items. This represents the most significant change to the system since its inception.
 
 ## Major V4 Changes Implemented
 
@@ -85,6 +89,34 @@ The system is undergoing a major architectural upgrade to introduce the Station 
   - Extended tables: swap data, email addresses
   - Audit trail preservation
   - User creation for merged station
+
+### 7. Enhanced Automated Email System (NEW)
+- **Station-Specific Configuration**:
+  - Individual email automation settings per station
+  - Custom send times (configurable via station_settings.php)
+  - Training nights selection with checkbox interface
+  - Alternate training nights for public holiday handling
+  - Enable/disable automation per station
+- **Smart Scheduling Logic**:
+  - Integrates with existing holiday API (check_holiday.php)
+  - Automatically switches to alternate training nights on holidays
+  - Hourly cron execution with precise time matching
+  - Comprehensive logging for debugging and monitoring
+- **Advanced Email Content**:
+  - HTML formatted emails with professional styling
+  - Sectioned layout: Missing Items, Deleted Items, Locker Notes
+  - Proper handling of notes with trimming and validation
+  - Station-specific branding and context
+- **Preview and Testing System**:
+  - Full email preview in email_admin.php with modal popup
+  - HTML and plain text preview tabs
+  - Send preview to any email address
+  - Recipients list display
+- **New Files Created**:
+  - `scripts/automated_email_processor.php`: Core automation logic
+  - Updated `scripts/email_checks.sh`: Simplified cron handler
+  - Enhanced `station_settings.php`: Email automation UI
+  - Enhanced `V4Changes.sql`: Email automation settings schema
 
 ## Current System State
 

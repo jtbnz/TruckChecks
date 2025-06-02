@@ -50,6 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_settings'])) {
     try {
         $db->beginTransaction();
         
+        // Handle training_nights specially
+        if (isset($_POST['training_days']) && is_array($_POST['training_days'])) {
+            $_POST['settings']['training_nights'] = implode(',', $_POST['training_days']);
+        } elseif (!isset($_POST['settings']['training_nights'])) {
+            $_POST['settings']['training_nights'] = '';
+        }
+        
         foreach ($_POST['settings'] as $key => $value) {
             // Validate and convert values based on type
             $settingType = $_POST['types'][$key] ?? 'string';
@@ -132,6 +139,30 @@ $availableSettings = [
         'default' => '',
         'description' => 'IP Geolocation API key for ipgeolocation.io (leave empty to disable)',
         'label' => 'IP Geolocation API Key'
+    ],
+    'send_email_check_time' => [
+        'type' => 'string',
+        'default' => '19:30',
+        'description' => 'Time of day to send automated email checks (HH:MM format)',
+        'label' => 'Email Check Time'
+    ],
+    'training_nights' => [
+        'type' => 'string',
+        'default' => '1,2',
+        'description' => 'Training nights as comma-separated day numbers (1=Monday, 7=Sunday)',
+        'label' => 'Training Nights'
+    ],
+    'alternate_training_night' => [
+        'type' => 'string',
+        'default' => '2',
+        'description' => 'Alternate training night when regular night falls on public holiday (1=Monday, 7=Sunday)',
+        'label' => 'Alternate Training Night'
+    ],
+    'email_automation_enabled' => [
+        'type' => 'boolean',
+        'default' => 'true',
+        'description' => 'Enable automated email sending for this station',
+        'label' => 'Enable Email Automation'
     ]
 ];
 
@@ -313,6 +344,37 @@ include 'templates/header.php';
         margin-top: 5px;
     }
 
+    .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin: 10px 0;
+    }
+
+    .day-checkbox {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .day-checkbox:hover {
+        background-color: #f8f9fa;
+    }
+
+    .day-checkbox input[type="checkbox"] {
+        margin: 0;
+    }
+
+    .day-checkbox input[type="checkbox"]:checked + span {
+        font-weight: bold;
+        color: #12044C;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
         .settings-container {
@@ -384,6 +446,43 @@ include 'templates/header.php';
                     <?php if ($key === 'refresh_interval'): ?>
                         <div class="help-text">Minimum 5000ms (5 seconds). Current value refreshes the Status page every <?= number_format($settings[$key]['setting_value'] / 1000, 1) ?> seconds.</div>
                     <?php endif; ?>
+                <?php elseif ($key === 'send_email_check_time'): ?>
+                    <input type="time" 
+                           name="settings[<?= $key ?>]" 
+                           id="setting_<?= $key ?>"
+                           value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>"
+                           class="setting-input">
+                    <div class="help-text">Time when automated emails will be sent (24-hour format)</div>
+                <?php elseif ($key === 'training_nights'): ?>
+                    <div class="checkbox-group">
+                        <?php 
+                        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
+                        $selectedDays = explode(',', $settings[$key]['setting_value']);
+                        foreach ($days as $dayNum => $dayName): 
+                        ?>
+                            <label class="day-checkbox">
+                                <input type="checkbox" 
+                                       name="training_days[]" 
+                                       value="<?= $dayNum ?>"
+                                       <?= in_array($dayNum, $selectedDays) ? 'checked' : '' ?>>
+                                <?= $dayName ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <input type="hidden" name="settings[<?= $key ?>]" id="training_nights_hidden" value="<?= htmlspecialchars($settings[$key]['setting_value']) ?>">
+                    <div class="help-text">Select which nights are training nights for this station</div>
+                <?php elseif ($key === 'alternate_training_night'): ?>
+                    <select name="settings[<?= $key ?>]" id="setting_<?= $key ?>" class="setting-input">
+                        <?php 
+                        $days = ['1' => 'Monday', '2' => 'Tuesday', '3' => 'Wednesday', '4' => 'Thursday', '5' => 'Friday', '6' => 'Saturday', '7' => 'Sunday'];
+                        foreach ($days as $dayNum => $dayName): 
+                        ?>
+                            <option value="<?= $dayNum ?>" <?= $settings[$key]['setting_value'] == $dayNum ? 'selected' : '' ?>>
+                                <?= $dayName ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="help-text">Backup training night when regular training night falls on a public holiday</div>
                 <?php else: ?>
                     <input type="text" 
                            name="settings[<?= $key ?>]" 
