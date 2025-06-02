@@ -110,6 +110,26 @@ if (isset($_GET['action']) && $_GET['action'] === 'preview' && $station) {
         $deletedItemsQuery->execute(['station_id' => $station['id']]);
         $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
 
+        // Query for all locker check notes in the last 7 days for this station
+        $allNotesQuery = $db->prepare("
+            SELECT
+                t.name as truck_name,
+                l.name as locker_name,
+                cn.note as note_text,
+                CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+                c.checked_by
+            FROM check_notes cn
+            JOIN checks c ON cn.check_id = c.id
+            JOIN lockers l ON c.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+              AND t.station_id = :station_id
+              AND TRIM(cn.note) != ''
+            ORDER BY t.name, l.name, c.check_date DESC
+        ");
+        $allNotesQuery->execute(['station_id' => $station['id']]);
+        $allNotes = $allNotesQuery->fetchAll(PDO::FETCH_ASSOC);
+
         // Fetch email addresses for this station
         $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id OR station_id IS NULL";
         $emailStmt = $db->prepare($emailQuery);
@@ -203,6 +223,30 @@ if (isset($_GET['action']) && $_GET['action'] === 'preview' && $station) {
             </div>';
         }
 
+        // Add all locker check notes section
+        if (!empty($allNotes)) {
+            $htmlContent .= '
+            <div class="section" style="background-color: #e7f3ff; border: 1px solid #b3d9ff;">
+                <h2>Locker Check Notes (Last 7 Days)</h2>';
+            
+            foreach ($allNotes as $note) {
+                $htmlContent .= '
+                <div class="item-entry">
+                    <div><span class="label">Truck:</span> ' . htmlspecialchars($note['truck_name']) . '</div>
+                    <div><span class="label">Locker:</span> ' . htmlspecialchars($note['locker_name']) . '</div>
+                    <div><span class="label">Checked by:</span> ' . htmlspecialchars($note['checked_by']) . ' at ' . htmlspecialchars($note['check_date']) . '</div>
+                    <div class="notes"><span class="label">Notes:</span> ' . htmlspecialchars(trim($note['note_text'])) . '</div>
+                </div>';
+            }
+            
+            $htmlContent .= '</div>';
+        } else {
+            $htmlContent .= '
+            <div class="section">
+                <p>No locker check notes found in the last 7 days.</p>
+            </div>';
+        }
+
         $current_directory = dirname($_SERVER['REQUEST_URI']);
         $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
 
@@ -240,6 +284,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'preview' && $station) {
             }       
         } else {
             $plainContent .= "No items have been deleted in the last 7 days\n";
+        }
+
+        // Add all locker check notes to plain text
+        $plainContent .= "\nLocker Check Notes (Last 7 Days):\n";
+        if (!empty($allNotes)) {
+            foreach ($allNotes as $note) {
+                $plainContent .= "Truck: {$note['truck_name']}, Locker: {$note['locker_name']}, Checked by {$note['checked_by']} at {$note['check_date']}, Notes: " . trim($note['note_text']) . "\n";
+            }
+        } else {
+            $plainContent .= "No locker check notes found in the last 7 days\n";
         }
 
         $plainContent .= "\nAccess the system: " . $current_url . "\n\n";
