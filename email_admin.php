@@ -41,6 +41,285 @@ if ($user['role'] === 'station_admin') {
 
 $db = get_db_connection();
 
+// Handle AJAX request for email preview
+if (isset($_GET['action']) && $_GET['action'] === 'preview' && $station) {
+    header('Content-Type: application/json');
+    
+    try {
+        // Fetch the latest check date for this station
+        $latestCheckQuery = "
+            SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date 
+            FROM checks c
+            JOIN lockers l ON c.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            WHERE t.station_id = :station_id
+            ORDER BY c.check_date DESC 
+            LIMIT 1
+        ";
+        $latestCheckStmt = $db->prepare($latestCheckQuery);
+        $latestCheckStmt->execute(['station_id' => $station['id']]);
+        $latestCheckResult = $latestCheckStmt->fetch(PDO::FETCH_ASSOC);
+        $latestCheckDate = $latestCheckResult ? $latestCheckResult['the_date'] : 'No checks found';
+
+        // Fetch the latest check data for this station
+        $checksQuery = "
+            WITH LatestChecks AS (
+                SELECT 
+                    c.locker_id, 
+                    MAX(c.id) AS latest_check_id
+                FROM checks c
+                JOIN lockers l ON c.locker_id = l.id
+                JOIN trucks t ON l.truck_id = t.id
+                WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
+                AND t.station_id = :station_id
+                GROUP BY c.locker_id
+            )
+            SELECT 
+                t.name as truck_name, 
+                l.name as locker_name, 
+                i.name as item_name, 
+                ci.is_present as checked, 
+                CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+                cn.note as notes,
+                c.checked_by,
+                c.id as check_id
+            FROM checks c
+            JOIN LatestChecks lc ON c.id = lc.latest_check_id
+            JOIN check_items ci ON c.id = ci.check_id
+            JOIN lockers l ON c.locker_id = l.id
+            JOIN trucks t ON l.truck_id = t.id
+            JOIN items i ON ci.item_id = i.id
+            LEFT JOIN check_notes cn on ci.check_id = cn.check_id
+            WHERE ci.is_present = 0
+            AND t.station_id = :station_id2
+            ORDER BY t.name, l.name
+        ";
+                        
+        $checksStmt = $db->prepare($checksQuery);
+        $checksStmt->execute(['station_id' => $station['id'], 'station_id2' => $station['id']]);
+        $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Query for deleted items in the last 7 days for this station
+        $deletedItemsQuery = $db->prepare("
+            SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at
+            FROM locker_item_deletion_log
+            WHERE deleted_at >= NOW() - INTERVAL 7 DAY
+            AND station_id = :station_id
+            ORDER BY deleted_at DESC
+        ");
+        $deletedItemsQuery->execute(['station_id' => $station['id']]);
+        $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
+
+        // Fetch email addresses for this station
+        $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id OR station_id IS NULL";
+        $emailStmt = $db->prepare($emailQuery);
+        $emailStmt->execute(['station_id' => $station['id']]);
+        $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        // Also get admin email for this station
+        $adminEmailQuery = "SELECT setting_value FROM station_settings WHERE setting_key = 'admin_email' AND station_id = :station_id";
+        $adminEmailStmt = $db->prepare($adminEmailQuery);
+        $adminEmailStmt->execute(['station_id' => $station['id']]);
+        $adminEmail = $adminEmailStmt->fetchColumn();
+
+        if ($adminEmail) {
+            $emails[] = $adminEmail;
+        }
+
+        // Remove duplicates
+        $emails = array_unique($emails);
+
+        // Generate HTML email content
+        $htmlContent = '
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .header { background-color: #12044C; color: white; padding: 20px; text-align: center; }
+                .section { margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
+                .missing-items { background-color: #fff3cd; border: 1px solid #ffeaa7; }
+                .deleted-items { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+                .item-entry { margin: 10px 0; padding: 10px; background-color: white; border-radius: 3px; }
+                .notes { font-style: italic; color: #666; margin-top: 5px; }
+                .footer { margin-top: 30px; padding: 20px; background-color: #e9ecef; text-align: center; font-size: 12px; }
+                .label { font-weight: bold; color: #12044C; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>TruckChecks Report - ' . htmlspecialchars($station['name']) . '</h1>
+                <p>Latest Check Date: ' . htmlspecialchars($latestCheckDate) . '</p>
+            </div>';
+
+        if (!empty($checks)) {
+            $htmlContent .= '
+            <div class="section missing-items">
+                <h2>Missing Items (Last 7 Days)</h2>';
+            
+            foreach ($checks as $check) {
+                $htmlContent .= '
+                <div class="item-entry">
+                    <div><span class="label">Truck:</span> ' . htmlspecialchars($check['truck_name']) . '</div>
+                    <div><span class="label">Locker:</span> ' . htmlspecialchars($check['locker_name']) . '</div>
+                    <div><span class="label">Item:</span> ' . htmlspecialchars($check['item_name']) . '</div>
+                    <div><span class="label">Checked by:</span> ' . htmlspecialchars($check['checked_by']) . ' at ' . htmlspecialchars($check['check_date']) . '</div>';
+                
+                // Include notes if they exist and have content after trimming
+                if (!empty($check['notes']) && trim($check['notes']) !== '') {
+                    $htmlContent .= '<div class="notes"><span class="label">Notes:</span> ' . htmlspecialchars(trim($check['notes'])) . '</div>';
+                }
+                
+                $htmlContent .= '</div>';
+            }
+            
+            $htmlContent .= '</div>';
+        } else {
+            $htmlContent .= '
+            <div class="section">
+                <p>No missing items found in the last 7 days.</p>
+            </div>';
+        }
+
+        if (!empty($deletedItems)) {
+            $htmlContent .= '
+            <div class="section deleted-items">
+                <h2>Deleted Items (Last 7 Days)</h2>';
+            
+            foreach ($deletedItems as $item) {
+                $htmlContent .= '
+                <div class="item-entry">
+                    <div><span class="label">Truck:</span> ' . htmlspecialchars($item['truck_name']) . '</div>
+                    <div><span class="label">Locker:</span> ' . htmlspecialchars($item['locker_name']) . '</div>
+                    <div><span class="label">Item:</span> ' . htmlspecialchars($item['item_name']) . '</div>
+                    <div><span class="label">Deleted at:</span> ' . htmlspecialchars($item['deleted_at']) . '</div>
+                </div>';
+            }
+            
+            $htmlContent .= '</div>';
+        } else {
+            $htmlContent .= '
+            <div class="section">
+                <p>No items have been deleted in the last 7 days.</p>
+            </div>';
+        }
+
+        $current_directory = dirname($_SERVER['REQUEST_URI']);
+        $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
+
+        $htmlContent .= '
+            <div class="footer">
+                <p><a href="' . htmlspecialchars($current_url) . '">Access TruckChecks System</a></p>
+                <p>This report is for station: ' . htmlspecialchars($station['name']) . '</p>
+                <p>Generated by: ' . htmlspecialchars($user['username']) . ' (' . htmlspecialchars($user['role']) . ')</p>
+                <p>Generated on: ' . date('Y-m-d H:i:s') . '</p>
+            </div>
+        </body>
+        </html>';
+
+        // Prepare plain text version
+        $plainContent = "Latest Missing Items Report for " . $station['name'] . "\n\n";
+        $plainContent .= "These are the lockers that have missing items recorded in the last 7 days:\n\n";
+        $plainContent .= "The last check was recorded: {$latestCheckDate}\n\n";
+
+        if (!empty($checks)) {
+            foreach ($checks as $check) {
+                $plainContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}";
+                if (!empty($check['notes']) && trim($check['notes']) !== '') {
+                    $plainContent .= ", Notes: " . trim($check['notes']);
+                }
+                $plainContent .= ", Checked by {$check['checked_by']}, at {$check['check_date']}\n";
+            } 
+        } else {
+            $plainContent .= "No missing items found in the last 7 days\n";
+        }
+
+        $plainContent .= "\nThe following items have been deleted in the last 7 days:\n";
+        if (!empty($deletedItems)) {
+            foreach ($deletedItems as $deletedItem) {
+                $plainContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n";
+            }       
+        } else {
+            $plainContent .= "No items have been deleted in the last 7 days\n";
+        }
+
+        $plainContent .= "\nAccess the system: " . $current_url . "\n\n";
+        $plainContent .= "This report is for station: " . $station['name'] . "\n";
+        $plainContent .= "Generated by: " . $user['username'] . " (" . $user['role'] . ")\n";
+
+        echo json_encode([
+            'success' => true,
+            'htmlContent' => $htmlContent,
+            'plainContent' => $plainContent,
+            'emails' => $emails,
+            'subject' => "Missing Items Report - " . $station['name'] . " - {$latestCheckDate}"
+        ]);
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+// Handle sending preview email via AJAX
+if (isset($_POST['action']) && $_POST['action'] === 'send_preview' && $station) {
+    header('Content-Type: application/json');
+    
+    $previewEmail = $_POST['email'] ?? '';
+    $htmlContent = $_POST['htmlContent'] ?? '';
+    $plainContent = $_POST['plainContent'] ?? '';
+    $subject = $_POST['subject'] ?? '';
+    
+    if (!empty($previewEmail) && filter_var($previewEmail, FILTER_VALIDATE_EMAIL)) {
+        try {
+            // Check if email configuration is available
+            if (!defined('EMAIL_HOST') || !defined('EMAIL_USER') || !defined('EMAIL_PASS')) {
+                throw new Exception('Email configuration is not set up in config.php');
+            }
+            
+            $mail = new PHPMailer(true);
+            
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host = EMAIL_HOST; 
+            $mail->SMTPAuth = true;
+            $mail->Username = EMAIL_USER; 
+            $mail->Password = EMAIL_PASS; 
+            $mail->SMTPSecure = "ssl";
+            $mail->Port = EMAIL_PORT;
+            
+            // Recipients
+            $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST'];
+            $mail->setFrom($from_email, 'TruckChecks - ' . $station['name']);
+            $mail->addAddress($previewEmail);
+            
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = $subject;
+            $mail->Body = $htmlContent;
+            $mail->AltBody = $plainContent;
+            
+            $mail->send();
+            echo json_encode([
+                'success' => true,
+                'message' => "Preview email sent successfully to " . htmlspecialchars($previewEmail)
+            ]);
+        } catch (Exception $e) {
+            echo json_encode([
+                'success' => false,
+                'error' => "Failed to send preview email: " . $e->getMessage()
+            ]);
+        }
+    } else {
+        echo json_encode([
+            'success' => false,
+            'error' => "Please enter a valid email address."
+        ]);
+    }
+    exit;
+}
+
 // Handle adding multiple email addresses (only if station is selected)
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_emails']) && $station) {
     $email_list = $_POST['email_list'];
@@ -408,6 +687,14 @@ include 'templates/header.php';
         background-color: #c82333;
     }
 
+    .button.preview {
+        background-color: #17a2b8;
+    }
+
+    .button.preview:hover {
+        background-color: #138496;
+    }
+
     .button:disabled {
         background-color: #6c757d;
         cursor: not-allowed;
@@ -499,6 +786,123 @@ include 'templates/header.php';
         margin: 0;
     }
 
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border: 1px solid #888;
+        width: 90%;
+        max-width: 800px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+        padding: 20px;
+        background-color: #12044C;
+        color: white;
+        border-radius: 5px 5px 0 0;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+    }
+
+    .modal-body {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        border-radius: 0 0 5px 5px;
+        text-align: right;
+    }
+
+    .close {
+        color: white;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #f8f9fa;
+        text-decoration: none;
+    }
+
+    .preview-tabs {
+        display: flex;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 20px;
+    }
+
+    .preview-tab {
+        padding: 10px 20px;
+        cursor: pointer;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-bottom: none;
+        margin-right: 5px;
+        border-radius: 5px 5px 0 0;
+    }
+
+    .preview-tab.active {
+        background-color: white;
+        border-bottom: 2px solid white;
+        margin-bottom: -2px;
+    }
+
+    .preview-content {
+        display: none;
+    }
+
+    .preview-content.active {
+        display: block;
+    }
+
+    .preview-html {
+        border: 1px solid #dee2e6;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+
+    .preview-plain {
+        white-space: pre-wrap;
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+    }
+
+    .email-recipients {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        border-radius: 5px;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
         .email-container {
@@ -513,6 +917,11 @@ include 'templates/header.php';
         .remove-btn {
             margin-top: 10px;
             align-self: flex-end;
+        }
+
+        .modal-content {
+            width: 95%;
+            margin: 2% auto;
         }
     }
 </style>
@@ -643,6 +1052,17 @@ include 'templates/header.php';
         </form>
     </div>
 
+    <!-- Email Preview Section -->
+    <div class="form-section">
+        <h2>Preview Email Report</h2>
+        <p>Preview what the check results email will look like before sending it to all recipients.</p>
+        <div class="button-container">
+            <button type="button" class="button preview" onclick="showEmailPreview()" <?= $email_configured ? '' : 'disabled' ?>>
+                Preview Email Report
+            </button>
+        </div>
+    </div>
+
     <?php if ($email_configured): ?>
     <div class="form-section test-email-section">
         <h2>Test Email Configuration</h2>
@@ -680,6 +1100,7 @@ include 'templates/header.php';
             <li><strong>Station-Specific:</strong> Each station can have its own set of email addresses</li>
             <li><strong>Primary Admin Email:</strong> The primary admin email is used for system notifications</li>
             <li><strong>Weekly Reports:</strong> All configured emails will receive weekly check reports</li>
+            <li><strong>Preview Feature:</strong> Preview the email report before sending to ensure all information is correct</li>
         </ul>
         <p>Required email settings in config.php:</p>
         <ul>
@@ -699,5 +1120,159 @@ include 'templates/header.php';
 
     <?php endif; ?>
 </div>
+
+<!-- Email Preview Modal -->
+<div id="emailPreviewModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close" onclick="closeEmailPreview()">&times;</span>
+            <h2>Email Report Preview</h2>
+        </div>
+        <div class="modal-body">
+            <div class="preview-tabs">
+                <div class="preview-tab active" onclick="switchPreviewTab('html')">HTML Version</div>
+                <div class="preview-tab" onclick="switchPreviewTab('plain')">Plain Text Version</div>
+            </div>
+            <div id="htmlPreview" class="preview-content active">
+                <div class="preview-html"></div>
+            </div>
+            <div id="plainPreview" class="preview-content">
+                <div class="preview-plain"></div>
+            </div>
+            <div class="email-recipients">
+                <h3>Recipients:</h3>
+                <div id="recipientsList"></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <input type="email" id="previewEmail" placeholder="Send preview to email..." style="padding: 10px; width: 300px; margin-right: 10px;">
+            <button class="button test" onclick="sendPreviewEmail()">Send Preview</button>
+            <button class="button secondary" onclick="closeEmailPreview()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPreviewData = null;
+
+function showEmailPreview() {
+    // Show loading state
+    const modal = document.getElementById('emailPreviewModal');
+    modal.style.display = 'block';
+    
+    // Reset tabs
+    switchPreviewTab('html');
+    
+    // Clear previous content
+    document.querySelector('.preview-html').innerHTML = '<p>Loading preview...</p>';
+    document.querySelector('.preview-plain').textContent = 'Loading preview...';
+    document.getElementById('recipientsList').innerHTML = '';
+    
+    // Fetch preview data
+    fetch('email_admin.php?action=preview')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentPreviewData = data;
+                
+                // Update HTML preview
+                document.querySelector('.preview-html').innerHTML = data.htmlContent;
+                
+                // Update plain text preview
+                document.querySelector('.preview-plain').textContent = data.plainContent;
+                
+                // Update recipients list
+                const recipientsList = document.getElementById('recipientsList');
+                if (data.emails && data.emails.length > 0) {
+                    recipientsList.innerHTML = data.emails.map(email => 
+                        `<div style="padding: 5px; background-color: #f8f9fa; margin: 5px 0; border-radius: 3px;">${email}</div>`
+                    ).join('');
+                } else {
+                    recipientsList.innerHTML = '<p style="color: #666; font-style: italic;">No recipients configured</p>';
+                }
+                
+                // Set default preview email
+                const previewEmailInput = document.getElementById('previewEmail');
+                if (data.emails && data.emails.length > 0) {
+                    previewEmailInput.value = data.emails[0];
+                }
+            } else {
+                alert('Error loading preview: ' + (data.error || 'Unknown error'));
+                closeEmailPreview();
+            }
+        })
+        .catch(error => {
+            alert('Error loading preview: ' + error.message);
+            closeEmailPreview();
+        });
+}
+
+function closeEmailPreview() {
+    document.getElementById('emailPreviewModal').style.display = 'none';
+}
+
+function switchPreviewTab(tab) {
+    // Update tab active states
+    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.preview-content').forEach(c => c.classList.remove('active'));
+    
+    if (tab === 'html') {
+        document.querySelector('.preview-tab:first-child').classList.add('active');
+        document.getElementById('htmlPreview').classList.add('active');
+    } else {
+        document.querySelector('.preview-tab:last-child').classList.add('active');
+        document.getElementById('plainPreview').classList.add('active');
+    }
+}
+
+function sendPreviewEmail() {
+    const email = document.getElementById('previewEmail').value;
+    if (!email || !currentPreviewData) {
+        alert('Please enter a valid email address');
+        return;
+    }
+    
+    // Disable button to prevent multiple sends
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Sending...';
+    
+    // Send preview email
+    const formData = new FormData();
+    formData.append('action', 'send_preview');
+    formData.append('email', email);
+    formData.append('htmlContent', currentPreviewData.htmlContent);
+    formData.append('plainContent', currentPreviewData.plainContent);
+    formData.append('subject', currentPreviewData.subject);
+    
+    fetch('email_admin.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to send preview email'));
+        }
+    })
+    .catch(error => {
+        alert('Error sending preview: ' + error.message);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.textContent = 'Send Preview';
+    });
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const modal = document.getElementById('emailPreviewModal');
+    if (event.target == modal) {
+        closeEmailPreview();
+    }
+}
+</script>
 
 <?php include 'templates/footer.php'; ?>
