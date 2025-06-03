@@ -7,36 +7,16 @@ use PHPMailer\PHPMailer\Exception;
 
 include 'db.php';
 include_once('auth.php');
+$station = requireStation();
 
-// Require authentication
+// Require authentication and get user context
 requireAuth();
 $user = getCurrentUser();
-$station = null;
-$no_station_selected = false;
 
 // Check if user has permission to manage email settings
 if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
     header('Location: login.php');
     exit;
-}
-
-// Get station context - use their first assigned station
-if ($user['role'] === 'station_admin') {
-    // Station admins: get their first assigned station
-    $station = getCurrentStation();
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    } else {
-        $no_station_selected = true;
-    }
-} elseif ($user['role'] === 'superuser') {
-    // Superusers: use their currently selected station
-    $user_stations = getUserStations($user['id']);
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    } else {
-        $no_station_selected = true;
-    }
 }
 
 $db = get_db_connection();
@@ -625,15 +605,6 @@ include 'templates/header.php';
         color: #12044C;
     }
 
-    .no-station-message {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        padding: 20px;
-        border-radius: 5px;
-        margin: 20px 0;
-        text-align: center;
-    }
-
     .info-section {
         margin: 20px 0;
         padding: 15px;
@@ -989,22 +960,11 @@ include 'templates/header.php';
     <div class="access-info">
         <strong>Access Level:</strong> 
         <?php if ($user['role'] === 'superuser'): ?>
-            <span class="role-badge role-superuser">Superuser</span> - Managing email settings for assigned station
+            <span class="role-badge role-superuser">Superuser</span> - Managing email settings for selected station
         <?php elseif ($user['role'] === 'station_admin'): ?>
             <span class="role-badge role-station_admin">Station Admin</span> - Managing email settings for your station
         <?php endif; ?>
     </div>
-
-    <?php if ($no_station_selected): ?>
-        <div class="no-station-message">
-            <h2>No Station Assigned</h2>
-            <p>You don't have any stations assigned to your account.</p>
-            <p>Please contact your administrator to assign you to a station before you can manage email settings.</p>
-            <div class="button-container">
-                <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button">← Back to Admin</a>
-            </div>
-        </div>
-    <?php else: ?>
 
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
@@ -1171,8 +1131,6 @@ include 'templates/header.php';
     <div class="button-container">
         <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button secondary">← Back to Admin</a>
     </div>
-
-    <?php endif; ?>
 </div>
 
 <!-- Email Preview Modal -->
