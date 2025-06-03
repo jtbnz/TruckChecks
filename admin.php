@@ -58,7 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         'qr-codes.php',
         'email_admin.php',
         'email_results.php',
-        'reports.php',
+        'locker_check_report.php',
+        'list_all_items_report.php',
+        'list_all_items_report_a3.php',
         'deleted_items_report.php',
         'backups.php',
         'login_logs.php',
@@ -461,8 +463,14 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Reports & Data</div>
-                    <a href="javascript:void(0)" onclick="loadPage('reports.php')" class="nav-item">
-                        <i>📊</i> Reports
+                    <a href="javascript:void(0)" onclick="loadPage('locker_check_report.php')" class="nav-item">
+                        <i>📄</i> Locker Check Reports
+                    </a>
+                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report.php')" class="nav-item">
+                        <i>📋</i> List All Items Report
+                    </a>
+                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report_a3.php')" class="nav-item">
+                        <i>📄</i> A3 Locker Items Report
                     </a>
                     <a href="javascript:void(0)" onclick="loadPage('deleted_items_report.php')" class="nav-item">
                         <i>🗑️</i> Deleted Items Report
@@ -581,7 +589,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Reports & Analytics</h3>
                                 <p>Generate comprehensive reports, view check history, and analyze fleet performance data.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('reports.php')" class="card-button">View Reports</button>
+                                    <button onclick="loadPage('locker_check_report.php')" class="card-button">Locker Reports</button>
                                     <button onclick="loadPage('deleted_items_report.php')" class="card-button">Deleted Items</button>
                                     <button onclick="loadPage('login_logs.php')" class="card-button secondary">Login Logs</button>
                                 </div>

@@ -376,7 +376,7 @@ $locker_statuses = get_all_locker_statuses($locker_ids, $db, $colours);
     <a href="find.php" class="button touch-button">Find an item</a>
     <a href="changeover.php" class="button touch-button">Relief Change Over</a>
     <a href="quiz/quiz.php" class="button touch-button">Quiz</a> 
-    <a href="reports.php" class="button touch-button">Reports</a>
+
     <a href="login.php" class="button touch-button">Admin</a>
     <a href="settings.php" class="button touch-button">Settings</a> 
 </div>
