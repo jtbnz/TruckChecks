@@ -43,6 +43,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Handle AJAX content loading request
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+    requireAuth();
+    $page = $_GET['page'] ?? '';
+    
+    // Security: Only allow specific pages
+    $allowedPages = [
+        'maintain_trucks.php',
+        'maintain_lockers.php', 
+        'maintain_locker_items.php',
+        'find.php',
+        'reset_locker_check.php',
+        'qr-codes.php',
+        'email_admin.php',
+        'email_results.php',
+        'reports.php',
+        'deleted_items_report.php',
+        'backups.php',
+        'login_logs.php',
+        'manage_stations.php',
+        'manage_users.php',
+        'show_code.php',
+        'station_settings.php'
+    ];
+    
+    if (in_array($page, $allowedPages) && file_exists($page)) {
+        include($page);
+    } else {
+        echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found or access denied.</div>';
+    }
+    exit;
+}
+
 // Ensure user is authenticated
 requireAuth();
 
@@ -71,7 +104,6 @@ if ($userRole === 'station_admin') {
         $userStations = [];
     }
 }
-
 
 $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
@@ -168,6 +200,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             text-decoration: none;
             border-left: 3px solid transparent;
             transition: all 0.3s ease;
+            cursor: pointer;
         }
         
         .nav-item:hover {
@@ -191,13 +224,21 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             flex: 1;
             margin-left: 280px;
             padding: 0;
+            min-height: 100vh;
+            background-color: white;
         }
         
-        .content-frame {
+        .content-area {
             width: 100%;
-            height: 100vh;
-            border: none;
+            min-height: 100vh;
             background-color: white;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+            color: #666;
         }
         
         .dashboard-content {
@@ -265,6 +306,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             border-radius: 5px;
             font-size: 14px;
             transition: background-color 0.3s;
+            cursor: pointer;
+            border: none;
         }
         
         .card-button:hover {
@@ -352,62 +395,62 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <div class="nav-section-title">Main</div>
-                    <a href="?page=dashboard" class="nav-item <?= $currentPage === 'dashboard' ? 'active' : '' ?>">
+                    <a href="javascript:void(0)" onclick="showDashboard()" class="nav-item <?= $currentPage === 'dashboard' ? 'active' : '' ?>" id="dashboard-link">
                         <i>🏠</i> Dashboard
                     </a>
-                    <a href="index.php" class="nav-item">
+                    <a href="index.php" class="nav-item" target="_blank">
                         <i>📊</i> Status Page
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Management</div>
-                    <a href="maintain_trucks.php" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('maintain_trucks.php')" class="nav-item">
                         <i>🚛</i> Maintain Trucks
                     </a>
-                    <a href="maintain_lockers.php" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('maintain_lockers.php')" class="nav-item">
                         <i>🗄️</i> Maintain Lockers
                     </a>
-                    <a href="maintain_locker_items.php" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('maintain_locker_items.php')" class="nav-item">
                         <i>📦</i> Maintain Locker Items
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Tools</div>
-                    <a href="find.php" class="nav-item" >
+                    <a href="javascript:void(0)" onclick="loadPage('find.php')" class="nav-item">
                         <i>🔍</i> Find an Item
                     </a>
-                    <a href="reset_locker_check.php" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('reset_locker_check.php')" class="nav-item">
                         <i>🔄</i> Reset Locker Checks
                     </a>
-                    <a href="qr-codes.php" class="nav-item" >
+                    <a href="javascript:void(0)" onclick="loadPage('qr-codes.php')" class="nav-item">
                         <i>📱</i> Generate QR Codes
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="email_admin.php" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('email_admin.php')" class="nav-item">
                         <i>📧</i> Manage Email Settings
                     </a>
-                    <a href="email_results.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('email_results.php')" class="nav-item">
                         <i>📤</i> Email Check Results
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Reports & Data</div>
-                    <a href="reports.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('reports.php')" class="nav-item">
                         <i>📊</i> Reports
                     </a>
-                    <a href="deleted_items_report.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('deleted_items_report.php')" class="nav-item">
                         <i>🗑️</i> Deleted Items Report
                     </a>
-                    <a href="backups.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('backups.php')" class="nav-item">
                         <i>💾</i> Download Backup
                     </a>
-                    <a href="login_logs.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('login_logs.php')" class="nav-item">
                         <i>📋</i> View Login Logs
                     </a>
                 </div>
@@ -415,10 +458,10 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <?php if ($userRole === 'superuser'): ?>
                 <div class="nav-section">
                     <div class="nav-section-title">System Administration</div>
-                    <a href="manage_stations.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('manage_stations.php')" class="nav-item">
                         <i>🏢</i> Manage Stations
                     </a>
-                    <a href="manage_users.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('manage_users.php')" class="nav-item">
                         <i>👥</i> Manage Users
                     </a>
                     <a href="install.php" class="nav-item" target="_blank">
@@ -430,7 +473,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <?php if ($userRole === 'station_admin'): ?>
                 <div class="nav-section">
                     <div class="nav-section-title">Station Administration</div>
-                    <a href="manage_users.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('manage_users.php')" class="nav-item">
                         <i>👥</i> Manage Station Users
                     </a>
                 </div>
@@ -438,14 +481,14 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Settings</div>
-                    <a href="show_code.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('show_code.php')" class="nav-item">
                         <i>🔐</i> Security Code
                     </a>
-                    <a href="station_settings.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('station_settings.php')" class="nav-item">
                         <i>⚙️</i> Station Settings
                     </a>
                     <?php if ($showButton): ?>
-                    <a href="demo_clean_tables.php" class="nav-item" target="content-frame">
+                    <a href="javascript:void(0)" onclick="loadPage('demo_clean_tables.php')" class="nav-item">
                         <i>🧹</i> Delete Demo Data
                     </a>
                     <?php endif; ?>
@@ -462,150 +505,164 @@ $currentPage = $_GET['page'] ?? 'dashboard';
         
         <!-- Main Content -->
         <div class="main-content">
-            <?php if ($currentPage === 'dashboard'): ?>
-                <div class="dashboard-content">
-                    <?php if (isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true): ?>
-                        <div class="demo-notice">
-                            <h3>Demo Mode Active</h3>
-                            <p>Demo mode adds background stripes and the word DEMO in the middle of the screen. There is also the Delete Demo Checks Data button which will reset the checks but not the locker changes. This message is not visible when demo mode is not enabled.</p>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div class="dashboard-header">
-                        <h1>TruckChecks Administration</h1>
-                        <div class="subtitle">
-                            Logged in as <?= htmlspecialchars($userName) ?> (<?= ucfirst(str_replace('_', ' ', $userRole)) ?>)
-                            <?php if ($userRole === 'station_admin' && !empty($userStations)): ?>
-                                - Managing <?= count($userStations) ?> station(s)
-                            <?php elseif ($userRole === 'superuser'): ?>
-                                <?php $currentStation = getCurrentStation(); ?>
-                                <?php if ($currentStation): ?>
-                                    - Current Station: <?= htmlspecialchars($currentStation['name']) ?>
-                                <?php else: ?>
-                                    - No station selected
+            <div class="loading" id="loading">
+                <p>Loading...</p>
+            </div>
+            
+            <div class="content-area" id="content-area">
+                <?php if ($currentPage === 'dashboard'): ?>
+                    <div class="dashboard-content">
+                        <?php if (isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true): ?>
+                            <div class="demo-notice">
+                                <h3>Demo Mode Active</h3>
+                                <p>Demo mode adds background stripes and the word DEMO in the middle of the screen. There is also the Delete Demo Checks Data button which will reset the checks but not the locker changes. This message is not visible when demo mode is not enabled.</p>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <div class="dashboard-header">
+                            <h1>TruckChecks Administration</h1>
+                            <div class="subtitle">
+                                Logged in as <?= htmlspecialchars($userName) ?> (<?= ucfirst(str_replace('_', ' ', $userRole)) ?>)
+                                <?php if ($userRole === 'station_admin' && !empty($userStations)): ?>
+                                    - Managing <?= count($userStations) ?> station(s)
+                                <?php elseif ($userRole === 'superuser'): ?>
+                                    <?php $currentStation = getCurrentStation(); ?>
+                                    <?php if ($currentStation): ?>
+                                        - Current Station: <?= htmlspecialchars($currentStation['name']) ?>
+                                    <?php else: ?>
+                                        - No station selected
+                                    <?php endif; ?>
                                 <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-grid">
+                            <div class="dashboard-card">
+                                <h3>Fleet Management</h3>
+                                <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('maintain_trucks.php')" class="card-button">Trucks</button>
+                                    <button onclick="loadPage('maintain_lockers.php')" class="card-button">Lockers</button>
+                                    <button onclick="loadPage('maintain_locker_items.php')" class="card-button">Items</button>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h3>Operations</h3>
+                                <p>Daily operational tools for managing checks, finding items, and generating QR codes for easy access.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('find.php')" class="card-button">Find Items</button>
+                                    <button onclick="loadPage('reset_locker_check.php')" class="card-button secondary">Reset Checks</button>
+                                    <button onclick="loadPage('qr-codes.php')" class="card-button">QR Codes</button>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h3>Reports & Analytics</h3>
+                                <p>Generate comprehensive reports, view check history, and analyze fleet performance data.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('reports.php')" class="card-button">View Reports</button>
+                                    <button onclick="loadPage('deleted_items_report.php')" class="card-button">Deleted Items</button>
+                                    <button onclick="loadPage('login_logs.php')" class="card-button secondary">Login Logs</button>
+                                </div>
+                            </div>
+                            
+                            <div class="dashboard-card">
+                                <h3>Communication</h3>
+                                <p>Configure email notifications and send check results to relevant personnel.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('email_admin.php')" class="card-button">Email Settings</button>
+                                    <button onclick="loadPage('email_results.php')" class="card-button">Send Results</button>
+                                </div>
+                            </div>
+                            
+                            <?php if ($userRole === 'superuser'): ?>
+                            <div class="dashboard-card">
+                                <h3>System Administration</h3>
+                                <p>Manage stations, users, and system-wide settings. Access installation and upgrade tools.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('manage_stations.php')" class="card-button">Stations</button>
+                                    <button onclick="loadPage('manage_users.php')" class="card-button">Users</button>
+                                    <a href="install.php" class="card-button secondary" target="_blank">Installer</a>
+                                </div>
+                            </div>
                             <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="dashboard-grid">
-                        <div class="dashboard-card">
-                            <h3>Fleet Management</h3>
-                            <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
-                            <div class="card-buttons">
-                                <a href="maintain_trucks.php" class="card-button" target="content-frame">Trucks</a>
-                                <a href="maintain_lockers.php" class="card-button" target="content-frame">Lockers</a>
-                                <a href="maintain_locker_items.php" class="card-button" target="content-frame">Items</a>
+                            
+                            <?php if ($userRole === 'station_admin'): ?>
+                            <div class="dashboard-card">
+                                <h3>Station Administration</h3>
+                                <p>Manage users for your assigned stations and configure station-specific settings.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('manage_users.php')" class="card-button">Station Users</button>
+                                    <button onclick="loadPage('station_settings.php')" class="card-button">Settings</button>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="dashboard-card">
-                            <h3>Operations</h3>
-                            <p>Daily operational tools for managing checks, finding items, and generating QR codes for easy access.</p>
-                            <div class="card-buttons">
-                                <a href="find.php" class="card-button" target="content-frame">Find Items</a>
-                                <a href="reset_locker_check.php" class="card-button secondary" target="content-frame">Reset Checks</a>
-                                <a href="qr-codes.php" class="card-button" target="content-frame">QR Codes</a>
-                            </div>
-                        </div>
-                        
-                        <div class="dashboard-card">
-                            <h3>Reports & Analytics</h3>
-                            <p>Generate comprehensive reports, view check history, and analyze fleet performance data.</p>
-                            <div class="card-buttons">
-                                <a href="reports.php" class="card-button" target="content-frame">View Reports</a>
-                                <a href="deleted_items_report.php" class="card-button" target="content-frame">Deleted Items</a>
-                                <a href="login_logs.php" class="card-button secondary" target="content-frame">Login Logs</a>
-                            </div>
-                        </div>
-                        
-                        <div class="dashboard-card">
-                            <h3>Communication</h3>
-                            <p>Configure email notifications and send check results to relevant personnel.</p>
-                            <div class="card-buttons">
-                                <a href="email_admin.php" class="card-button" target="content-frame">Email Settings</a>
-                                <a href="email_results.php" class="card-button" target="content-frame">Send Results</a>
-                            </div>
-                        </div>
-                        
-                        <?php if ($userRole === 'superuser'): ?>
-                        <div class="dashboard-card">
-                            <h3>System Administration</h3>
-                            <p>Manage stations, users, and system-wide settings. Access installation and upgrade tools.</p>
-                            <div class="card-buttons">
-                                <a href="manage_stations.php" class="card-button" target="content-frame">Stations</a>
-                                <a href="manage_users.php" class="card-button" target="content-frame">Users</a>
-                                <a href="install.php" class="card-button secondary" target="_blank">Installer</a>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <?php if ($userRole === 'station_admin'): ?>
-                        <div class="dashboard-card">
-                            <h3>Station Administration</h3>
-                            <p>Manage users for your assigned stations and configure station-specific settings.</p>
-                            <div class="card-buttons">
-                                <a href="manage_users.php" class="card-button" target="content-frame">Station Users</a>
-                                <a href="station_settings.php" class="card-button" target="content-frame">Settings</a>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <div class="dashboard-card">
-                            <h3>Data Management</h3>
-                            <p>Backup your data, manage security settings, and configure system preferences.</p>
-                            <div class="card-buttons">
-                                <a href="backups.php" class="card-button" target="content-frame">Backup</a>
-                                <a href="show_code.php" class="card-button secondary" target="content-frame">Security</a>
+                            <?php endif; ?>
+                            
+                            <div class="dashboard-card">
+                                <h3>Data Management</h3>
+                                <p>Backup your data, manage security settings, and configure system preferences.</p>
+                                <div class="card-buttons">
+                                    <button onclick="loadPage('backups.php')" class="card-button">Backup</button>
+                                    <button onclick="loadPage('show_code.php')" class="card-button secondary">Security</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            <?php else: ?>
-                <iframe name="content-frame" class="content-frame" src="about:blank"></iframe>
-            <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
     
     <script>
-        // Detect if device is mobile
-        function isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        }
-        
-        // Handle navigation clicks
-        document.querySelectorAll('.nav-item[target="content-frame"]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Remove active class from all nav items
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                
-                // Add active class to clicked item
-                this.classList.add('active');
-                
-                // Update URL without page reload
-                const url = new URL(window.location);
-                url.searchParams.set('page', 'content');
-                window.history.pushState({}, '', url);
-            });
-        });
-        
-        // Handle dashboard link
-        document.querySelector('.nav-item[href="?page=dashboard"]').addEventListener('click', function(e) {
-            e.preventDefault();
+        // Load page content via AJAX
+        function loadPage(page) {
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('content-area').style.display = 'none';
             
             // Remove active class from all nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
             
+            // Add active class to clicked item
+            event.target.classList.add('active');
+            
+            // Load content via AJAX
+            fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('content-area').innerHTML = html;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content-area').style.display = 'block';
+                    
+                    // Update URL without page reload
+                    const url = new URL(window.location);
+                    url.searchParams.set('page', 'content');
+                    window.history.pushState({}, '', url);
+                })
+                .catch(error => {
+                    console.error('Error loading page:', error);
+                    document.getElementById('content-area').innerHTML = '<div style="padding: 20px; text-align: center; color: #dc3545;">Error loading page. Please try again.</div>';
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('content-area').style.display = 'block';
+                });
+        }
+        
+        // Show dashboard
+        function showDashboard() {
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
             // Add active class to dashboard
-            this.classList.add('active');
+            document.getElementById('dashboard-link').classList.add('active');
             
             // Redirect to dashboard
             window.location.href = '?page=dashboard';
-        });
+        }
         
         // Handle station change for superusers
         function changeStation() {
