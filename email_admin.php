@@ -23,14 +23,14 @@ if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
 // Get station context - use their first assigned station
 if ($user['role'] === 'station_admin') {
     // Station admins: get their first assigned station
-    $user_stations = getUserStations($user['id']);
+    $station = getCurrentStation();
     if (!empty($user_stations)) {
         $station = $user_stations[0];
     } else {
         $no_station_selected = true;
     }
 } elseif ($user['role'] === 'superuser') {
-    // Superusers: get their first assigned station, or first available station
+    // Superusers: use their currently selected station
     $user_stations = getUserStations($user['id']);
     if (!empty($user_stations)) {
         $station = $user_stations[0];
