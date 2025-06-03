@@ -441,7 +441,7 @@ include 'templates/header.php';
     </div>
 
     <div class="button-container" style="margin-top: 30px;">
-        <a href="admin.php" class="button secondary">← Back to Admin</a>
+        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button secondary">← Back to Admin</a>
     </div>
 </div>
 

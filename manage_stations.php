@@ -414,7 +414,7 @@ include 'templates/header.php';
 <div class="management-container">
     <div class="page-header">
         <h1 class="page-title">Station Management</h1>
-        <a href="admin.php" class="btn btn-secondary">← Back to Admin</a>
+        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="btn btn-secondary">← Back to Admin</a>
     </div>
 
     <?php if ($error): ?>

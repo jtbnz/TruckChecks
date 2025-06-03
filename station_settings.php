@@ -528,7 +528,7 @@ include 'templates/header.php';
 <div class="settings-container">
     <div class="page-header">
         <h1 class="page-title">Station Settings</h1>
-        <a href="admin.php" class="btn btn-secondary">← Back to Admin</a>
+        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="btn btn-secondary">← Back to Admin</a>
     </div>
 
     <div class="station-info">
@@ -589,7 +589,7 @@ include 'templates/header.php';
 
         <div class="form-actions">
             <button type="submit" name="save_settings" class="btn btn-primary">Save Settings</button>
-            <a href="admin.php" class="btn btn-secondary">Cancel</a>
+            <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 

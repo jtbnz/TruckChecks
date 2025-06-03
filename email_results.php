@@ -531,7 +531,7 @@ include 'templates/header.php';
             <p>You don't have any stations assigned to your account.</p>
             <p>Please contact your administrator to assign you to a station before you can send email results.</p>
             <div class="button-container">
-                <a href="admin.php" class="button">← Back to Admin</a>
+                <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button">← Back to Admin</a>
             </div>
         </div>
     <?php else: ?>
@@ -628,7 +628,7 @@ include 'templates/header.php';
 
     <div class="button-container">
         <a href="email_admin.php" class="button">Manage Email Settings</a>
-        <a href="admin.php" class="button secondary">← Back to Admin</a>
+        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button secondary">← Back to Admin</a>
     </div>
 
     <?php endif; ?>

@@ -311,7 +311,7 @@ include 'templates/header.php';
 </div>
 
 <div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">← Back to Admin</a>
+    <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button touch-button">← Back to Admin</a>
 </div>
 
 <script>
