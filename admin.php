@@ -489,7 +489,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <a href="javascript:void(0)" onclick="loadPage('manage_stations.php')" class="nav-item">
                         <i>🏢</i> Manage Stations
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('manage_users.php')" class="nav-item">
+                    <a href="manage_users.php" target="_blank" class="nav-item">
                         <i>👥</i> Manage Users
                     </a>
                     <a href="install.php" class="nav-item" target="_blank">
@@ -610,7 +610,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <p>Manage stations, users, and system-wide settings. Access installation and upgrade tools.</p>
                                 <div class="card-buttons">
                                     <button onclick="loadPage('manage_stations.php')" class="card-button">Stations</button>
-                                    <button onclick="loadPage('manage_users.php')" class="card-button">Users</button>
+                                    <a href="manage_users.php" target="_blank" class="card-button">Users</a>
                                     <a href="install.php" class="card-button secondary" target="_blank">Installer</a>
                                 </div>
                             </div>
@@ -621,7 +621,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Station Administration</h3>
                                 <p>Manage users for your assigned stations and configure station-specific settings.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('manage_users.php')" class="card-button">Station Users</button>
+                                    <a href="manage_users.php" target="_blank" class="card-button">Station Users</a>
                                     <button onclick="loadPage('station_settings.php')" class="card-button">Settings</button>
                                 </div>
                             </div>
