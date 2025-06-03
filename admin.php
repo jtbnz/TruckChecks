@@ -65,11 +65,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         'manage_stations.php',
         'manage_users.php',
         'show_code.php',
-        'station_settings.php'
+        'station_settings.php',
+        'demo_clean_tables.php'
     ];
     
     if (in_array($page, $allowedPages) && file_exists($page)) {
+        // Capture the output
+        ob_start();
         include($page);
+        $content = ob_get_clean();
+        
+        // If the content includes full HTML structure, extract just the body content
+        if (strpos($content, '<!DOCTYPE') !== false) {
+            // Extract content between <body> and </body> tags
+            if (preg_match('/<body[^>]*>(.*?)<\/body>/s', $content, $matches)) {
+                echo $matches[1];
+            } else {
+                // Fallback: remove everything before <body> and after </body>
+                $content = preg_replace('/.*?<body[^>]*>/s', '', $content);
+                $content = preg_replace('/<\/body>.*$/s', '', $content);
+                echo $content;
+            }
+        } else {
+            // Content is already a fragment, output as-is
+            echo $content;
+        }
     } else {
         echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found or access denied.</div>';
     }
