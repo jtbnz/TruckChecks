@@ -355,40 +355,40 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <a href="?page=dashboard" class="nav-item <?= $currentPage === 'dashboard' ? 'active' : '' ?>">
                         <i>🏠</i> Dashboard
                     </a>
-                    <a href="index.php" class="nav-item" target="content-frame">
+                    <a href="index.php" class="nav-item">
                         <i>📊</i> Status Page
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Management</div>
-                    <a href="maintain_trucks.php" class="nav-item" target="content-frame">
+                    <a href="maintain_trucks.php" class="nav-item">
                         <i>🚛</i> Maintain Trucks
                     </a>
-                    <a href="maintain_lockers.php" class="nav-item" target="content-frame">
+                    <a href="maintain_lockers.php" class="nav-item">
                         <i>🗄️</i> Maintain Lockers
                     </a>
-                    <a href="maintain_locker_items.php" class="nav-item" target="content-frame">
+                    <a href="maintain_locker_items.php" class="nav-item">
                         <i>📦</i> Maintain Locker Items
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Tools</div>
-                    <a href="find.php" class="nav-item" target="content-frame">
+                    <a href="find.php" class="nav-item" >
                         <i>🔍</i> Find an Item
                     </a>
-                    <a href="reset_locker_check.php" class="nav-item" target="content-frame">
+                    <a href="reset_locker_check.php" class="nav-item">
                         <i>🔄</i> Reset Locker Checks
                     </a>
-                    <a href="qr-codes.php" class="nav-item" target="content-frame">
+                    <a href="qr-codes.php" class="nav-item" >
                         <i>📱</i> Generate QR Codes
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="email_admin.php" class="nav-item" target="content-frame">
+                    <a href="email_admin.php" class="nav-item">
                         <i>📧</i> Manage Email Settings
                     </a>
                     <a href="email_results.php" class="nav-item" target="content-frame">
