@@ -1,8 +1,23 @@
 <?php
 include_once('auth.php');
+// Attempt to include config.php, otherwise use config_sample.php as a fallback for DEBUG constant
+if (file_exists('config.php')) {
+    include_once('config.php');
+} else {
+    include_once('config_sample.php'); // Fallback for DEBUG constant
+}
+
+// Initialize DEBUG if not defined
+if (!defined('DEBUG')) {
+    define('DEBUG', false);
+}
 
 // Require superuser access
 requireSuperuser();
+
+if (DEBUG) {
+    error_log("manage_stations.php: Script started.");
+}
 
 $db = get_db_connection();
 $error = '';
@@ -63,43 +78,71 @@ if (isset($_GET['ajax'])) {
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_POST['add_station'])) {
+        if (DEBUG) {
+            error_log("manage_stations.php: Attempting to add station. POST data: " . print_r($_POST, true));
+        }
         $name = trim($_POST['station_name']);
         $description = trim($_POST['station_description']);
         
         if (empty($name)) {
             $error = "Station name is required.";
+            if (DEBUG) {
+                error_log("manage_stations.php: Add station failed - name was empty.");
+            }
         } else {
             try {
                 $stmt = $db->prepare("INSERT INTO stations (name, description) VALUES (?, ?)");
                 $stmt->execute([$name, $description]);
                 $success = "Station added successfully.";
+                if (DEBUG) {
+                    error_log("manage_stations.php: Station '{$name}' added successfully.");
+                }
+                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('manage_stations.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+                exit;
             } catch (Exception $e) {
                 if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
                     $error = "A station with this name already exists.";
                 } else {
                     $error = "Error adding station: " . $e->getMessage();
                 }
+                if (DEBUG) {
+                    error_log("manage_stations.php: Error adding station: " . $e->getMessage());
+                }
             }
         }
     }
     
     if (isset($_POST['edit_station'])) {
+        if (DEBUG) {
+            error_log("manage_stations.php: Attempting to edit station. POST data: " . print_r($_POST, true));
+        }
         $stationId = (int)$_POST['station_id'];
         $name = trim($_POST['station_name']);
         $description = trim($_POST['station_description']);
         
         if (empty($name)) {
             $error = "Station name is required.";
+            if (DEBUG) {
+                error_log("manage_stations.php: Edit station failed - name was empty for ID {$stationId}.");
+            }
         } else {
             try {
                 $stmt = $db->prepare("UPDATE stations SET name = ?, description = ? WHERE id = ?");
                 $stmt->execute([$name, $description, $stationId]);
                 $success = "Station updated successfully.";
+                if (DEBUG) {
+                    error_log("manage_stations.php: Station ID {$stationId} updated successfully.");
+                }
+                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('manage_stations.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+                exit;
             } catch (Exception $e) {
                 if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
                     $error = "A station with this name already exists.";
                 } else {
                     $error = "Error updating station: " . $e->getMessage();
+                }
+                if (DEBUG) {
+                    error_log("manage_stations.php: Error updating station ID {$stationId}: " . $e->getMessage());
                 }
             }
         }
@@ -108,6 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Handle station deletion
 if (isset($_GET['delete_station'])) {
+    if (DEBUG) {
+        error_log("manage_stations.php: Attempting to delete station ID: " . $_GET['delete_station']);
+    }
     $stationId = (int)$_GET['delete_station'];
     
     try {
@@ -118,19 +164,30 @@ if (isset($_GET['delete_station'])) {
         
         if ($truckCount > 0) {
             $error = "Cannot delete station: it has $truckCount truck(s) assigned. Please reassign or delete the trucks first.";
+            if (DEBUG) {
+                error_log("manage_stations.php: Delete station failed - station ID {$stationId} has {$truckCount} trucks.");
+            }
         } else {
             // Delete user assignments first
-            $stmt = $db->prepare("DELETE FROM user_stations WHERE station_id = ?");
-            $stmt->execute([$stationId]);
+            $stmt_users = $db->prepare("DELETE FROM user_stations WHERE station_id = ?");
+            $stmt_users->execute([$stationId]);
             
             // Delete station
-            $stmt = $db->prepare("DELETE FROM stations WHERE id = ?");
-            $stmt->execute([$stationId]);
+            $stmt_station = $db->prepare("DELETE FROM stations WHERE id = ?");
+            $stmt_station->execute([$stationId]);
             
             $success = "Station deleted successfully.";
+            if (DEBUG) {
+                error_log("manage_stations.php: Station ID {$stationId} deleted successfully.");
+            }
+            echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('manage_stations.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+            exit;
         }
     } catch (Exception $e) {
         $error = "Error deleting station: " . $e->getMessage();
+        if (DEBUG) {
+            error_log("manage_stations.php: Error deleting station ID {$stationId}: " . $e->getMessage());
+        }
     }
 }
 
@@ -151,8 +208,15 @@ try {
 } catch (Exception $e) {
     $error = "Error loading stations: " . $e->getMessage();
     $stations = [];
+    if (DEBUG) {
+        error_log("manage_stations.php: Error loading stations: " . $e->getMessage());
+    }
 }
 
+if (DEBUG) {
+    echo "<script>console.log('manage_stations.php: PHP script part finished. Stations count: " . count($stations) . "');</script>";
+    error_log("manage_stations.php: Rendering page. Stations count: " . count($stations));
+}
 ?>
 
 <style>
@@ -446,8 +510,8 @@ try {
                 <div class="station-header">
                     <h3 class="station-name"><?= htmlspecialchars($station['name']) ?></h3>
                     <div class="station-actions">
-                        <button class="btn btn-primary btn-sm" onclick="editStation(<?= $station['id'] ?>, '<?= htmlspecialchars($station['name']) ?>', '<?= htmlspecialchars($station['description']) ?>')">Edit</button>
-                        <a href="?delete_station=<?= $station['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this station? This action cannot be undone.')">Delete</a>
+                        <button class="btn btn-primary btn-sm" onclick="editStation(<?= $station['id'] ?>, '<?= htmlspecialchars(addslashes($station['name'])) ?>', '<?= htmlspecialchars(addslashes($station['description'] ?? '')) ?>')">Edit</button>
+                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this station? This action cannot be undone.')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('manage_stations.php?delete_station=<?= $station['id'] ?>'); } else { console.error('parent.loadPage not found'); window.location.href='manage_stations.php?delete_station=<?= $station['id'] ?>'; } }" class="btn btn-danger btn-sm">Delete</a>
                     </div>
                 </div>
 

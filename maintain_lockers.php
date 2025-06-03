@@ -1,7 +1,21 @@
 <?php
 include_once('auth.php');
-include_once('config.php');
+// Attempt to include config.php, otherwise use config_sample.php as a fallback for DEBUG constant
+if (file_exists('config.php')) {
+    include_once('config.php');
+} else {
+    include_once('config_sample.php'); // Fallback for DEBUG constant
+}
 include_once('db.php');
+
+// Initialize DEBUG if not defined
+if (!defined('DEBUG')) {
+    define('DEBUG', false);
+}
+
+if (DEBUG) {
+    error_log("maintain_lockers.php: Script started. Station ID: " . ($station['id'] ?? 'Not Set'));
+}
 
 // Require authentication and station context
 $station = requireStation();
@@ -13,6 +27,9 @@ $success_message = '';
 
 // Handle adding a new locker
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_locker'])) {
+    if (DEBUG) {
+        error_log("maintain_lockers.php: Attempting to add locker. POST data: " . print_r($_POST, true));
+    }
     $locker_name = trim($_POST['locker_name']);
     $truck_id = $_POST['truck_id'];
     if (!empty($locker_name) && !empty($truck_id)) {
@@ -25,19 +42,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_locker'])) {
                 $query = $db->prepare('INSERT INTO lockers (name, truck_id) VALUES (:name, :truck_id)');
                 $query->execute(['name' => $locker_name, 'truck_id' => $truck_id]);
                 $success_message = "Locker '{$locker_name}' added successfully.";
+                if (DEBUG) {
+                    error_log("maintain_lockers.php: Locker '{$locker_name}' added successfully to truck ID {$truck_id}.");
+                }
+                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+                exit;
             } else {
                 $error_message = "Selected truck not found or access denied.";
+                if (DEBUG) {
+                    error_log("maintain_lockers.php: Add locker failed - truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
+                }
             }
         } catch (Exception $e) {
             $error_message = "Error adding locker: " . $e->getMessage();
+            if (DEBUG) {
+                error_log("maintain_lockers.php: Error adding locker: " . $e->getMessage());
+            }
         }
     } else {
         $error_message = "Locker name and truck selection are required.";
+        if (DEBUG) {
+            error_log("maintain_lockers.php: Add locker failed - locker name or truck ID was empty.");
+        }
     }
 }
 
 // Handle editing a locker
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_locker'])) {
+    if (DEBUG) {
+        error_log("maintain_lockers.php: Attempting to edit locker. POST data: " . print_r($_POST, true));
+    }
     $locker_id = $_POST['locker_id'];
     $locker_name = trim($_POST['locker_name']);
     $truck_id = $_POST['truck_id'];
@@ -54,6 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_locker'])) {
             
             if (!$check_query->fetch()) {
                 $error_message = "Locker not found or access denied.";
+                if (DEBUG) {
+                    error_log("maintain_lockers.php: Edit locker failed - locker ID {$locker_id} not found or access denied for station ID: " . $station['id']);
+                }
             } else {
                 // Verify new truck belongs to current station
                 $truck_check = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
@@ -63,20 +100,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_locker'])) {
                     $query = $db->prepare('UPDATE lockers SET name = :name, truck_id = :truck_id WHERE id = :id');
                     $query->execute(['name' => $locker_name, 'truck_id' => $truck_id, 'id' => $locker_id]);
                     $success_message = "Locker updated successfully.";
+                    if (DEBUG) {
+                        error_log("maintain_lockers.php: Locker ID {$locker_id} updated successfully.");
+                    }
+                    echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+                    exit;
                 } else {
                     $error_message = "Selected truck not found or access denied.";
+                    if (DEBUG) {
+                        error_log("maintain_lockers.php: Edit locker failed - new truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
+                    }
                 }
             }
         } catch (Exception $e) {
             $error_message = "Error updating locker: " . $e->getMessage();
+            if (DEBUG) {
+                error_log("maintain_lockers.php: Error updating locker: " . $e->getMessage());
+            }
         }
     } else {
         $error_message = "Locker name and truck selection are required.";
+        if (DEBUG) {
+            error_log("maintain_lockers.php: Edit locker failed - locker name, truck ID, or locker ID was empty.");
+        }
     }
 }
 
 // Handle deleting a locker
 if (isset($_GET['delete_locker_id'])) {
+    if (DEBUG) {
+        error_log("maintain_lockers.php: Attempting to delete locker ID: " . $_GET['delete_locker_id']);
+    }
     $locker_id = $_GET['delete_locker_id'];
     try {
         // First check if locker belongs to current station
@@ -90,6 +144,9 @@ if (isset($_GET['delete_locker_id'])) {
         
         if (!$check_query->fetch()) {
             $error_message = "Locker not found or access denied.";
+            if (DEBUG) {
+                error_log("maintain_lockers.php: Delete locker failed - locker ID {$locker_id} not found or access denied for station ID: " . $station['id']);
+            }
         } else {
             // Check if locker has any items
             $item_check = $db->prepare('SELECT COUNT(*) FROM items WHERE locker_id = :locker_id');
@@ -98,14 +155,25 @@ if (isset($_GET['delete_locker_id'])) {
             
             if ($item_count > 0) {
                 $error_message = "Cannot delete locker: This locker has {$item_count} item(s) assigned to it. Please delete all items first.";
+                if (DEBUG) {
+                    error_log("maintain_lockers.php: Delete locker failed - locker ID {$locker_id} has {$item_count} items.");
+                }
             } else {
                 $query = $db->prepare('DELETE FROM lockers WHERE id = :id');
                 $query->execute(['id' => $locker_id]);
                 $success_message = "Locker deleted successfully.";
+                if (DEBUG) {
+                    error_log("maintain_lockers.php: Locker ID {$locker_id} deleted successfully.");
+                }
+                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
+                exit;
             }
         }
     } catch (Exception $e) {
         $error_message = "Error deleting locker: " . $e->getMessage();
+        if (DEBUG) {
+            error_log("maintain_lockers.php: Error deleting locker: " . $e->getMessage());
+        }
     }
 }
 
@@ -159,8 +227,15 @@ try {
 } catch (Exception $e) {
     $error_message = "Error loading lockers: " . $e->getMessage();
     $lockers = [];
+    if (DEBUG) {
+        error_log("maintain_lockers.php: Error loading lockers: " . $e->getMessage());
+    }
 }
 
+if (DEBUG) {
+    echo "<script>console.log('maintain_lockers.php: PHP script part finished. Lockers count: " . count($lockers) . ". Edit locker: " . ($edit_locker ? $edit_locker['id'] : 'null') . "');</script>";
+    error_log("maintain_lockers.php: Rendering page. Lockers count: " . count($lockers) . ". Edit locker ID: " . ($edit_locker['id'] ?? 'None'));
+}
 ?>
 
 <style>
@@ -427,7 +502,7 @@ try {
     <?php if (empty($trucks)): ?>
         <div class="no-trucks-warning">
             <h3>No Trucks Available</h3>
-            <p>You need to add trucks before you can create lockers. <a href="maintain_trucks.php">Go to Maintain Trucks</a> to add your first truck.</p>
+            <p>You need to add trucks before you can create lockers. <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_trucks.php'; }">Go to Maintain Trucks</a> to add your first truck.</p>
         </div>
     <?php else: ?>
         <?php if ($edit_locker): ?>
@@ -450,7 +525,7 @@ try {
                     </div>
                     <div class="button-container">
                         <button type="submit" name="edit_locker" class="button">Update Locker</button>
-                        <a href="maintain_lockers.php" class="button secondary">Cancel</a>
+                        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_lockers.php'; }" class="button secondary">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -499,11 +574,10 @@ try {
                         </div>
                     </div>
                     <div class="locker-actions">
-                        <a href="?edit_id=<?= $locker['id'] ?>" class="edit-link">Edit</a>
+                        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?edit_id=<?= $locker['id'] ?>'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_lockers.php?edit_id=<?= $locker['id'] ?>'; }" class="edit-link">Edit</a>
                         <?php if ($locker['item_count'] == 0): ?>
-                            <a href="?delete_locker_id=<?= $locker['id'] ?>" 
-                               class="delete-link"
-                               onclick="return confirm('Are you sure you want to delete this locker?');">Delete</a>
+                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this locker?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?delete_locker_id=<?= $locker['id'] ?>'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_lockers.php?delete_locker_id=<?= $locker['id'] ?>'; } }"
+                               class="delete-link">Delete</a>
                         <?php else: ?>
                             <span class="delete-link disabled" 
                                   title="Cannot delete locker with items">Delete</span>

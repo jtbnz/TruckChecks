@@ -1,7 +1,22 @@
 <?php
 include_once('auth.php');
-include_once('config.php');
+// Attempt to include config.php, otherwise use config_sample.php as a fallback for DEBUG constant
+if (file_exists('config.php')) {
+    include_once('config.php');
+} else {
+    include_once('config_sample.php'); // Fallback for DEBUG constant
+}
+
+// Initialize DEBUG if not defined
+if (!defined('DEBUG')) {
+    define('DEBUG', false);
+}
+
 $station = requireStation();
+
+if (DEBUG) {
+    error_log("maintain_locker_items.php: Script started. Station ID: " . ($station['id'] ?? 'Not Set'));
+}
 
 // Require authentication and get user context
 requireAuth();
@@ -90,30 +105,133 @@ if (isset($_GET['ajax'])) {
 
 // Handle adding a new item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
-    $item_name = $_POST['item_name'];
+    if (DEBUG) {
+        error_log("maintain_locker_items.php: Attempting to add item. POST data: " . print_r($_POST, true));
+    }
+    $item_name = trim($_POST['item_name']);
     $locker_id = $_POST['locker_id'];
+    $current_filters = http_build_query(array_filter(['truck_filter' => ($_POST['truck_filter_hidden'] ?? ''), 'locker_filter' => ($_POST['locker_filter_hidden'] ?? '')]));
+
     if (!empty($item_name) && !empty($locker_id)) {
-        $query = $db->prepare('INSERT INTO items (name, locker_id) VALUES (:name, :locker_id)');
-        $query->execute(['name' => $item_name, 'locker_id' => $locker_id]);
+        try {
+            // Verify locker belongs to current station
+            $locker_check = $db->prepare('SELECT l.id FROM lockers l JOIN trucks t ON l.truck_id = t.id WHERE l.id = :locker_id AND t.station_id = :station_id');
+            $locker_check->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
+
+            if ($locker_check->fetch()) {
+                $query = $db->prepare('INSERT INTO items (name, locker_id) VALUES (:name, :locker_id)');
+                $query->execute(['name' => $item_name, 'locker_id' => $locker_id]);
+                if (DEBUG) {
+                    error_log("maintain_locker_items.php: Item '{$item_name}' added successfully to locker ID {$locker_id}.");
+                }
+                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?{$current_filters}'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php?{$current_filters}'; }</script>";
+                exit;
+            } else {
+                $error_message = "Selected locker not found or access denied.";
+                if (DEBUG) {
+                    error_log("maintain_locker_items.php: Add item failed - locker ID {$locker_id} not found or access denied for station ID: " . $station['id']);
+                }
+            }
+        } catch (Exception $e) {
+            $error_message = "Error adding item: " . $e->getMessage();
+            if (DEBUG) {
+                error_log("maintain_locker_items.php: Error adding item: " . $e->getMessage());
+            }
+        }
+    } else {
+        $error_message = "Item name and locker selection are required.";
+        if (DEBUG) {
+            error_log("maintain_locker_items.php: Add item failed - item name or locker ID was empty.");
+        }
     }
 }
 
 // Handle editing an item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
+    if (DEBUG) {
+        error_log("maintain_locker_items.php: Attempting to edit item. POST data: " . print_r($_POST, true));
+    }
     $item_id = $_POST['item_id'];
-    $item_name = $_POST['item_name'];
+    $item_name = trim($_POST['item_name']);
     $locker_id = $_POST['locker_id'];
+    $current_filters = http_build_query(array_filter(['truck_filter' => ($_POST['truck_filter_hidden'] ?? ''), 'locker_filter' => ($_POST['locker_filter_hidden'] ?? '')]));
+
     if (!empty($item_name) && !empty($locker_id) && !empty($item_id)) {
-        $query = $db->prepare('UPDATE items SET name = :name, locker_id = :locker_id WHERE id = :id');
-        $query->execute(['name' => $item_name, 'locker_id' => $locker_id, 'id' => $item_id]);
+        try {
+            // Verify item and new locker belong to current station
+            $item_check = $db->prepare('SELECT i.id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id WHERE i.id = :item_id AND t.station_id = :station_id');
+            $item_check->execute(['item_id' => $item_id, 'station_id' => $station['id']]);
+
+            if (!$item_check->fetch()) {
+                $error_message = "Item not found or access denied.";
+                 if (DEBUG) {
+                    error_log("maintain_locker_items.php: Edit item failed - item ID {$item_id} not found or access denied for station ID: " . $station['id']);
+                }
+            } else {
+                $new_locker_check = $db->prepare('SELECT l.id FROM lockers l JOIN trucks t ON l.truck_id = t.id WHERE l.id = :locker_id AND t.station_id = :station_id');
+                $new_locker_check->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
+
+                if ($new_locker_check->fetch()) {
+                    $query = $db->prepare('UPDATE items SET name = :name, locker_id = :locker_id WHERE id = :id');
+                    $query->execute(['name' => $item_name, 'locker_id' => $locker_id, 'id' => $item_id]);
+                    if (DEBUG) {
+                        error_log("maintain_locker_items.php: Item ID {$item_id} updated successfully.");
+                    }
+                    echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?{$current_filters}'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php?{$current_filters}'; }</script>";
+                    exit;
+                } else {
+                    $error_message = "Selected new locker not found or access denied.";
+                    if (DEBUG) {
+                        error_log("maintain_locker_items.php: Edit item failed - new locker ID {$locker_id} not found or access denied for station ID: " . $station['id']);
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            $error_message = "Error updating item: " . $e->getMessage();
+            if (DEBUG) {
+                error_log("maintain_locker_items.php: Error updating item: " . $e->getMessage());
+            }
+        }
+    } else {
+        $error_message = "Item name, locker selection, and item ID are required.";
+        if (DEBUG) {
+            error_log("maintain_locker_items.php: Edit item failed - item name, locker ID, or item ID was empty.");
+        }
     }
 }
 
 // Handle deleting an item
 if (isset($_GET['delete_item_id'])) {
+    if (DEBUG) {
+        error_log("maintain_locker_items.php: Attempting to delete item ID: " . $_GET['delete_item_id']);
+    }
     $item_id = $_GET['delete_item_id'];
-    $query = $db->prepare('DELETE FROM items WHERE id = :id');
-    $query->execute(['id' => $item_id]);
+    $current_filters = http_build_query(array_filter(['truck_filter' => ($_GET['truck_filter'] ?? ''), 'locker_filter' => ($_GET['locker_filter'] ?? '')]));
+    try {
+        // Verify item belongs to current station before deleting
+        $item_check = $db->prepare('SELECT i.id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id WHERE i.id = :item_id AND t.station_id = :station_id');
+        $item_check->execute(['item_id' => $item_id, 'station_id' => $station['id']]);
+
+        if ($item_check->fetch()) {
+            $query = $db->prepare('DELETE FROM items WHERE id = :id');
+            $query->execute(['id' => $item_id]);
+            if (DEBUG) {
+                error_log("maintain_locker_items.php: Item ID {$item_id} deleted successfully.");
+            }
+            echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?{$current_filters}'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php?{$current_filters}'; }</script>";
+            exit;
+        } else {
+            $error_message = "Item not found or access denied for deletion.";
+            if (DEBUG) {
+                error_log("maintain_locker_items.php: Delete item failed - item ID {$item_id} not found or access denied for station ID: " . $station['id']);
+            }
+        }
+    } catch (Exception $e) {
+        $error_message = "Error deleting item: " . $e->getMessage();
+        if (DEBUG) {
+            error_log("maintain_locker_items.php: Error deleting item: " . $e->getMessage());
+        }
+    }
 }
 
 // Get item to edit if edit_id is set
@@ -187,6 +305,11 @@ $items_query .= ' ORDER BY t.name, l.name, i.name';
 $stmt = $db->prepare($items_query);
 $stmt->execute($params);
 $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if (DEBUG) {
+    echo "<script>console.log('maintain_locker_items.php: PHP script part finished. Items count: " . count($items) . ". Edit item: " . ($edit_item ? $edit_item['id'] : 'null') . "');</script>";
+    error_log("maintain_locker_items.php: Rendering page. Items count: " . count($items) . ". Edit item ID: " . ($edit_item['id'] ?? 'None') . ". Filters: truck_filter={$truck_filter}, locker_filter={$locker_filter}");
+}
 ?>
 
 <h1>Maintain Locker Items</h1>
@@ -195,6 +318,8 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <h2>Edit Item</h2>
 <form method="POST" class="edit-item-form">
     <input type="hidden" name="item_id" value="<?= $edit_item['id'] ?>">
+    <input type="hidden" name="truck_filter_hidden" value="<?= htmlspecialchars($truck_filter) ?>">
+    <input type="hidden" name="locker_filter_hidden" value="<?= htmlspecialchars($locker_filter) ?>">
     <div class="input-container">
         <input type="text" name="item_name" placeholder="Item Name" value="<?= htmlspecialchars($edit_item['name']) ?>" required>
     </div>
@@ -210,13 +335,14 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
     <div class="button-container">
         <button type="submit" name="edit_item" class="button touch-button">Update Item</button>
-        <a href="maintain_locker_items.php<?= !empty($truck_filter) || !empty($locker_filter) ? '?' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>" class="button touch-button" style="background-color: #6c757d;">Cancel</a>
+        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php<?= !empty($truck_filter) || !empty($locker_filter) ? '?' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php<?= !empty($truck_filter) || !empty($locker_filter) ? '?' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'; }" class="button touch-button" style="background-color: #6c757d;">Cancel</a>
     </div>
 </form>
 <?php else: ?>
 <h2>Add New Item</h2>
 <form method="POST" class="add-item-form">
-
+    <input type="hidden" name="truck_filter_hidden" value="<?= htmlspecialchars($truck_filter) ?>">
+    <input type="hidden" name="locker_filter_hidden" value="<?= htmlspecialchars($locker_filter) ?>">
     <div class="input-container">
         <label for="add_truck_filter">Select Truck:</label>
         <select id="add_truck_filter" onchange="updateAddLockerDropdown()">
@@ -311,8 +437,8 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php foreach ($items as $item): ?>
                 <li>
                     <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
-                    <a href="?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>">Edit</a> | 
-                    <a href="?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
+                    <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'; }">Edit</a> | 
+                    <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this item?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_locker_items.php?delete_item_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'; } }" >Delete</a>
                 </li>
             <?php endforeach; ?>
         </ul>
@@ -323,9 +449,6 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <?php endif; ?>
 </div>
 
-<div class="button-container" style="margin-top: 20px;">
-    <a href="admin.php" class="button touch-button">Admin Page</a>
-</div>
 
 <script>
 // JavaScript for real-time filtering
