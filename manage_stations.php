@@ -153,7 +153,6 @@ try {
     $stations = [];
 }
 
-include 'templates/header.php';
 ?>
 
 <style>
@@ -414,7 +413,6 @@ include 'templates/header.php';
 <div class="management-container">
     <div class="page-header">
         <h1 class="page-title">Station Management</h1>
-        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="btn btn-secondary">← Back to Admin</a>
     </div>
 
     <?php if ($error): ?>
@@ -625,5 +623,3 @@ document.getElementById('editModal').addEventListener('click', function(e) {
     }
 });
 </script>
-
-<?php include 'templates/footer.php'; ?>

@@ -87,7 +87,6 @@ if (isset($_GET['ajax'])) {
     }
 }
 
-include 'templates/header.php';
 
 // Handle adding a new item
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
@@ -546,5 +545,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<?php include 'templates/footer.php'; ?>

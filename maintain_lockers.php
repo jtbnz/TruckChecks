@@ -161,7 +161,6 @@ try {
     $lockers = [];
 }
 
-include 'templates/header.php';
 ?>
 
 <style>
@@ -515,9 +514,5 @@ include 'templates/header.php';
         <?php endif; ?>
     </div>
 
-    <div class="button-container" style="margin-top: 30px;">
-        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button secondary">← Back to Admin</a>
     </div>
 </div>
-
-<?php include 'templates/footer.php'; ?>
