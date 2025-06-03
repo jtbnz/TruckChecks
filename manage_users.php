@@ -12,7 +12,12 @@ requireAuth();
 // Get user information
 $user = getCurrentUser();
 if (!$user) {
-    header('Location: login.php');
+    // Check if this is an AJAX request
+    if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+        echo '<div style="padding: 20px; text-align: center; color: #dc3545;">Authentication required. Please <a href="login.php">login</a> to access this page.</div>';
+    } else {
+        header('Location: login.php');
+    }
     exit;
 }
 
