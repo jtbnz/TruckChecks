@@ -47,6 +47,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] === '1') {
     requireAuth();
     $page = $_GET['page'] ?? '';
+
+    // Setup context for the included page
+    $pdo = get_db_connection();
+    $user = getCurrentUser();
+    $userRole = $user['role'];
+    $userName = $user['username'];
+
+    $currentStation = null; 
+    $userStations = []; 
+
+    if ($userRole === 'superuser') {
+        $currentStation = getCurrentStation(); 
+    } elseif ($userRole === 'station_admin') {
+        try {
+            $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+            $stmt_stations->execute([$user['id']]);
+            $userStations = $stmt_stations->fetchAll();
+            if (count($userStations) === 1) {
+                $currentStation = $userStations[0]; 
+            }
+        } catch (Exception $e) {
+            error_log('Error getting user stations in AJAX: ' . $e->getMessage());
+        }
+    }
     
     // Security: Only allow specific pages
     $allowedPages = [

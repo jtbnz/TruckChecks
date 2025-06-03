@@ -1,653 +1,326 @@
-<?php 
-/* 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);  
+<?php
+// This page is now a component loaded by admin.php
+// It expects $pdo, $user, $userRole, $currentStation to be available.
 
-echo "debug is on";
- */
-include('config.php');
-require '../vendor/autoload.php';
+// Ensure composer autoload is available
+if (!class_exists(PHPMailer\PHPMailer\PHPMailer::class)) {
+    if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+        require_once __DIR__ . '/vendor/autoload.php';
+    } elseif (file_exists(dirname(__DIR__) . '/vendor/autoload.php')) {
+        require_once dirname(__DIR__) . '/vendor/autoload.php';
+    } else {
+        echo "<div class='alert alert-danger'>PHPMailer library not found. Please run 'composer install'.</div>";
+        return;
+    }
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-include 'db.php';
-include_once('auth.php');
+// $currentStation is provided by admin.php
+if (!$currentStation) {
+    echo "<div class='alert alert-warning'>Please select a station to view/send email results.</div>";
+    return; 
+}
 
-// Require authentication
-requireAuth();
-$user = getCurrentUser();
-$station = null;
-$no_station_selected = false;
+$station_id = $currentStation['id'];
+$station_name = $currentStation['name'];
 
-// Check if user has permission to send email results
-if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
-    header('Location: login.php');
+// Ensure config.php is loaded for EMAIL_ constants
+$config_path = __DIR__ . '/config.php';
+if (file_exists($config_path)) {
+    include_once($config_path);
+}
+$email_is_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined('EMAIL_PASS') && defined('EMAIL_PORT');
+
+// Function to fetch data and prepare email content (to avoid duplication)
+function prepare_email_data_and_content($pdo_conn, $current_station_details, $current_user_details) {
+    $station_id_func = $current_station_details['id'];
+    $station_name_func = $current_station_details['name'];
+
+    // Fetch latest check date
+    $latestCheckQuery = "SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date FROM checks c JOIN lockers l ON c.locker_id = l.id JOIN trucks t ON l.truck_id = t.id WHERE t.station_id = :station_id ORDER BY c.check_date DESC LIMIT 1";
+    $latestCheckStmt = $pdo_conn->prepare($latestCheckQuery);
+    $latestCheckStmt->execute(['station_id' => $station_id_func]);
+    $latestCheckDate = ($res = $latestCheckStmt->fetch(PDO::FETCH_ASSOC)) ? $res['the_date'] : 'No checks found';
+
+    // Fetch missing items
+    $checksQuery = "
+        WITH LatestChecks AS (
+            SELECT c.locker_id, MAX(c.id) AS latest_check_id FROM checks c
+            JOIN lockers l ON c.locker_id = l.id JOIN trucks t ON l.truck_id = t.id
+            WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW() AND t.station_id = :station_id1 GROUP BY c.locker_id
+        )
+        SELECT t.name as truck_name, l.name as locker_name, i.name as item_name, 
+               CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
+               cn.note as notes, c.checked_by
+        FROM checks c JOIN LatestChecks lc ON c.id = lc.latest_check_id
+        JOIN check_items ci ON c.id = ci.check_id JOIN lockers l ON c.locker_id = l.id
+        JOIN trucks t ON l.truck_id = t.id JOIN items i ON ci.item_id = i.id
+        LEFT JOIN check_notes cn on c.id = cn.check_id AND l.id = cn.locker_id
+        WHERE ci.is_present = 0 AND t.station_id = :station_id2 ORDER BY t.name, l.name";
+    $checksStmt = $pdo_conn->prepare($checksQuery);
+    $checksStmt->execute(['station_id1' => $station_id_func, 'station_id2' => $station_id_func]);
+    $missing_items_data = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Deleted items
+    $deletedItemsQuery = $pdo_conn->prepare("SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at FROM locker_item_deletion_log WHERE deleted_at >= NOW() - INTERVAL 7 DAY AND station_id = :station_id ORDER BY deleted_at DESC");
+    $deletedItemsQuery->execute(['station_id' => $station_id_func]);
+    $deleted_items_data = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
+
+    // All notes
+    $allNotesQuery = $pdo_conn->prepare("SELECT t.name as truck_name, l.name as locker_name, cn.note as note_text, CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date, c.checked_by FROM check_notes cn JOIN checks c ON cn.check_id = c.id JOIN lockers l ON c.locker_id = l.id JOIN trucks t ON l.truck_id = t.id WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW() AND t.station_id = :station_id AND TRIM(cn.note) != '' ORDER BY t.name, l.name, c.check_date DESC");
+    $allNotesQuery->execute(['station_id' => $station_id_func]);
+    $all_notes_data = $allNotesQuery->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Email recipients
+    $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id OR station_id IS NULL"; // Includes global if station_id is NULL
+    $emailStmt = $pdo_conn->prepare($emailQuery);
+    $emailStmt->execute(['station_id' => $station_id_func]);
+    $recipient_emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
+    $adminEmailQuery = "SELECT setting_value FROM station_settings WHERE setting_key = 'admin_email' AND station_id = :station_id";
+    $adminEmailStmt = $pdo_conn->prepare($adminEmailQuery);
+    $adminEmailStmt->execute(['station_id' => $station_id_func]);
+    if ($adminEmail = $adminEmailStmt->fetchColumn()) $recipient_emails[] = $adminEmail;
+    $recipient_emails = array_values(array_unique(array_filter($recipient_emails)));
+
+
+    // Base URL for links in email
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];
+    $web_root_url = $protocol . $host;
+    $system_access_url = $web_root_url . '/index.php?station_id=' . $station_id_func;
+
+    // Generate HTML content
+    $html = "<html><head><style>body{font-family:Arial,sans-serif;line-height:1.6;color:#333}.header{background-color:#12044C;color:white;padding:20px;text-align:center}.section{margin:20px 0;padding:15px;background-color:#f8f9fa;border-radius:5px}.missing-items{background-color:#fff3cd;border:1px solid #ffeaa7}.deleted-items{background-color:#f8d7da;border:1px solid #f5c6cb}.notes-section{background-color:#e7f3ff;border:1px solid #b3d9ff}.item-entry{margin:10px 0;padding:10px;background-color:white;border-radius:3px}.notes{font-style:italic;color:#666;margin-top:5px}.footer{margin-top:30px;padding:20px;background-color:#e9ecef;text-align:center;font-size:12px}.label{font-weight:bold;color:#12044C}</style></head><body>";
+    $html .= "<div class='header'><h1>TruckChecks Report - " . htmlspecialchars($station_name_func) . "</h1><p>Latest Check Date: " . htmlspecialchars($latestCheckDate) . "</p></div>";
+    
+    // Plain text content
+    $plain = "TruckChecks Report - " . htmlspecialchars($station_name_func) . "\nLatest Check Date: " . htmlspecialchars($latestCheckDate) . "\n\n";
+
+    if (!empty($missing_items_data)) {
+        $html .= "<div class='section missing-items'><h2>Missing Items (Last 7 Days)</h2>";
+        $plain .= "MISSING ITEMS (Last 7 Days):\n";
+        foreach ($missing_items_data as $item) {
+            $html .= "<div class='item-entry'><div><span class='label'>Truck:</span> ".htmlspecialchars($item['truck_name'])."</div><div><span class='label'>Locker:</span> ".htmlspecialchars($item['locker_name'])."</div><div><span class='label'>Item:</span> ".htmlspecialchars($item['item_name'])."</div><div><span class='label'>Checked by:</span> ".htmlspecialchars($item['checked_by'])." at ".htmlspecialchars($item['check_date'])."</div>";
+            if (!empty($item['notes']) && trim($item['notes']) !== '') {
+                $html .= "<div class='notes'><span class='label'>Notes:</span> ".htmlspecialchars(trim($item['notes']))."</div>";
+                $plain .= "  Notes: ".trim($item['notes'])."\n";
+            }
+            $html .= "</div>";
+            $plain .= "- Truck: ".htmlspecialchars($item['truck_name']).", Locker: ".htmlspecialchars($item['locker_name']).", Item: ".htmlspecialchars($item['item_name']).", By: ".htmlspecialchars($item['checked_by'])." at ".htmlspecialchars($item['check_date'])."\n";
+        }
+        $html .= "</div>";
+    } else {
+        $html .= "<div class='section'><p>No missing items found in the last 7 days.</p></div>";
+        $plain .= "No missing items found in the last 7 days.\n";
+    }
+
+    if (!empty($deleted_items_data)) {
+        $html .= "<div class='section deleted-items'><h2>Deleted Items (Last 7 Days)</h2>";
+        $plain .= "\nDELETED ITEMS (Last 7 Days):\n";
+        foreach ($deleted_items_data as $item) {
+            $html .= "<div class='item-entry'><div><span class='label'>Truck:</span> ".htmlspecialchars($item['truck_name'])."</div><div><span class='label'>Locker:</span> ".htmlspecialchars($item['locker_name'])."</div><div><span class='label'>Item:</span> ".htmlspecialchars($item['item_name'])."</div><div><span class='label'>Deleted at:</span> ".htmlspecialchars($item['deleted_at'])."</div></div>";
+            $plain .= "- Truck: ".htmlspecialchars($item['truck_name']).", Locker: ".htmlspecialchars($item['locker_name']).", Item: ".htmlspecialchars($item['item_name']).", At: ".htmlspecialchars($item['deleted_at'])."\n";
+        }
+        $html .= "</div>";
+    }
+
+    if (!empty($all_notes_data)) {
+        $html .= "<div class='section notes-section'><h2>Locker Check Notes (Last 7 Days)</h2>";
+        $plain .= "\nLOCKER CHECK NOTES (Last 7 Days):\n";
+        foreach ($all_notes_data as $note) {
+            $html .= "<div class='item-entry'><div><span class='label'>Truck:</span> ".htmlspecialchars($note['truck_name'])."</div><div><span class='label'>Locker:</span> ".htmlspecialchars($note['locker_name'])."</div><div><span class='label'>Checked by:</span> ".htmlspecialchars($note['checked_by'])." at ".htmlspecialchars($note['check_date'])."</div><div class='notes'><span class='label'>Notes:</span> ".htmlspecialchars(trim($note['note_text']))."</div></div>";
+            $plain .= "- Truck: ".htmlspecialchars($note['truck_name']).", Locker: ".htmlspecialchars($note['locker_name']).", By: ".htmlspecialchars($note['checked_by'])." at ".htmlspecialchars($note['check_date']).", Note: ".trim($note['note_text'])."\n";
+        }
+        $html .= "</div>";
+    }
+
+    $html .= "<div class='footer'><p><a href='".htmlspecialchars($system_access_url)."'>Access TruckChecks System</a></p><p>This report is for station: ".htmlspecialchars($station_name_func)."</p><p>Generated by: ".htmlspecialchars($current_user_details['username'])." (".htmlspecialchars($current_user_details['role']).")</p><p>Generated on: ".date('Y-m-d H:i:s')."</p></div></body></html>";
+    $plain .= "\nAccess System: ".htmlspecialchars($system_access_url)."\nReport for station: ".htmlspecialchars($station_name_func)."\nGenerated by: ".htmlspecialchars($current_user_details['username'])." (".htmlspecialchars($current_user_details['role']).")\nGenerated on: ".date('Y-m-d H:i:s');
+
+    return [
+        'htmlContent' => $html,
+        'plainContent' => $plain,
+        'emails' => $recipient_emails,
+        'subject' => "TruckChecks Report - " . $station_name_func . " - " . $latestCheckDate,
+        'latestCheckDate' => $latestCheckDate // For display
+    ];
+}
+
+$sub_action = $_REQUEST['sub_action'] ?? 'preview_page'; // Default to showing the preview page
+
+if ($sub_action === 'send_final_report') {
+    header('Content-Type: application/json');
+    if (!$email_is_configured) {
+        echo json_encode(['success' => false, 'error' => 'Email sending is not configured in config.php.']);
+        exit;
+    }
+
+    $email_data = prepare_email_data_and_content($pdo, $currentStation, $user);
+
+    if (empty($email_data['emails'])) {
+        echo json_encode(['success' => false, 'error' => 'No recipients configured for this station.']);
+        exit;
+    }
+
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = EMAIL_HOST; 
+        $mail->SMTPAuth = true;
+        $mail->Username = EMAIL_USER; 
+        $mail->Password = EMAIL_PASS; 
+        $mail->SMTPSecure = defined('EMAIL_SMTP_SECURE') ? EMAIL_SMTP_SECURE : "ssl";
+        $mail->Port = EMAIL_PORT;
+
+        $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'truckchecks.com');
+        $mail->setFrom($from_email, 'TruckChecks - ' . $station_name);
+        foreach ($email_data['emails'] as $recipient_email) {
+            $mail->addAddress($recipient_email);
+        }
+
+        $mail->isHTML(true);
+        $mail->Subject = $email_data['subject'];
+        $mail->Body = $email_data['htmlContent'];
+        $mail->AltBody = $email_data['plainContent'];
+        
+        $mail->send();
+        echo json_encode(['success' => true, 'message' => 'Report email sent successfully to ' . count($email_data['emails']) . ' recipient(s).']);
+    } catch (Exception $e) {
+        error_log("Mailer Error for station $station_id: " . $mail->ErrorInfo . " | Exception: " . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Message could not be sent. Mailer Error: ' . htmlspecialchars($mail->ErrorInfo)]);
+    }
     exit;
 }
 
-// Get station context - use their first assigned station
-if ($user['role'] === 'station_admin') {
-    // Station admins: get their first assigned station
-    $user_stations = getUserStations($user['id']);
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    } else {
-        $no_station_selected = true;
-    }
-} elseif ($user['role'] === 'superuser') {
-    // Superusers: get their first assigned station, or first available station
-    $user_stations = getUserStations($user['id']);
-    if (!empty($user_stations)) {
-        $station = $user_stations[0];
-    } else {
-        $no_station_selected = true;
-    }
-}
+// If not sending, then we are displaying the preview page.
+$email_preview_data = prepare_email_data_and_content($pdo, $currentStation, $user);
+$htmlContent_preview = $email_preview_data['htmlContent'];
+$plainContent_preview = $email_preview_data['plainContent'];
+$emails_preview = $email_preview_data['emails'];
+$latestCheckDate_preview = $email_preview_data['latestCheckDate'];
 
-$pdo = get_db_connection();
-$IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
-
-$current_directory = dirname($_SERVER['REQUEST_URI']);
-$current_url = 'https://' . $_SERVER['HTTP_HOST'] . $current_directory .  '/index.php';
-
-// Check if email configuration is available
-$email_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined('EMAIL_PASS') && defined('EMAIL_PORT');
-
-// Initialize variables
-$latestCheckDate = 'No checks found';
-$checks = [];
-$deletedItems = [];
-$allNotes = [];
-$emails = [];
-$emailContent = '';
-$htmlContent = '';
-
-// Only process data if station is selected
-if ($station) {
-    // Fetch the latest check date for this station
-    $latestCheckQuery = "
-        SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, '+00:00', '+12:00')) as the_date 
-        FROM checks c
-        JOIN lockers l ON c.locker_id = l.id
-        JOIN trucks t ON l.truck_id = t.id
-        WHERE t.station_id = :station_id
-        ORDER BY c.check_date DESC 
-        LIMIT 1
-    ";
-    $latestCheckStmt = $pdo->prepare($latestCheckQuery);
-    $latestCheckStmt->execute(['station_id' => $station['id']]);
-    $latestCheckResult = $latestCheckStmt->fetch(PDO::FETCH_ASSOC);
-    $latestCheckDate = $latestCheckResult ? $latestCheckResult['the_date'] : 'No checks found';
-
-    // Fetch the latest check data for this station
-    $checksQuery = "
-        WITH LatestChecks AS (
-            SELECT 
-                c.locker_id, 
-                MAX(c.id) AS latest_check_id
-            FROM checks c
-            JOIN lockers l ON c.locker_id = l.id
-            JOIN trucks t ON l.truck_id = t.id
-            WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
-            AND t.station_id = :station_id
-            GROUP BY c.locker_id
-        )
-        SELECT 
-            t.name as truck_name, 
-            l.name as locker_name, 
-            i.name as item_name, 
-            ci.is_present as checked, 
-            CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
-            cn.note as notes,
-            c.checked_by,
-            c.id as check_id
-        FROM checks c
-        JOIN LatestChecks lc ON c.id = lc.latest_check_id
-        JOIN check_items ci ON c.id = ci.check_id
-        JOIN lockers l ON c.locker_id = l.id
-        JOIN trucks t ON l.truck_id = t.id
-        JOIN items i ON ci.item_id = i.id
-        LEFT JOIN check_notes cn on ci.check_id = cn.check_id
-        WHERE ci.is_present = 0
-        AND t.station_id = :station_id2
-        ORDER BY t.name, l.name
-    ";
-                    
-    $checksStmt = $pdo->prepare($checksQuery);
-    $checksStmt->execute(['station_id' => $station['id'], 'station_id2' => $station['id']]);
-    $checks = $checksStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Query for deleted items in the last 7 days for this station
-    $deletedItemsQuery = $pdo->prepare("
-        SELECT truck_name, locker_name, item_name, CONVERT_TZ(deleted_at, '+00:00', '+12:00') AS deleted_at
-        FROM locker_item_deletion_log
-        WHERE deleted_at >= NOW() - INTERVAL 7 DAY
-        AND station_id = :station_id
-        ORDER BY deleted_at DESC
-    ");
-    $deletedItemsQuery->execute(['station_id' => $station['id']]);
-    $deletedItems = $deletedItemsQuery->fetchAll(PDO::FETCH_ASSOC);
-
-    // Query for all locker check notes in the last 7 days for this station
-    $allNotesQuery = $pdo->prepare("
-        SELECT
-            t.name as truck_name,
-            l.name as locker_name,
-            cn.note as note_text,
-            CONVERT_TZ(c.check_date, '+00:00', '+12:00') AS check_date,
-            c.checked_by
-        FROM check_notes cn
-        JOIN checks c ON cn.check_id = c.id
-        JOIN lockers l ON c.locker_id = l.id
-        JOIN trucks t ON l.truck_id = t.id
-        WHERE c.check_date BETWEEN DATE_SUB(NOW(), INTERVAL 6 DAY) AND NOW()
-          AND t.station_id = :station_id
-          AND TRIM(cn.note) != ''
-        ORDER BY t.name, l.name, c.check_date DESC
-    ");
-    $allNotesQuery->execute(['station_id' => $station['id']]);
-    $allNotes = $allNotesQuery->fetchAll(PDO::FETCH_ASSOC);
-
-    // Fetch email addresses for this station
-    $emailQuery = "SELECT email FROM email_addresses WHERE station_id = :station_id OR station_id IS NULL";
-    $emailStmt = $pdo->prepare($emailQuery);
-    $emailStmt->execute(['station_id' => $station['id']]);
-    $emails = $emailStmt->fetchAll(PDO::FETCH_COLUMN);
-
-    // Also get admin email for this station
-    $adminEmailQuery = "SELECT setting_value FROM station_settings WHERE setting_key = 'admin_email' AND station_id = :station_id";
-    $adminEmailStmt = $pdo->prepare($adminEmailQuery);
-    $adminEmailStmt->execute(['station_id' => $station['id']]);
-    $adminEmail = $adminEmailStmt->fetchColumn();
-
-    if ($adminEmail) {
-        $emails[] = $adminEmail;
-    }
-
-    // Remove duplicates
-    $emails = array_unique($emails);
-
-    // Generate HTML email content
-    $htmlContent = '
-    <html>
-    <head>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .header { background-color: #12044C; color: white; padding: 20px; text-align: center; }
-            .section { margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
-            .missing-items { background-color: #fff3cd; border: 1px solid #ffeaa7; }
-            .deleted-items { background-color: #f8d7da; border: 1px solid #f5c6cb; }
-            .item-entry { margin: 10px 0; padding: 10px; background-color: white; border-radius: 3px; }
-            .notes { font-style: italic; color: #666; margin-top: 5px; }
-            .footer { margin-top: 30px; padding: 20px; background-color: #e9ecef; text-align: center; font-size: 12px; }
-            .label { font-weight: bold; color: #12044C; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>TruckChecks Report - ' . htmlspecialchars($station['name']) . '</h1>
-            <p>Latest Check Date: ' . htmlspecialchars($latestCheckDate) . '</p>
-        </div>';
-
-    if (!empty($checks)) {
-        $htmlContent .= '
-        <div class="section missing-items">
-            <h2>Missing Items (Last 7 Days)</h2>';
-        
-        foreach ($checks as $check) {
-            $htmlContent .= '
-            <div class="item-entry">
-                <div><span class="label">Truck:</span> ' . htmlspecialchars($check['truck_name']) . '</div>
-                <div><span class="label">Locker:</span> ' . htmlspecialchars($check['locker_name']) . '</div>
-                <div><span class="label">Item:</span> ' . htmlspecialchars($check['item_name']) . '</div>
-                <div><span class="label">Checked by:</span> ' . htmlspecialchars($check['checked_by']) . ' at ' . htmlspecialchars($check['check_date']) . '</div>';
-            
-            // Include notes if they exist and have content after trimming
-            if (!empty($check['notes']) && trim($check['notes']) !== '') {
-                $htmlContent .= '<div class="notes"><span class="label">Notes:</span> ' . htmlspecialchars(trim($check['notes'])) . '</div>';
-            }
-            
-            $htmlContent .= '</div>';
-        }
-        
-        $htmlContent .= '</div>';
-    } else {
-        $htmlContent .= '
-        <div class="section">
-            <p>No missing items found in the last 7 days.</p>
-        </div>';
-    }
-
-    if (!empty($deletedItems)) {
-        $htmlContent .= '
-        <div class="section deleted-items">
-            <h2>Deleted Items (Last 7 Days)</h2>';
-        
-        foreach ($deletedItems as $item) {
-            $htmlContent .= '
-            <div class="item-entry">
-                <div><span class="label">Truck:</span> ' . htmlspecialchars($item['truck_name']) . '</div>
-                <div><span class="label">Locker:</span> ' . htmlspecialchars($item['locker_name']) . '</div>
-                <div><span class="label">Item:</span> ' . htmlspecialchars($item['item_name']) . '</div>
-                <div><span class="label">Deleted at:</span> ' . htmlspecialchars($item['deleted_at']) . '</div>
-            </div>';
-        }
-        
-        $htmlContent .= '</div>';
-    } else {
-        $htmlContent .= '
-        <div class="section">
-            <p>No items have been deleted in the last 7 days.</p>
-        </div>';
-    }
-
-    // Add all locker check notes section
-    if (!empty($allNotes)) {
-        $htmlContent .= '
-        <div class="section" style="background-color: #e7f3ff; border: 1px solid #b3d9ff;">
-            <h2>Locker Check Notes (Last 7 Days)</h2>';
-        
-        foreach ($allNotes as $note) {
-            $htmlContent .= '
-            <div class="item-entry">
-                <div><span class="label">Truck:</span> ' . htmlspecialchars($note['truck_name']) . '</div>
-                <div><span class="label">Locker:</span> ' . htmlspecialchars($note['locker_name']) . '</div>
-                <div><span class="label">Checked by:</span> ' . htmlspecialchars($note['checked_by']) . ' at ' . htmlspecialchars($note['check_date']) . '</div>
-                <div class="notes"><span class="label">Notes:</span> ' . htmlspecialchars(trim($note['note_text'])) . '</div>
-            </div>';
-        }
-        
-        $htmlContent .= '</div>';
-    } else {
-        $htmlContent .= '
-        <div class="section">
-            <p>No locker check notes found in the last 7 days.</p>
-        </div>';
-    }
-
-    $htmlContent .= '
-        <div class="footer">
-            <p><a href="' . htmlspecialchars($current_url) . '">Access TruckChecks System</a></p>
-            <p>This report is for station: ' . htmlspecialchars($station['name']) . '</p>
-            <p>Generated by: ' . htmlspecialchars($user['username']) . ' (' . htmlspecialchars($user['role']) . ')</p>
-            <p>Generated on: ' . date('Y-m-d H:i:s') . '</p>
-        </div>
-    </body>
-    </html>';
-
-    // Prepare plain text email content (for fallback)
-    $emailContent = "Latest Missing Items Report for " . $station['name'] . "\n\n";
-    $emailContent .= "These are the lockers that have missing items recorded in the last 7 days:\n\n";
-    $emailContent .= "The last check was recorded: {$latestCheckDate}\n\n";
-
-    if (!empty($checks)) {
-        foreach ($checks as $check) {
-            $emailContent .= "Truck: {$check['truck_name']}, Locker: {$check['locker_name']}, Item: {$check['item_name']}";
-            if (!empty($check['notes']) && trim($check['notes']) !== '') {
-                $emailContent .= ", Notes: " . trim($check['notes']);
-            }
-            $emailContent .= ", Checked by {$check['checked_by']}, at {$check['check_date']}\n";
-        } 
-    } else {
-        $emailContent .= "No missing items found in the last 7 days\n";
-    }
-
-    $emailContent .= "\nThe following items have been deleted in the last 7 days:\n";
-    if (!empty($deletedItems)) {
-        foreach ($deletedItems as $deletedItem) {
-            $emailContent .= "Truck: {$deletedItem['truck_name']}, Locker: {$deletedItem['locker_name']}, Item: {$deletedItem['item_name']}, Deleted at {$deletedItem['deleted_at']}\n";
-        }       
-    } else {
-        $emailContent .= "No items have been deleted in the last 7 days\n";
-    }
-
-    // Add all locker check notes to plain text
-    $emailContent .= "\nLocker Check Notes (Last 7 Days):\n";
-    if (!empty($allNotes)) {
-        foreach ($allNotes as $note) {
-            $emailContent .= "Truck: {$note['truck_name']}, Locker: {$note['locker_name']}, Checked by {$note['checked_by']} at {$note['check_date']}, Notes: " . trim($note['note_text']) . "\n";
-        }
-    } else {
-        $emailContent .= "No locker check notes found in the last 7 days\n";
-    }
-
-    $emailContent .= "\nAccess the system: " . $current_url . "\n\n";
-    $emailContent .= "This report is for station: " . $station['name'] . "\n";
-    $emailContent .= "Generated by: " . $user['username'] . " (" . $user['role'] . ")\n";
-}
-
-include 'templates/header.php';
 ?>
+<div class="component-container email-results-container">
+    <style>
+        /* Styles specific to email_results.php component */
+        .email-results-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .page-header-er { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ccc; }
+        .page-title-er { color: #333; margin: 0; }
+        .station-info-er { text-align: center; margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 4px;}
+        .email-preview-section { background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; padding: 15px; margin-bottom: 20px; }
+        .preview-tabs-er { display: flex; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+        .preview-tab-er { padding: 8px 12px; cursor: pointer; border: 1px solid transparent; border-bottom: none; background-color: #e9ecef; }
+        .preview-tab-er.active { background-color: #fff; border-color: #ccc; border-bottom-color: #fff; margin-bottom: -1px; }
+        .preview-content-er { display: none; }
+        .preview-content-er.active { display: block; }
+        .preview-html-er { border:1px solid #ddd; padding:10px; min-height:200px; background:#fff; max-height: 400px; overflow-y: auto;}
+        .preview-plain-er { white-space:pre-wrap; font-family:monospace; border:1px solid #ddd; padding:10px; min-height:200px; background:#fff; max-height: 400px; overflow-y: auto;}
+        .recipients-list-er { margin-top:15px; padding:10px; background-color:#e7f3ff; border:1px solid #b3d9ff; font-size:0.9em; }
+        .recipients-list-er h3 { margin-top:0; font-size:1.1em; }
+        .button-er { padding: 10px 18px; background-color: #12044C; color:white; border:none; border-radius:4px; cursor:pointer; font-size:1em; }
+        .button-er:hover { background-color: #0056b3; }
+        .button-er:disabled { background-color: #6c757d; }
+        .status-message-er { padding:10px; margin:15px 0; border-radius:4px; }
+        .warning-er { background-color: #fff3cd; color: #856404; border:1px solid #ffeaa7; }
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: .25rem; }
+        .alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba; }
+        .alert-danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
 
-<style>
-    .email-container {
-        max-width: 800px;
-        margin: 20px auto;
-        padding: 20px;
-    }
-
-    .page-header {
-        margin-bottom: 30px;
-        padding-bottom: 15px;
-        border-bottom: 2px solid #12044C;
-    }
-
-    .page-title {
-        color: #12044C;
-        margin: 0;
-    }
-
-    .access-info {
-        background-color: #e7f3ff;
-        border: 1px solid #b3d9ff;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .station-info {
-        text-align: center;
-        margin-bottom: 30px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-    }
-
-    .station-name {
-        font-size: 18px;
-        font-weight: bold;
-        color: #12044C;
-    }
-
-    .no-station-message {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        padding: 20px;
-        border-radius: 5px;
-        margin: 20px 0;
-        text-align: center;
-    }
-
-    .email-preview {
-        background-color: #f8f9fa;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        padding: 20px;
-        margin: 20px 0;
-    }
-
-    .email-preview-html {
-        border: 1px solid #dee2e6;
-        padding: 20px;
-        background-color: white;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .email-preview-plain {
-        white-space: pre-line;
-        font-family: monospace;
-        font-size: 14px;
-        background-color: #f8f9fa;
-        padding: 20px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-    }
-
-    .email-list {
-        background-color: #e7f3ff;
-        border: 1px solid #b3d9ff;
-        border-radius: 5px;
-        padding: 15px;
-        margin: 20px 0;
-    }
-
-    .status-message {
-        padding: 15px;
-        border-radius: 5px;
-        margin: 20px 0;
-        font-weight: bold;
-    }
-
-    .success {
-        background-color: #d4edda;
-        border: 1px solid #c3e6cb;
-        color: #155724;
-    }
-
-    .error {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-    }
-
-    .warning {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        color: #856404;
-    }
-
-    .button {
-        display: inline-block;
-        padding: 12px 24px;
-        background-color: #12044C;
-        color: white;
-        text-decoration: none;
-        border: none;
-        border-radius: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        margin: 5px;
-    }
-
-    .button:hover {
-        background-color: #0056b3;
-    }
-
-    .button.secondary {
-        background-color: #6c757d;
-    }
-
-    .button.secondary:hover {
-        background-color: #545b62;
-    }
-
-    .button-container {
-        text-align: center;
-        margin-top: 30px;
-    }
-
-    .role-badge {
-        display: inline-block;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 11px;
-        font-weight: bold;
-        text-transform: uppercase;
-    }
-
-    .role-superuser {
-        background-color: #dc3545;
-        color: white;
-    }
-
-    .role-station_admin {
-        background-color: #28a745;
-        color: white;
-    }
-
-    .preview-tabs {
-        display: flex;
-        border-bottom: 2px solid #dee2e6;
-        margin-bottom: 20px;
-    }
-
-    .preview-tab {
-        padding: 10px 20px;
-        cursor: pointer;
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-bottom: none;
-        margin-right: 5px;
-        border-radius: 5px 5px 0 0;
-    }
-
-    .preview-tab.active {
-        background-color: white;
-        border-bottom: 2px solid white;
-        margin-bottom: -2px;
-    }
-
-    .preview-content {
-        display: none;
-    }
-
-    .preview-content.active {
-        display: block;
-    }
-</style>
-
-<div class="email-container">
-    <div class="page-header">
-        <h1 class="page-title">Email Check Results</h1>
+    <div class="page-header-er">
+        <h1 class="page-title-er">Email Check Results Report</h1>
     </div>
 
-    <!-- Access Level Information -->
-    <div class="access-info">
-        <strong>Access Level:</strong> 
-        <?php if ($user['role'] === 'superuser'): ?>
-            <span class="role-badge role-superuser">Superuser</span> - Sending email results for assigned station
-        <?php elseif ($user['role'] === 'station_admin'): ?>
-            <span class="role-badge role-station_admin">Station Admin</span> - Sending email results for your station
-        <?php endif; ?>
+    <div class="station-info-er">
+        <strong>Station: <?= htmlspecialchars($station_name) ?></strong>
+        <br>
+        <small>Report for checks around: <?= htmlspecialchars($latestCheckDate_preview) ?></small>
     </div>
 
-    <?php if ($no_station_selected): ?>
-        <div class="no-station-message">
-            <h2>No Station Assigned</h2>
-            <p>You don't have any stations assigned to your account.</p>
-            <p>Please contact your administrator to assign you to a station before you can send email results.</p>
-            <div class="button-container">
-                <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button">← Back to Admin</a>
-            </div>
-        </div>
-    <?php else: ?>
-
-    <div class="station-info">
-        <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
-        <?php if ($station['description']): ?>
-            <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
-        <?php endif; ?>
-    </div>
-
-    <?php if (!$email_configured): ?>
-        <div class="status-message warning">
-            <strong>Warning:</strong> Email configuration is not set up in config.php. Email functionality will not work until you configure the following settings:
-            <ul>
-                <li><strong>EMAIL_HOST</strong> - SMTP server hostname</li>
-                <li><strong>EMAIL_USER</strong> - Email username</li>
-                <li><strong>EMAIL_PASS</strong> - Email password</li>
-                <li><strong>EMAIL_PORT</strong> - SMTP port number</li>
-            </ul>
+    <?php if (!$email_is_configured): ?>
+        <div class="status-message-er warning-er">
+            <strong>Warning:</strong> Email sending is not configured in `config.php`. Please set EMAIL_HOST, EMAIL_USER, EMAIL_PASS, and EMAIL_PORT. The report cannot be sent.
         </div>
     <?php endif; ?>
 
-    <h2>Email Preview</h2>
-    <div class="email-preview">
-        <div class="preview-tabs">
-            <div class="preview-tab active" onclick="switchTab('html')">HTML Version</div>
-            <div class="preview-tab" onclick="switchTab('plain')">Plain Text Version</div>
+    <div class="email-preview-section">
+        <h2>Email Preview</h2>
+        <div class="preview-tabs-er">
+            <div class="preview-tab-er active" onclick="switchEmailResultsTab('html_er_tab')">HTML Version</div>
+            <div class="preview-tab-er" onclick="switchEmailResultsTab('plain_er_tab')">Plain Text Version</div>
         </div>
-        <div id="htmlPreview" class="preview-content active">
-            <div class="email-preview-html"><?= $htmlContent ?></div>
+        <div id="html_er_tab" class="preview-content-er active">
+            <div class="preview-html-er"><?= $htmlContent_preview ?></div>
         </div>
-        <div id="plainPreview" class="preview-content">
-            <div class="email-preview-plain"><?= htmlspecialchars($emailContent) ?></div>
+        <div id="plain_er_tab" class="preview-content-er">
+            <pre class="preview-plain-er"><?= htmlspecialchars($plainContent_preview) ?></pre>
         </div>
     </div>
 
-    <?php if (!empty($emails)): ?>
-        <div class="email-list">
-            <h3>Emails to send to:</h3>
+    <?php if (!empty($emails_preview)): ?>
+        <div class="recipients-list-er">
+            <h3>Report will be sent to:</h3>
             <ul>
-                <?php foreach ($emails as $email): ?>
-                    <li><?= htmlspecialchars($email) ?></li>
+                <?php foreach ($emails_preview as $email_item): ?>
+                    <li><?= htmlspecialchars($email_item) ?></li>
                 <?php endforeach; ?>
             </ul>
         </div>
-
-        <?php if ($email_configured): ?>
-            <?php
-            // Send the email if there are email addresses and email is configured
-            $subject = "Missing Items Report - " . $station['name'] . " - {$latestCheckDate}";
-            $mail = new PHPMailer(true);
-
-            try {
-                // Server settings
-                $mail->isSMTP();
-                $mail->Host = EMAIL_HOST; 
-                $mail->SMTPAuth = true;
-                $mail->Username = EMAIL_USER; 
-                $mail->Password = EMAIL_PASS; 
-                $mail->SMTPSecure = "ssl";
-                $mail->Port = EMAIL_PORT;
-
-                // Recipients
-                // Validate EMAIL_USER is a proper email format
-                $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . $_SERVER['HTTP_HOST'];
-                $mail->setFrom($from_email, 'TruckChecks - ' . $station['name']);
-                foreach ($emails as $email) {
-                    $mail->addAddress($email);
-                }
-
-                // Content
-                $mail->isHTML(true);
-                $mail->Subject = $subject;
-                $mail->Body = $htmlContent;
-                $mail->AltBody = $emailContent;
-                $mail->send();
-                
-                echo '<div class="status-message success">Emails sent successfully to ' . count($emails) . ' recipient(s)!</div>';
-            } catch (Exception $e) {
-                echo '<div class="status-message error">Message could not be sent. Mailer Error: ' . htmlspecialchars($mail->ErrorInfo) . '</div>';
-            }
-            ?>
-        <?php else: ?>
-            <div class="status-message error">
-                Cannot send emails because email configuration is not set up in config.php.
-            </div>
-        <?php endif; ?>
+        <div style="text-align:center; margin-top:20px;">
+            <button id="sendFinalReportButton" class="button-er" onclick="sendFinalReportEmail()" <?= $email_is_configured ? '' : 'disabled' ?>>
+                Send Final Report Email
+            </button>
+            <?php if (!$email_is_configured): ?>
+                <p style="color:red; font-size:0.9em;">Sending disabled due to missing email configuration.</p>
+            <?php endif; ?>
+        </div>
     <?php else: ?>
-        <div class="status-message warning">
-            No email addresses configured for this station. Please set up email addresses in the admin panel or configure an admin email address.
+        <div class="status-message-er warning-er">
+            No email addresses configured for this station. Please set up recipients in "Manage Email Settings".
         </div>
     <?php endif; ?>
-
-    <div class="button-container">
-        <a href="email_admin.php" class="button">Manage Email Settings</a>
-        <a href="javascript:parent.location.href='admin.php?page=dashboard'" class="button secondary">← Back to Admin</a>
-    </div>
-
-    <?php endif; ?>
+    <div id="emailSendStatus" style="margin-top:15px; text-align:center;"></div>
 </div>
 
 <script>
-function switchTab(tab) {
-    // Update tab active states
-    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.preview-content').forEach(c => c.classList.remove('active'));
+function switchEmailResultsTab(tabIdToShow) {
+    document.querySelectorAll('.email-results-container .preview-tab-er').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.email-results-container .preview-content-er').forEach(content => content.classList.remove('active'));
     
-    if (tab === 'html') {
-        document.querySelector('.preview-tab:first-child').classList.add('active');
-        document.getElementById('htmlPreview').classList.add('active');
-    } else {
-        document.querySelector('.preview-tab:last-child').classList.add('active');
-        document.getElementById('plainPreview').classList.add('active');
-    }
+    document.querySelector('.email-results-container .preview-tab-er[onclick*="' + tabIdToShow + '"]').classList.add('active');
+    document.getElementById(tabIdToShow).classList.add('active');
+}
+
+function sendFinalReportEmail() {
+    const sendButton = document.getElementById('sendFinalReportButton');
+    const statusDiv = document.getElementById('emailSendStatus');
+    
+    sendButton.disabled = true;
+    sendButton.textContent = 'Sending...';
+    statusDiv.innerHTML = '<p><em>Processing request...</em></p>';
+
+    fetch('admin.php?ajax=1&page=email_results.php&sub_action=send_final_report', {
+        method: 'POST' // Can be GET if no sensitive data, but POST is fine
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            statusDiv.innerHTML = '<p style="color:green;"><strong>Success:</strong> ' + (data.message || 'Email sent successfully!') + '</p>';
+            // Optionally, disable button further or change text to "Sent"
+            sendButton.textContent = 'Report Sent';
+        } else {
+            statusDiv.innerHTML = '<p style="color:red;"><strong>Error:</strong> ' + (data.error || 'Failed to send email.') + '</p>';
+            sendButton.disabled = false;
+            sendButton.textContent = 'Send Final Report Email';
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = '<p style="color:red;"><strong>Network Error:</strong> ' + error.message + '</p>';
+        sendButton.disabled = false;
+        sendButton.textContent = 'Send Final Report Email';
+        console.error("Send final report error:", error);
+    });
 }
 </script>
-
-<?php include 'templates/footer.php'; ?>
