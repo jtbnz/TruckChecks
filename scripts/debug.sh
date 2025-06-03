@@ -15,13 +15,14 @@ fi
 # Check current DEBUG setting
 if grep -q "define('DEBUG'[[:space:]]*,[[:space:]]*false)" "$CONFIG_FILE"; then
     # If DEBUG is currently false, change it to true
-    sed -i '' 's/define('"'"'DEBUG'"'"'[[:space:]]*,[[:space:]]*false)/define('"'"'DEBUG'"'"', true)/g' "$CONFIG_FILE"
+    sed -i '' -e 's/define('"'"'DEBUG'"'"'[[:space:]]*,[[:space:]]*false)/define('"'"'DEBUG'"'"', true)/g' "$CONFIG_FILE"
     echo "Debug mode: ON"
 elif grep -q "define('DEBUG'[[:space:]]*,[[:space:]]*true)" "$CONFIG_FILE"; then
     # If DEBUG is currently true, change it to false
-    sed -i '' 's/define('"'"'DEBUG'"'"'[[:space:]]*,[[:space:]]*true)/define('"'"'DEBUG'"'"', false)/g' "$CONFIG_FILE"
+    sed -i '' -e 's/define('"'"'DEBUG'"'"'[[:space:]]*,[[:space:]]*true)/define('"'"'DEBUG'"'"', false)/g' "$CONFIG_FILE"
     echo "Debug mode: OFF"
 else
-    echo "Could not find DEBUG setting in config.php"
+    echo "Could not find DEBUG setting in config.php or it's in an unexpected format."
+    echo "Expected format: define('DEBUG', false); or define('DEBUG', true);"
     exit 1
 fi
