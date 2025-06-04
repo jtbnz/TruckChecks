@@ -928,36 +928,32 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
                 .then(response => response.text())
                 .then(html => {
-                    console.log('Received HTML content:', html.substring(0, 500) + '...'); // Log first 500 chars of received HTML
                     const contentArea = document.getElementById('content-area');
                     
-                    // Create a temporary div to parse the HTML and extract scripts
+                    // Create a temporary div to parse the HTML
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = html;
 
-                    // Extract and re-execute scripts
+                    // Extract scripts before inserting HTML
                     const scripts = Array.from(tempDiv.getElementsByTagName('script'));
-                    for (let i = 0; i < scripts.length; i++) {
-                        const oldScript = scripts[i];
+                    scripts.forEach(script => script.parentNode.removeChild(script)); // Remove scripts from tempDiv
+
+                    // Insert HTML (without scripts) into the content area first
+                    contentArea.innerHTML = tempDiv.innerHTML;
+                    
+                    // Then, append and execute scripts
+                    scripts.forEach(oldScript => {
                         const newScript = document.createElement('script');
-                        
                         // Copy attributes
                         for (let j = 0; j < oldScript.attributes.length; j++) {
                             const attr = oldScript.attributes[j];
                             newScript.setAttribute(attr.name, attr.value);
                         }
-                        
                         // Copy content
                         newScript.textContent = oldScript.textContent;
-                        
-                        // Append new script to body to execute it
-                        document.body.appendChild(newScript);
-                        // Remove the original script element from tempDiv to prevent re-insertion
-                        oldScript.parentNode.removeChild(oldScript);
-                    }
-                    
-                    // Insert the remaining HTML (without original script elements) into the content area
-                    contentArea.innerHTML = tempDiv.innerHTML;
+                        // Append new script to the content area (or body if preferred for global scripts)
+                        contentArea.appendChild(newScript); 
+                    });
                     
                     document.getElementById('loading').style.display = 'none';
                     contentArea.style.display = 'block';
