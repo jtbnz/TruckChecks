@@ -233,18 +233,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     if ($stmt_item_exists->fetch()) {
                         $response = ['success' => false, 'message' => 'Another item with this name already exists in the selected locker.'];
                     } else {
-                        // Update the item. The station_id for the item should remain $current_station_id
-                        // as the locker (and its truck) has been verified to be in this station.
-                        $stmt_update = $pdo->prepare("UPDATE items SET name = ?, locker_id = ?, station_id = ? WHERE id = ? AND station_id = ?");
-                        // We also ensure the item being updated belongs to the current station for security.
-                        $stmt_update->execute([$new_item_name, $new_locker_id, $current_station_id, $item_id, $current_station_id]);
+                        // Update the item.
+                        // The 'station_id' column in the 'items' table appears to be missing in the live database,
+                        // based on the "Unknown column 'station_id' in 'WHERE'" error.
+                        // So, we remove references to items.station_id from this query.
+                        // The check that the new_locker_id belongs to the current_station_id has already been performed.
+                        $stmt_update = $pdo->prepare("UPDATE items SET name = ?, locker_id = ? WHERE id = ?");
+                        $stmt_update->execute([$new_item_name, $new_locker_id, $item_id]);
                         
                         if ($stmt_update->rowCount() > 0) {
                             $response = ['success' => true, 'message' => 'Item updated successfully.'];
                         } else {
-                            // This could happen if the item ID didn't exist or didn't belong to the station,
-                            // or if no actual data changed.
-                            $response = ['success' => false, 'message' => 'Item not updated. It might not exist, not belong to this station, or no changes were made.'];
+                            // This could happen if the item ID didn't exist,
+                            // or if no actual data changed (e.g., saving with the same name and locker).
+                            // We can check if the item exists to provide a more specific message.
+                            $stmt_check_item = $pdo->prepare("SELECT id FROM items WHERE id = ?");
+                            $stmt_check_item->execute([$item_id]);
+                            if ($stmt_check_item->fetch()) {
+                                $response = ['success' => true, 'message' => 'Item details remain unchanged. No update performed.']; // Treat as success if no data changed
+                            } else {
+                                $response = ['success' => false, 'message' => 'Item not updated. It might not exist.'];
+                            }
                         }
                     }
                 }
