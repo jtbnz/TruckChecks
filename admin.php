@@ -212,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     ini_set('display_startup_errors', 0);
     error_reporting(0);
 
-    ob_clean(); // Discard any buffered output to prevent JSON corruption
+    // ob_clean(); // Moved to just before include
     requireAuth();
     
     // Setup context for the module
@@ -256,13 +256,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     }
     
     if ($module && file_exists('admin_modules/' . $module)) {
+        ob_clean(); // Clean buffer right before including the module
         include('admin_modules/' . $module);
-        // Ensure exit after module inclusion for AJAX POST actions
+        // The module is expected to set header, echo JSON, and exit.
+        // As a safeguard, if the module didn't exit, we ensure JSON output.
+        if (!headers_sent()) {
+            ob_end_clean(); // Clean again in case module outputted something
+            header('Content-Type: application/json');
+            // If module was supposed to output JSON but didn't, this indicates an error in module logic.
+            echo json_encode(['success' => false, 'message' => 'Module did not produce expected JSON output.']);
+        }
         exit; 
     } else {
         ob_end_clean(); // Ensure no other output
         header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+        echo json_encode(['success' => false, 'message' => 'Invalid action or module not found.']);
     }
     exit;
 }
