@@ -515,8 +515,11 @@ function deleteStation(stationId, stationName) {
     formData.append('ajax_action', 'delete_station');
     formData.append('station_id', stationId);
     
-    fetch('admin_modules/manage_stations.php', {
+    fetch('admin.php', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
     .then(response => response.json())
@@ -557,7 +560,7 @@ if (typeof window !== 'undefined') {
             const formData = new FormData(this);
             formData.append('ajax_action', 'add_station');
             
-            fetch('admin_modules/manage_stations.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })

@@ -553,8 +553,11 @@ function deleteLocker(lockerId, lockerName) {
     formData.append('ajax_action', 'delete_locker');
     formData.append('locker_id', lockerId);
     
-    fetch('admin_modules/maintain_lockers.php', {
+    fetch('admin.php', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
     .then(response => response.json())
@@ -595,7 +598,7 @@ if (typeof window !== 'undefined') {
             const formData = new FormData(this);
             formData.append('ajax_action', 'add_locker');
             
-            fetch('admin_modules/maintain_lockers.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })

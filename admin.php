@@ -135,7 +135,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     exit;
 }
 
-// Handle AJAX requests to modules
+// Handle AJAX requests from modules
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
+    requireAuth();
+    
+    // Setup context for the module
+    $pdo = get_db_connection();
+    $user = getCurrentUser();
+    $userRole = $user['role'];
+    $userName = $user['username'];
+    
+    $currentStation = null;
+    if ($userRole === 'superuser') {
+        $currentStation = getCurrentStation();
+    } elseif ($userRole === 'station_admin') {
+        try {
+            $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+            $stmt_stations->execute([$user['id']]);
+            $userStations = $stmt_stations->fetchAll();
+            if (count($userStations) === 1) {
+                $currentStation = $userStations[0];
+            }
+        } catch (Exception $e) {
+            error_log('Error getting user stations in module POST: ' . $e->getMessage());
+        }
+    }
+    
+    // Determine which module to load based on the ajax_action
+    $module = '';
+    $action = $_POST['ajax_action'];
+    
+    if (in_array($action, ['add_truck', 'edit_truck', 'delete_truck'])) {
+        $module = 'maintain_trucks.php';
+    } elseif (in_array($action, ['add_locker', 'edit_locker', 'delete_locker'])) {
+        $module = 'maintain_lockers.php';
+    } elseif (in_array($action, ['add_item', 'edit_item', 'delete_item'])) {
+        $module = 'maintain_locker_items.php';
+    } elseif (in_array($action, ['add_station', 'edit_station', 'delete_station'])) {
+        $module = 'manage_stations.php';
+    }
+    
+    if ($module && file_exists('admin_modules/' . $module)) {
+        include('admin_modules/' . $module);
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Invalid action']);
+    }
+    exit;
+}
+
+// Handle AJAX requests to modules (legacy support)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['REQUEST_URI'], '/admin_modules/') !== false) {
     requireAuth();
     

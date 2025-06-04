@@ -484,8 +484,11 @@ function deleteTruck(truckId, truckName) {
     formData.append('ajax_action', 'delete_truck');
     formData.append('truck_id', truckId);
     
-    fetch('admin_modules/maintain_trucks.php', {
+    fetch('admin.php', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
     .then(response => response.json())
@@ -526,7 +529,7 @@ if (typeof window !== 'undefined') {
             const formData = new FormData(this);
             formData.append('ajax_action', 'add_truck');
             
-            fetch('admin_modules/maintain_trucks.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })

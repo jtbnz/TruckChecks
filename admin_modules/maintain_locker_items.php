@@ -603,8 +603,11 @@ function deleteItem(itemId, itemName) {
     formData.append('ajax_action', 'delete_item');
     formData.append('item_id', itemId);
     
-    fetch('admin_modules/maintain_locker_items.php', {
+    fetch('admin.php', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
     .then(response => response.json())
@@ -645,7 +648,7 @@ if (typeof window !== 'undefined') {
             const formData = new FormData(this);
             formData.append('ajax_action', 'add_item');
             
-            fetch('admin_modules/maintain_locker_items.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })
