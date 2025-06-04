@@ -1,22 +1,25 @@
 <?php
-include('config.php');
-if (DEBUG) {
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-    // Don't output text here as it breaks AJAX JSON responses
-    // echo "Debug mode is on";
-} else {
-    ini_set('display_errors', 0);
-    ini_set('display_startup_errors', 0);
-    error_reporting(0);
-}
+ob_start(); // Start output buffering at the very beginning
 
+// Suppress all errors immediately to prevent any debug output from included files
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
+include('config.php'); // config.php might define DEBUG
 include('db.php');
 include('auth.php');
 
+// If DEBUG is explicitly enabled in config.php, re-enable error reporting for non-AJAX requests
+if (defined('DEBUG') && DEBUG && (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') && (!isset($_POST['ajax_action']) && !isset($_POST['action']))) {
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+}
+
 // Handle AJAX station change request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_station') {
+    ob_clean(); // Discard any buffered output to prevent JSON corruption
     header('Content-Type: application/json');
     
     try {
@@ -33,12 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
         
         if (setCurrentStation($stationId)) {
+            ob_end_clean(); // Ensure no other output
             echo json_encode(['success' => true]);
         } else {
             throw new Exception('Failed to set station');
         }
         
     } catch (Exception $e) {
+        ob_end_clean(); // Ensure no other output
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
     exit;
@@ -46,6 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Handle AJAX content loading request
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+    // Suppress all errors for AJAX responses to prevent JSON corruption
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
+
     requireAuth();
     $page = $_GET['page'] ?? '';
 
@@ -138,6 +148,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
 
 // Handle AJAX requests from modules
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
+    // Suppress all errors for AJAX responses to prevent JSON corruption
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
+
+    ob_clean(); // Discard any buffered output to prevent JSON corruption
     requireAuth();
     
     // Setup context for the module
@@ -179,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     if ($module && file_exists('admin_modules/' . $module)) {
         include('admin_modules/' . $module);
     } else {
+        ob_end_clean(); // Ensure no other output
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Invalid action']);
     }
@@ -187,6 +204,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
 // Handle AJAX requests to modules (legacy support)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['REQUEST_URI'], '/admin_modules/') !== false) {
+    // Suppress all errors for AJAX responses to prevent JSON corruption
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
+
+    ob_clean(); // Discard any buffered output to prevent JSON corruption
     requireAuth();
     
     // Setup context for the module
@@ -225,6 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['REQUEST_URI'], '/a
         if (in_array($module, $allowedModules) && file_exists('admin_modules/' . $module)) {
             include('admin_modules/' . $module);
         } else {
+            ob_end_clean(); // Ensure no other output
             header('HTTP/1.1 404 Not Found');
             echo json_encode(['success' => false, 'message' => 'Module not found']);
         }
@@ -778,7 +802,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
     
     <script>
         // Load page content via AJAX
-        function loadPage(page) {
+        function loadPage(page, navElement = null) {
             // Show loading indicator
             document.getElementById('loading').style.display = 'block';
             document.getElementById('content-area').style.display = 'none';
@@ -788,8 +812,19 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 item.classList.remove('active');
             });
             
-            // Add active class to clicked item
-            event.target.classList.add('active');
+            // Add active class to clicked item or find by page name
+            if (navElement) {
+                navElement.classList.add('active');
+            } else {
+                // Find the nav item based on the page name
+                const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+                navItems.forEach(item => {
+                    const onclickAttr = item.getAttribute('onclick');
+                    if (onclickAttr && onclickAttr.includes(`loadPage('${page}')`)) {
+                        item.classList.add('active');
+                    }
+                });
+            }
             
             // Load content via AJAX
             fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
@@ -822,7 +857,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     
                     // Update URL without page reload
                     const url = new URL(window.location);
-                    url.searchParams.set('page', 'content');
+                    url.searchParams.set('page', page.replace('.php', '')); // Clean URL for history
                     window.history.pushState({}, '', url);
                 })
                 .catch(error => {
@@ -832,6 +867,14 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     document.getElementById('content-area').style.display = 'block';
                 });
         }
+        
+        // Modify existing onclicks to pass 'this' (the element itself)
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const onclickAttr = item.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes('loadPage(') && !onclickAttr.includes(', this)')) {
+                item.setAttribute('onclick', onclickAttr.replace(')', ', this)'));
+            }
+        });
         
         // Show dashboard
         function showDashboard() {
@@ -875,5 +918,3 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             }
         }
     </script>
-</body>
-</html>
