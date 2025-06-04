@@ -144,13 +144,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     
     // Security: Only allow specific pages
     $allowedPages = [
-        'admin_modules/maintain_trucks.php',
-        'admin_modules/maintain_lockers.php', 
-        'admin_modules/maintain_locker_items.php',
-        'admin_modules/lockers.php', // Added new Lockers module
+        // 'admin_modules/maintain_trucks.php', // Functionality merged into admin_modules/lockers.php
+        // 'admin_modules/maintain_lockers.php', // Functionality merged into admin_modules/lockers.php
+        // 'admin_modules/maintain_locker_items.php', // Functionality merged into admin_modules/lockers.php
+        'admin_modules/lockers.php', // Unified module for Trucks, Lockers, Items
+        'admin_modules/qr_codes.php', // Moved QR codes to modules
         'find.php',
         'reset_locker_check.php',
-        'qr-codes.php',
+        // 'qr-codes.php', // Removed old path
         'email_admin.php',
         'email_results.php',
         'locker_check_report.php',
@@ -246,12 +247,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $module = '';
     $action = $_POST['ajax_action'];
     
-    if (in_array($action, ['add_truck', 'edit_truck', 'delete_truck'])) {
-        $module = 'maintain_trucks.php';
-    } elseif (in_array($action, ['add_locker', 'edit_locker', 'delete_locker'])) {
-        $module = 'maintain_lockers.php';
-    } elseif (in_array($action, ['add_item', 'edit_item', 'delete_item'])) {
-        $module = 'maintain_locker_items.php';
+    if (in_array($action, [
+        'add_truck', 'edit_truck', 'delete_truck',
+        'add_locker', 'edit_locker', 'delete_locker',
+        'add_item', 'edit_item', 'delete_item'
+    ])) {
+        $module = 'lockers.php'; // All these actions are handled by the unified lockers.php module
     } elseif (in_array($action, ['add_station', 'edit_station', 'delete_station'])) {
         $module = 'manage_stations.php';
     }
@@ -687,17 +688,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Management</div>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_trucks.php', this)" class="nav-item">
-                        <i>🚛</i> Maintain Trucks
-                    </a>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="nav-item">
-                        <i>🗄️</i> Maintain Lockers
-                    </a>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="nav-item">
-                        <i>📦</i> Maintain Locker Items
-                    </a>
                     <a href="javascript:void(0)" onclick="loadPage('admin_modules/lockers.php', this)" class="nav-item">
-                        <i>🔑</i> Lockers
+                        <i>🔑</i> Trucks, Lockers & Items
                     </a>
                 </div>
                 
@@ -709,7 +701,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     <a href="javascript:void(0)" onclick="loadPage('reset_locker_check.php', this)" class="nav-item">
                         <i>🔄</i> Reset Locker Checks
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('qr-codes.php', this)" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/qr_codes.php', this)" class="nav-item">
                         <i>📱</i> Generate QR Codes
                     </a>
                 </div>
@@ -832,10 +824,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Fleet Management</h3>
                                 <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('admin_modules/maintain_trucks.php', this)" class="card-button">Trucks</button>
-                                    <button onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="card-button">Maintain Lockers</button>
-                                    <button onclick="loadPage('admin_modules/lockers.php', this)" class="card-button">Lockers & Items (New)</button>
-                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="card-button">Maintain Items</button>
+                                    <button onclick="loadPage('admin_modules/lockers.php', this)" class="card-button">Trucks, Lockers & Items</button>
                                 </div>
                             </div>
                             
