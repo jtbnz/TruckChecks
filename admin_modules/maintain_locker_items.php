@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
     }
     // For AJAX actions, return JSON response
     if ($isAjaxAction) {
-        ob_clean(); // Clear any buffered output before sending JSON
+        ob_end_clean(); // Clear any buffered output before sending JSON
         header('Content-Type: application/json');
         echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
         exit;
@@ -80,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     }
     // For AJAX actions, return JSON response
     if ($isAjaxAction) {
+        ob_end_clean(); // Clear any buffered output before sending JSON
         header('Content-Type: application/json');
         echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
         exit;
@@ -113,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_item_id']) && i
         }
     }
     // Always return JSON response for delete action
+    ob_end_clean(); // Clear any buffered output before sending JSON
     header('Content-Type: application/json');
     echo json_encode(['success' => $response_success, 'message' => $response_message]);
     exit;
