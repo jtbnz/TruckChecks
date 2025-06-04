@@ -10,6 +10,14 @@ $db = $pdo; // Use the PDO connection from admin.php
 $error_message = '';
 $success_message = '';
 
+// Temporarily dump POST data for debugging
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'delete_item') {
+    ob_clean(); // Clear any previous output
+    header('Content-Type: text/plain'); // Send as plain text to avoid JSON parsing errors during debug
+    var_dump($_POST);
+    exit;
+}
+
 // Check if we're handling an AJAX action from a form submission
 $isAjaxAction = isset($_POST['ajax_action']) || (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'delete_item');
 
@@ -85,9 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     }
 }
 
-// Handle deleting an item
-if (isset($_GET['delete_item_id']) && isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'delete_item') {
-    $item_id = $_GET['delete_item_id'];
+// Handle deleting an item (now via POST)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_item_id']) && isset($_POST['ajax_action']) && $_POST['ajax_action'] === 'delete_item') {
+    $item_id = $_POST['delete_item_id'];
+    $response_success = false;
+    $response_message = '';
+
     try {
         // Verify item belongs to current station before deleting
         $item_check = $db->prepare('SELECT i.id FROM items i JOIN lockers l ON i.locker_id = l.id JOIN trucks t ON l.truck_id = t.id WHERE i.id = :item_id AND t.station_id = :station_id');
@@ -96,16 +107,17 @@ if (isset($_GET['delete_item_id']) && isset($_GET['ajax_action']) && $_GET['ajax
         if ($item_check->fetch()) {
             $query = $db->prepare('DELETE FROM items WHERE id = :id');
             $query->execute(['id' => $item_id]);
-            $success_message = "Item deleted successfully.";
+            $response_success = true;
+            $response_message = "Item deleted successfully.";
         } else {
-            $error_message = "Item not found or access denied for deletion.";
+            $response_message = "Item not found or access denied for deletion.";
         }
     } catch (Exception $e) {
-        $error_message = "Error deleting item: " . $e->getMessage();
+        $response_message = "Error deleting item: " . $e->getMessage();
     }
     // Always return JSON response for delete action
     header('Content-Type: application/json');
-    echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+    echo json_encode(['success' => $response_success, 'message' => $response_message]);
     exit;
 }
 
