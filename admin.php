@@ -928,6 +928,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
                 .then(response => response.text())
                 .then(html => {
+                    console.log('Received HTML content:', html.substring(0, 500) + '...'); // Log first 500 chars of received HTML
                     const contentArea = document.getElementById('content-area');
                     
                     // Create a temporary div to parse the HTML and extract scripts
@@ -949,8 +950,10 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                         // Copy content
                         newScript.textContent = oldScript.textContent;
                         
-                        // Replace old script with new one to execute it
-                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                        // Append new script to body to execute it
+                        document.body.appendChild(newScript);
+                        // Remove the original script element from tempDiv to prevent re-insertion
+                        oldScript.parentNode.removeChild(oldScript);
                     }
                     
                     // Insert the remaining HTML (without original script elements) into the content area
