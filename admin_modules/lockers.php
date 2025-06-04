@@ -580,7 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="button secondary" onclick="closeEditItemModal()">Cancel</button>
-                <button type="submit" class="button">Save Changes</button>
+                <button type="button" class="button" id="save-edit-item-button">Save Changes</button>
             </div>
         </form>
     </div>
@@ -813,14 +813,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
 </div>
 
 <script>
-function handleAjaxResponse(response, successCallback, errorCallback) {
+function handleAjaxResponse(response, operationName = 'Operation') {
     if (response.success) {
-        if (successCallback) successCallback(response);
-        console.log('Success:', response.message || 'Operation successful.');
+        alert(response.message || `${operationName} successful.`);
+        console.log('Success:', response.message || `${operationName} successful.`);
+        return true; // Indicate success
     } else {
-        if (errorCallback) errorCallback(response);
-        alert('Error: ' + (response.message || 'An unknown error occurred.'));
-        console.error('Error:', response.message);
+        alert(`Operation Notice: ${response.message || `An issue occurred with ${operationName}.`}`);
+        console.error('Operation Notice/Error:', response.message || `An issue occurred with ${operationName}.`);
+        return false; // Indicate failure/issue
     }
 }
 
@@ -842,16 +843,14 @@ function handleAddTruck(event) {
     })
     .then(response => response.json())
     .then(data => {
-        handleAjaxResponse(data, function(res) {
-            alert(res.message || 'Truck added successfully!'); 
+        if (handleAjaxResponse(data, 'Truck addition')) {
             form.reset();
-            // Reload the current module content within admin.php's framework
             if (typeof loadPage === 'function') {
                 loadPage('admin_modules/lockers.php');
             } else {
-                window.location.reload(); // Fallback if loadPage is not available
+                window.location.reload();
             }
-        });
+        }
     })
     .catch(error => {
         console.error('Network error:', error);
@@ -879,15 +878,14 @@ function handleAddLocker(event) {
     })
     .then(response => response.json())
     .then(data => {
-        handleAjaxResponse(data, function(res) {
-            alert(res.message || 'Locker added successfully!');
+        if (handleAjaxResponse(data, 'Locker addition')) {
             form.reset();
             if (typeof loadPage === 'function') {
                 loadPage('admin_modules/lockers.php');
             } else {
                 window.location.reload();
             }
-        });
+        }
     })
     .catch(error => {
         console.error('Network error:', error);
@@ -914,8 +912,7 @@ function handleAddItem(event) {
     })
     .then(response => response.json())
     .then(data => {
-        handleAjaxResponse(data, function(res) {
-            alert(res.message || 'Item added successfully!');
+        if (handleAjaxResponse(data, 'Item addition')) {
             form.reset();
             document.getElementById('select-locker-for-item').innerHTML = '<option value="">-- Select Truck First --</option>'; 
             if (typeof loadPage === 'function') {
@@ -923,7 +920,7 @@ function handleAddItem(event) {
             } else {
                 window.location.reload();
             }
-        });
+        }
     })
     .catch(error => {
         console.error('Network error:', error);
@@ -1119,12 +1116,21 @@ function loadLockersForEditModal(truckId, callback) {
     });
 }
 
-
-function handleEditItemSubmit(event) {
-    event.preventDefault();
-    const form = event.target;
+// Renamed and modified: No longer takes 'event', gets form by ID.
+function handleEditItemSubmit() { 
+    const form = document.getElementById('edit-item-form');
     const formData = new FormData(form);
     formData.append('ajax_action', 'edit_item');
+
+    // Basic client-side validation
+    const itemName = formData.get('item_name') ? formData.get('item_name').trim() : '';
+    const lockerId = formData.get('locker_id'); // ID, so no trim
+    const itemId = formData.get('item_id');
+
+    if (!itemId || !itemName || !lockerId) {
+        alert('Item Name and Locker selection are required to save changes.');
+        return;
+    }
 
     fetch('admin_modules/lockers.php', {
         method: 'POST',
@@ -1132,20 +1138,19 @@ function handleEditItemSubmit(event) {
     })
     .then(response => response.json())
     .then(data => {
-        handleAjaxResponse(data, function(res) {
-            alert(res.message || 'Item updated successfully!');
+        if (handleAjaxResponse(data, 'Item update')) {
             closeEditItemModal();
             const currentTruckFilter = document.getElementById('filter-items-by-truck').value;
             const currentLockerFilter = document.getElementById('filter-items-by-locker').value;
             loadItemsList(currentTruckFilter, currentLockerFilter);
-        });
+        }
+        // If handleAjaxResponse returns false, it has already alerted the user.
     })
     .catch(error => {
         console.error('Network error updating item:', error);
         alert('Network error. Could not update item.');
     });
 }
-
 
 function initializeLockersModule() {
     console.log('Lockers module initialized via JS.');
@@ -1162,9 +1167,10 @@ function initializeLockersModule() {
         addItemForm.onsubmit = handleAddItem;
     }
 
-    const editItemForm = document.getElementById('edit-item-form');
-    if (editItemForm) {
-        editItemForm.onsubmit = handleEditItemSubmit;
+    // Attach to the new button's click event for editing items
+    const saveEditItemButton = document.getElementById('save-edit-item-button');
+    if (saveEditItemButton) {
+        saveEditItemButton.onclick = handleEditItemSubmit; // No 'event' passed, function adapted
     }
     
     window.onclick = function(event) {
