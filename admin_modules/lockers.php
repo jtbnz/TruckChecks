@@ -521,7 +521,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                                     FROM items li
                                     JOIN lockers l ON li.locker_id = l.id
                                     JOIN trucks t ON l.truck_id = t.id
-                                    WHERE li.station_id = ? 
+                                    WHERE t.station_id = ?  -- Filter by truck's station_id
                                     ORDER BY t.name, l.name, li.name
                                 ");
                                 $stmt_items->execute([$current_station_id]);
