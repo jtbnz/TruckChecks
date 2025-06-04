@@ -613,13 +613,13 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Management</div>
-                    <a href="javascript:void(0)" onclick="loadPage('maintain_trucks.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_trucks.php')" class="nav-item">
                         <i>🚛</i> Maintain Trucks
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('maintain_lockers.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_lockers.php')" class="nav-item">
                         <i>🗄️</i> Maintain Lockers
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('maintain_locker_items.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_locker_items.php')" class="nav-item">
                         <i>📦</i> Maintain Locker Items
                     </a>
                 </div>
@@ -672,7 +672,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <?php if ($userRole === 'superuser'): ?>
                 <div class="nav-section">
                     <div class="nav-section-title">System Administration</div>
-                    <a href="javascript:void(0)" onclick="loadPage('manage_stations.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/manage_stations.php')" class="nav-item">
                         <i>🏢</i> Manage Stations
                     </a>
                     <a href="manage_users.php" target="_blank" class="nav-item">
@@ -755,9 +755,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Fleet Management</h3>
                                 <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('maintain_trucks.php')" class="card-button">Trucks</button>
-                                    <button onclick="loadPage('maintain_lockers.php')" class="card-button">Lockers</button>
-                                    <button onclick="loadPage('maintain_locker_items.php')" class="card-button">Items</button>
+                                    <button onclick="loadPage('admin_modules/maintain_trucks.php')" class="card-button">Trucks</button>
+                                    <button onclick="loadPage('admin_modules/maintain_lockers.php')" class="card-button">Lockers</button>
+                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php')" class="card-button">Items</button>
                                 </div>
                             </div>
                             
@@ -795,7 +795,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>System Administration</h3>
                                 <p>Manage stations, users, and system-wide settings. Access installation and upgrade tools.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('manage_stations.php')" class="card-button">Stations</button>
+                                    <button onclick="loadPage('admin_modules/manage_stations.php')" class="card-button">Stations</button>
                                     <a href="manage_users.php" target="_blank" class="card-button">Users</a>
                                     <a href="install.php" class="card-button secondary" target="_blank">Installer</a>
                                 </div>
