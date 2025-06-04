@@ -5,6 +5,11 @@
 
 global $pdo, $user, $userRole, $userName, $station, $DEBUG, $userStations; // $userStations is available in admin.php context
 
+// Ensure session is started if not already (admin.php should handle this, but as a fallback for direct AJAX)
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
 $db = $pdo; // Use the PDO connection from admin.php
 $error_message = '';
 $success_message = '';
@@ -12,9 +17,41 @@ $success_message = '';
 $current_station_id = null;
 $current_station_name = "No station selected";
 
+// Attempt to get station from global $station variable first (set by admin.php for normal loads)
 if (isset($station) && is_array($station) && isset($station['id'])) {
     $current_station_id = $station['id'];
     $current_station_name = $station['name'];
+} 
+// If $station wasn't set (e.g., direct AJAX call not fully bootstrapping admin.php environment), 
+// try to load selected station from session.
+else if (isset($_SESSION['selected_station_id']) && $pdo) { // Ensure $pdo is available
+    try {
+        $stmt_session_station = $pdo->prepare("SELECT id, name FROM stations WHERE id = ?");
+        $stmt_session_station->execute([$_SESSION['selected_station_id']]);
+        $session_station_data = $stmt_session_station->fetch(PDO::FETCH_ASSOC);
+        if ($session_station_data) {
+            $current_station_id = $session_station_data['id'];
+            $current_station_name = $session_station_data['name'];
+            // Optionally, re-assign to global $station if other parts of this script might expect $station to be populated
+            // $station = $session_station_data; 
+        } else {
+            // Selected station ID in session doesn't exist in DB, clear it to prevent issues
+            unset($_SESSION['selected_station_id']);
+        }
+    } catch (PDOException $e) {
+        error_log("Error fetching station from session for AJAX in lockers.php: " . $e->getMessage());
+        // $current_station_id will remain null, subsequent checks will handle it.
+    }
+}
+// Fallback if $current_station_id is STILL null, but $userStations indicates a single station for a station_admin
+else if (!$current_station_id && isset($userRole) && $userRole === 'station_admin' && isset($userStations) && count($userStations) === 1) {
+    $single_station_keys = array_keys($userStations);
+    $current_station_id = $single_station_keys[0];
+    $current_station_name = $userStations[$current_station_id];
+     if (isset($_SESSION)) { // Ensure session is available before trying to set
+        $_SESSION['selected_station_id'] = $current_station_id; // Persist this auto-selection
+    }
+    // $station = ['id' => $current_station_id, 'name' => $current_station_name]; // Also update $station global
 }
 
 // Handle AJAX actions (POST for CUD operations)
