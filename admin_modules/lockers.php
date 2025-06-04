@@ -205,8 +205,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
         } else {
             $response['message'] = 'Truck ID missing or invalid context.';
         }
+    } elseif ($action === 'get_filtered_items') {
+        if (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Station not selected.', 'data' => []];
+        } else {
+            $truck_id_filter = $_GET['truck_id'] ?? null;
+            $locker_id_filter = $_GET['locker_id'] ?? null;
+
+            $sql_items = "
+                SELECT li.id, li.name AS item_name, l.name AS locker_name, t.name AS truck_name
+                FROM items li
+                JOIN lockers l ON li.locker_id = l.id
+                JOIN trucks t ON l.truck_id = t.id
+                WHERE t.station_id = :station_id"; // Always filter by current station
+
+            $params = [':station_id' => $current_station_id];
+
+            if (!empty($truck_id_filter)) {
+                $sql_items .= " AND t.id = :truck_id";
+                $params[':truck_id'] = $truck_id_filter;
+            }
+            if (!empty($locker_id_filter)) {
+                $sql_items .= " AND l.id = :locker_id";
+                $params[':locker_id'] = $locker_id_filter;
+            }
+            $sql_items .= " ORDER BY t.name, l.name, li.name";
+
+            try {
+                $stmt_items = $db->prepare($sql_items);
+                $stmt_items->execute($params);
+                $items_data = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+                $response = ['success' => true, 'data' => $items_data];
+            } catch (PDOException $e) {
+                error_log("Error fetching filtered items: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error fetching items. ' . ($DEBUG ? $e->getMessage() : ''), 'data' => []];
+            }
+        }
     }
-    // TODO: Implement other GET AJAX actions if needed (e.g., get_items_for_locker_or_truck)
     
     echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
@@ -501,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                     <h4>Existing Items</h4>
                     <div class="form-group">
                         <label for="filter-items-by-truck">Filter by Truck:</label>
-                        <select id="filter-items-by-truck" name="filter_truck_id_for_items" onchange="loadItemsList(this.value)">
+                        <select id="filter-items-by-truck" name="filter_truck_id_for_items" onchange="handleTruckFilterChange(this.value)">
                             <option value="">All Trucks</option>
                              <?php
                                 if (isset($trucks_for_list) && count($trucks_for_list) > 0) {
@@ -510,6 +545,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                                     }
                                 }
                             ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-items-by-locker">Filter by Locker:</label>
+                        <select id="filter-items-by-locker" name="filter_locker_id_for_items" onchange="loadItemsList(document.getElementById('filter-items-by-truck').value, this.value)">
+                            <option value="">All Lockers</option>
+                            <!-- Populated by JS -->
                         </select>
                     </div>
                     <div class="scrollable-list-container">
@@ -700,12 +742,101 @@ function loadLockersForItemDropdown(truckId) {
     });
 }
 
-function loadItemsList(truckIdFilter = '') {
-    console.log('loadItemsList called with truck ID:', truckIdFilter);
-    // Placeholder for future dynamic client-side filtering.
-    // For now, PHP handles initial load and full page reload updates lists.
+function loadItemsList(truckIdFilter = '', lockerIdFilter = '') {
+    console.log('loadItemsList called with Truck ID:', truckIdFilter, 'Locker ID:', lockerIdFilter);
+    const itemsListUl = document.getElementById('items-list');
+    itemsListUl.innerHTML = '<li>Loading items...</li>';
+
+    let fetchUrl = `admin_modules/lockers.php?ajax_action=get_filtered_items`;
+    if (truckIdFilter) {
+        fetchUrl += `&truck_id=${encodeURIComponent(truckIdFilter)}`;
+    }
+    if (lockerIdFilter) {
+        fetchUrl += `&locker_id=${encodeURIComponent(lockerIdFilter)}`;
+    }
+    // The PHP backend will implicitly use the $current_station_id from session/global context
+
+    fetch(fetchUrl)
+    .then(response => response.json())
+    .then(data => {
+        itemsListUl.innerHTML = ''; // Clear previous items
+        if (data.success && data.data) {
+            if (data.data.length > 0) {
+                data.data.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${escapeHTML(item.item_name)} (Locker: ${escapeHTML(item.locker_name)}, Truck: ${escapeHTML(item.truck_name)})</span> <span class="actions"><!-- Edit/Delete buttons here --></span>`;
+                    itemsListUl.appendChild(li);
+                });
+            } else {
+                itemsListUl.innerHTML = '<li>No items found matching your criteria.</li>';
+            }
+        } else {
+            itemsListUl.innerHTML = `<li>Error loading items: ${escapeHTML(data.message || 'Unknown error')}</li>`;
+            console.error('Error fetching items:', data.message);
+        }
+    })
+    .catch(error => {
+        itemsListUl.innerHTML = '<li>Network error loading items.</li>';
+        console.error('Network error fetching items:', error);
+    });
 }
 
+function handleTruckFilterChange(truckId) {
+    loadLockersForFilterDropdown(truckId);
+    // Automatically load items for the selected truck and "All Lockers"
+    loadItemsList(truckId, ''); 
+}
+
+function loadLockersForFilterDropdown(truckId) {
+    const lockerFilterSelect = document.getElementById('filter-items-by-locker');
+    lockerFilterSelect.innerHTML = '<option value="">Loading lockers...</option>';
+
+    if (!truckId) {
+        lockerFilterSelect.innerHTML = '<option value="">All Lockers</option>'; // Reset if no truck selected
+        return;
+    }
+
+    // Re-use the existing get_lockers_for_truck AJAX action used for the "Add Item" form
+    // Ensure $current_station_id is implicitly used by the backend for security.
+    fetch(`admin_modules/lockers.php?ajax_action=get_lockers_for_truck&truck_id=${encodeURIComponent(truckId)}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data) {
+            lockerFilterSelect.innerHTML = '<option value="">All Lockers</option>'; // Default option
+            if (data.data.length > 0) {
+                data.data.forEach(locker => {
+                    const option = document.createElement('option');
+                    option.value = locker.id;
+                    option.textContent = locker.name;
+                    lockerFilterSelect.appendChild(option);
+                });
+            } else {
+                 lockerFilterSelect.innerHTML = '<option value="">No lockers for this truck</option>';
+            }
+        } else {
+            lockerFilterSelect.innerHTML = '<option value="">Error loading lockers</option>';
+            console.error('Error fetching lockers for filter:', data.message || 'No specific message');
+        }
+    })
+    .catch(error => {
+        lockerFilterSelect.innerHTML = '<option value="">Error loading lockers</option>';
+        console.error('Network error fetching lockers for filter:', error);
+    });
+}
+
+// Helper function to prevent XSS
+function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, function (match) {
+        return {
+            '&': '&',
+            '<': '<',
+            '>': '>',
+            '"': '"',
+            "'": '&#39;'
+        }[match];
+    });
+}
 
 function initializeLockersModule() {
     console.log('Lockers module initialized via JS.');

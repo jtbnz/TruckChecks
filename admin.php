@@ -833,8 +833,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
                                 <div class="card-buttons">
                                     <button onclick="loadPage('admin_modules/maintain_trucks.php', this)" class="card-button">Trucks</button>
-                                    <button onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="card-button">Lockers</button>
-                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="card-button">Items</button>
+                                    <button onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="card-button">Maintain Lockers</button>
+                                    <button onclick="loadPage('admin_modules/lockers.php', this)" class="card-button">Lockers & Items (New)</button>
+                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="card-button">Maintain Items</button>
                                 </div>
                             </div>
                             
