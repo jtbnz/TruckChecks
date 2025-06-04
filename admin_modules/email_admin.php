@@ -392,9 +392,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_admin_email'])) {
     }
 }
 
-<?php if(defined('DEBUG') && DEBUG && $_SERVER['REQUEST_METHOD'] == 'POST'): ?>
-    <?php error_log("Email_admin.php: Finished all POST processing blocks."); ?>
-<?php endif; ?>
+if(defined('DEBUG') && DEBUG && $_SERVER['REQUEST_METHOD'] == 'POST') {
+    error_log("Email_admin.php: Finished all POST processing blocks.");
+}
 
 // Get current email settings for display
 $current_admin_email_display = null;
