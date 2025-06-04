@@ -747,15 +747,13 @@ function updateAddLockerDropdown() {
 // New function to handle item deletion via AJAX
 function deleteItem(itemId, truckFilter, lockerFilter) {
     if (confirm('Are you sure you want to delete this item?')) {
-        const params = new URLSearchParams();
-        params.append('delete_item_id', itemId);
-        params.append('ajax_action', 'delete_item'); // This will be caught by admin.php's GET handler
+        const formData = new FormData();
+        formData.append('delete_item_id', itemId);
+        formData.append('ajax_action', 'delete_item'); // This will be caught by admin.php's POST handler
         
-        fetch('admin.php?' + params.toString(), { // Send GET request to admin.php
-            method: 'GET', // Explicitly set method to GET
-            headers: {
-                'Content-Type': 'application/json', // Indicate expected response type
-            },
+        fetch('admin.php', { // Send POST request to admin.php
+            method: 'POST', // Explicitly set method to POST
+            body: formData,
         })
         .then(response => response.json())
         .then(data => {
