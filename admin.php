@@ -257,6 +257,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     
     if ($module && file_exists('admin_modules/' . $module)) {
         include('admin_modules/' . $module);
+        // Ensure exit after module inclusion for AJAX POST actions
+        exit; 
     } else {
         ob_end_clean(); // Ensure no other output
         header('Content-Type: application/json');

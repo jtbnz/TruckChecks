@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
     }
     // For AJAX actions, return JSON response
     if ($isAjaxAction) {
+        ob_clean(); // Clear any buffered output before sending JSON
         header('Content-Type: application/json');
         echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
         exit;
