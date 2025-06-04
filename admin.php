@@ -49,6 +49,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
+// Handle AJAX GET requests for JSON data (e.g., for dropdowns, filters)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] !== '1') { // Exclude ajax=1 which is for HTML content
+    // Suppress all errors for AJAX responses to prevent JSON corruption
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(0);
+
+    requireAuth();
+    
+    // Setup context for the included page
+    $pdo = get_db_connection();
+    $user = getCurrentUser();
+    $userRole = $user['role'];
+    $userName = $user['username'];
+
+    if ($userRole === 'superuser') {
+        $station = getCurrentStation();
+    } elseif ($userRole === 'station_admin') {
+        try {
+            $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+            $stmt_stations->execute([$user['id']]);
+            $userStations = $stmt_stations->fetchAll();
+            if (count($userStations) === 1) {
+                $station = $userStations[0];
+            } else {
+                $station = null;
+            }
+        } catch (Exception $e) {
+            error_log('Error getting user stations in AJAX: ' . $e->getMessage());
+            $station = null;
+        }
+    } else {
+        $station = null;
+    }
+
+    $ajax_action = $_GET['ajax'];
+    
+    // Route to specific modules for JSON output
+    if ($ajax_action === 'get_lockers' || $ajax_action === 'get_items') {
+        include('admin_modules/maintain_locker_items.php');
+        // The included file is expected to handle JSON output and exit
+    } else {
+        // If it's an unknown AJAX GET request, return an error
+        ob_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Invalid AJAX GET action']);
+        exit;
+    }
+    exit; // Ensure no further output after handling AJAX GET
+}
+
 // Handle AJAX content loading request
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] === '1') {
     // Suppress all errors for AJAX responses to prevent JSON corruption
