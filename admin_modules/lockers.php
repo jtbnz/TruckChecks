@@ -250,7 +250,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 }
             } catch (PDOException $e) {
                 error_log("Error editing item: " . $e->getMessage());
-                $response = ['success' => false, 'message' => 'Database error editing item. ' . (isset($DEBUG) && $DEBUG ? $e->getMessage() : '')];
+                // Always include the specific PDO exception message for better debugging via AJAX response
+                $response = ['success' => false, 'message' => 'Database error editing item: ' . $e->getMessage()];
             }
         }
     }
