@@ -69,18 +69,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     $userStations = []; 
 
     if ($userRole === 'superuser') {
-        $currentStation = getCurrentStation(); 
+        $station = getCurrentStation(); // Assign to global $station
     } elseif ($userRole === 'station_admin') {
         try {
             $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
             $stmt_stations->execute([$user['id']]);
             $userStations = $stmt_stations->fetchAll();
             if (count($userStations) === 1) {
-                $currentStation = $userStations[0]; 
+                $station = $userStations[0]; // Assign to global $station
+            } else {
+                // If station admin has multiple stations, and no specific station is selected,
+                // or if the current station is not valid for them, default to null or redirect.
+                // For now, we'll ensure $station is null if not explicitly set to a single station.
+                $station = null; 
             }
         } catch (Exception $e) {
             error_log('Error getting user stations in AJAX: ' . $e->getMessage());
+            $station = null;
         }
+    } else {
+        $station = null; // Ensure $station is null for other roles or unhandled cases
     }
     
     // Security: Only allow specific pages
@@ -162,20 +170,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $userRole = $user['role'];
     $userName = $user['username'];
     
-    $currentStation = null;
     if ($userRole === 'superuser') {
-        $currentStation = getCurrentStation();
+        $station = getCurrentStation(); // Assign to global $station
     } elseif ($userRole === 'station_admin') {
         try {
             $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
             $stmt_stations->execute([$user['id']]);
             $userStations = $stmt_stations->fetchAll();
             if (count($userStations) === 1) {
-                $currentStation = $userStations[0];
+                $station = $userStations[0]; // Assign to global $station
+            } else {
+                $station = null;
             }
         } catch (Exception $e) {
             error_log('Error getting user stations in module POST: ' . $e->getMessage());
+            $station = null;
         }
+    } else {
+        $station = null;
     }
     
     // Determine which module to load based on the ajax_action
