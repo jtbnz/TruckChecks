@@ -144,7 +144,7 @@ $web_root_url = $protocol . $host;
 
     <div class="locker-grid">
         <?php
-        $top_level_locker_url = $web_root_url . '/index.php?station_id=' . $station_id; // Assuming index.php can take station_id
+        $top_level_locker_url = $base_app_url . '/index.php?station_id=' . $station_id; // Using $base_app_url
 
         $result_top = Builder::create()
             ->writer(new PngWriter())
@@ -165,7 +165,7 @@ $web_root_url = $protocol . $host;
         // Generate Security QR Code
         $security_code = get_station_setting_for_qr($pdo, 'security_code', $station_id, '');
         if (!empty($security_code)) {
-            $security_url = $web_root_url . '/set_security_cookie.php?code=' . urlencode($security_code) . '&station_id=' . $station_id . '&station_name=' . urlencode($station_name);
+            $security_url = $base_app_url . '/set_security_cookie.php?code=' . urlencode($security_code) . '&station_id=' . $station_id . '&station_name=' . urlencode($station_name); // Using $base_app_url
             
             $security_result_qr = Builder::create()
                 ->writer(new PngWriter())->data($security_url)->encoding(new Encoding('UTF-8'))
@@ -201,7 +201,7 @@ $web_root_url = $protocol . $host;
                 <div class="locker-grid">
                     <?php foreach ($lockers as $locker): ?>
                         <?php
-                        $locker_check_url = $web_root_url . '/check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'] . '&station_id=' . $station_id;
+                        $locker_check_url = $base_app_url . '/check_locker_items.php?truck_id=' . $truck['id'] . '&locker_id=' . $locker['id'] . '&station_id=' . $station_id; // Using $base_app_url
                         $result_locker_qr = Builder::create()
                             ->writer(new PngWriter())->data($locker_check_url)->encoding(new Encoding('UTF-8'))
                             ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())->size(150)->margin(5)->build();
