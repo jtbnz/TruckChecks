@@ -147,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         'admin_modules/maintain_trucks.php',
         'admin_modules/maintain_lockers.php', 
         'admin_modules/maintain_locker_items.php',
+        'admin_modules/lockers.php', // Added new Lockers module
         'find.php',
         'reset_locker_check.php',
         'qr-codes.php',
@@ -686,58 +687,61 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Management</div>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_trucks.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_trucks.php', this)" class="nav-item">
                         <i>🚛</i> Maintain Trucks
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_lockers.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="nav-item">
                         <i>🗄️</i> Maintain Lockers
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_locker_items.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="nav-item">
                         <i>📦</i> Maintain Locker Items
+                    </a>
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/lockers.php', this)" class="nav-item">
+                        <i>🔑</i> Lockers
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Tools</div>
-                    <a href="javascript:void(0)" onclick="loadPage('find.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('find.php', this)" class="nav-item">
                         <i>🔍</i> Find an Item
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('reset_locker_check.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('reset_locker_check.php', this)" class="nav-item">
                         <i>🔄</i> Reset Locker Checks
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('qr-codes.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('qr-codes.php', this)" class="nav-item">
                         <i>📱</i> Generate QR Codes
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="javascript:void(0)" onclick="loadPage('email_admin.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('email_admin.php', this)" class="nav-item">
                         <i>📧</i> Manage Email Settings
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('email_results.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('email_results.php', this)" class="nav-item">
                         <i>📤</i> Email Check Results
                     </a>
                 </div>
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Reports & Data</div>
-                    <a href="javascript:void(0)" onclick="loadPage('locker_check_report.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('locker_check_report.php', this)" class="nav-item">
                         <i>📄</i> Locker Check Reports
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report.php', this)" class="nav-item">
                         <i>📋</i> List All Items Report
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report_a3.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('list_all_items_report_a3.php', this)" class="nav-item">
                         <i>📄</i> A3 Locker Items Report
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('deleted_items_report.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('deleted_items_report.php', this)" class="nav-item">
                         <i>🗑️</i> Deleted Items Report
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('backups.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('backups.php', this)" class="nav-item">
                         <i>💾</i> Download Backup
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('login_logs.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('login_logs.php', this)" class="nav-item">
                         <i>📋</i> View Login Logs
                     </a>
                 </div>
@@ -745,7 +749,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <?php if ($userRole === 'superuser'): ?>
                 <div class="nav-section">
                     <div class="nav-section-title">System Administration</div>
-                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/manage_stations.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/manage_stations.php', this)" class="nav-item">
                         <i>🏢</i> Manage Stations
                     </a>
                     <a href="manage_users.php" target="_blank" class="nav-item">
@@ -760,7 +764,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <?php if ($userRole === 'station_admin'): ?>
                 <div class="nav-section">
                     <div class="nav-section-title">Station Administration</div>
-                    <a href="javascript:void(0)" onclick="loadPage('manage_users.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('manage_users.php', this)" class="nav-item">
                         <i>👥</i> Manage Station Users
                     </a>
                 </div>
@@ -768,14 +772,14 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Settings</div>
-                    <a href="javascript:void(0)" onclick="loadPage('show_code.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('show_code.php', this)" class="nav-item">
                         <i>🔐</i> Security Code
                     </a>
-                    <a href="javascript:void(0)" onclick="loadPage('station_settings.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('station_settings.php', this)" class="nav-item">
                         <i>⚙️</i> Station Settings
                     </a>
                     <?php if ($showButton): ?>
-                    <a href="javascript:void(0)" onclick="loadPage('demo_clean_tables.php')" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('demo_clean_tables.php', this)" class="nav-item">
                         <i>🧹</i> Delete Demo Data
                     </a>
                     <?php endif; ?>
@@ -828,9 +832,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Fleet Management</h3>
                                 <p>Manage your trucks, lockers, and items. Add new vehicles, organize storage compartments, and maintain inventory lists.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('admin_modules/maintain_trucks.php')" class="card-button">Trucks</button>
-                                    <button onclick="loadPage('admin_modules/maintain_lockers.php')" class="card-button">Lockers</button>
-                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php')" class="card-button">Items</button>
+                                    <button onclick="loadPage('admin_modules/maintain_trucks.php', this)" class="card-button">Trucks</button>
+                                    <button onclick="loadPage('admin_modules/maintain_lockers.php', this)" class="card-button">Lockers</button>
+                                    <button onclick="loadPage('admin_modules/maintain_locker_items.php', this)" class="card-button">Items</button>
                                 </div>
                             </div>
                             
@@ -838,9 +842,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Operations</h3>
                                 <p>Daily operational tools for managing checks, finding items, and generating QR codes for easy access.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('find.php')" class="card-button">Find Items</button>
-                                    <button onclick="loadPage('reset_locker_check.php')" class="card-button secondary">Reset Checks</button>
-                                    <button onclick="loadPage('qr-codes.php')" class="card-button">QR Codes</button>
+                                    <button onclick="loadPage('find.php', this)" class="card-button">Find Items</button>
+                                    <button onclick="loadPage('reset_locker_check.php', this)" class="card-button secondary">Reset Checks</button>
+                                    <button onclick="loadPage('qr-codes.php', this)" class="card-button">QR Codes</button>
                                 </div>
                             </div>
                             
@@ -848,9 +852,9 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Reports & Analytics</h3>
                                 <p>Generate comprehensive reports, view check history, and analyze fleet performance data.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('locker_check_report.php')" class="card-button">Locker Reports</button>
-                                    <button onclick="loadPage('deleted_items_report.php')" class="card-button">Deleted Items</button>
-                                    <button onclick="loadPage('login_logs.php')" class="card-button secondary">Login Logs</button>
+                                    <button onclick="loadPage('locker_check_report.php', this)" class="card-button">Locker Reports</button>
+                                    <button onclick="loadPage('deleted_items_report.php', this)" class="card-button">Deleted Items</button>
+                                    <button onclick="loadPage('login_logs.php', this)" class="card-button secondary">Login Logs</button>
                                 </div>
                             </div>
                             
@@ -858,8 +862,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Communication</h3>
                                 <p>Configure email notifications and send check results to relevant personnel.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('email_admin.php')" class="card-button">Email Settings</button>
-                                    <button onclick="loadPage('email_results.php')" class="card-button">Send Results</button>
+                                    <button onclick="loadPage('email_admin.php', this)" class="card-button">Email Settings</button>
+                                    <button onclick="loadPage('email_results.php', this)" class="card-button">Send Results</button>
                                 </div>
                             </div>
                             
@@ -868,7 +872,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>System Administration</h3>
                                 <p>Manage stations, users, and system-wide settings. Access installation and upgrade tools.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('admin_modules/manage_stations.php')" class="card-button">Stations</button>
+                                    <button onclick="loadPage('admin_modules/manage_stations.php', this)" class="card-button">Stations</button>
                                     <a href="manage_users.php" target="_blank" class="card-button">Users</a>
                                     <a href="install.php" class="card-button secondary" target="_blank">Installer</a>
                                 </div>
@@ -881,7 +885,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <p>Manage users for your assigned stations and configure station-specific settings.</p>
                                 <div class="card-buttons">
                                     <a href="manage_users.php" target="_blank" class="card-button">Station Users</a>
-                                    <button onclick="loadPage('station_settings.php')" class="card-button">Settings</button>
+                                    <button onclick="loadPage('station_settings.php', this)" class="card-button">Settings</button>
                                 </div>
                             </div>
                             <?php endif; ?>
@@ -890,8 +894,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Data Management</h3>
                                 <p>Backup your data, manage security settings, and configure system preferences.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('backups.php')" class="card-button">Backup</button>
-                                    <button onclick="loadPage('show_code.php')" class="card-button secondary">Security</button>
+                                    <button onclick="loadPage('backups.php', this)" class="card-button">Backup</button>
+                                    <button onclick="loadPage('show_code.php', this)" class="card-button secondary">Security</button>
                                 </div>
                             </div>
                         </div>
@@ -1044,3 +1048,6 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             });
         }
     </script>
+
+</body>
+</html>
