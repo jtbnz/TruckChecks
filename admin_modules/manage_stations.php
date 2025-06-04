@@ -468,7 +468,7 @@ try {
                     <h3 class="station-name"><?= htmlspecialchars($station['name']) ?></h3>
                     <div class="station-actions">
                         <button class="btn btn-primary btn-sm" onclick="editStation(<?= $station['id'] ?>, '<?= htmlspecialchars(addslashes($station['name'])) ?>', '<?= htmlspecialchars(addslashes($station['description'] ?? '')) ?>')">Edit</button>
-                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this station? This action cannot be undone.')){ deleteStation(<?= $station['id'] ?>); }" class="btn btn-danger btn-sm">Delete</a>
+                        <a href="#" onclick="if(confirm('Are you sure you want to delete this station? This action cannot be undone.')){ deleteStation(<?= $station['id'] ?>); }" class="btn btn-danger btn-sm">Delete</a>
                     </div>
                 </div>
 

@@ -520,8 +520,7 @@ try {
                     <div class="locker-actions">
                         <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?edit_id=<?= $locker['id'] ?>'); }" class="edit-link">Edit</a>
                         <?php if ($locker['item_count'] == 0): ?>
-                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this locker?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?delete_locker_id=<?= $locker['id'] ?>&ajax_action=delete_locker'); } }"
-                               class="delete-link">Delete</a>
+                            <a href="#" data-locker-id="<?= $locker['id'] ?>" class="delete-link">Delete</a>
                         <?php else: ?>
                             <span class="delete-link disabled" 
                                   title="Cannot delete locker with items">Delete</span>
@@ -601,8 +600,7 @@ document.addEventListener('DOMContentLoaded', function() {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (confirm('Are you sure you want to delete this locker?')) {
-                    const url = new URL(this.href);
-                    const lockerId = url.searchParams.get('delete_locker_id');
+                    const lockerId = this.dataset.lockerId; // Get locker ID from data attribute
                     
                     fetch(`admin.php?ajax_action=delete_locker&delete_locker_id=${lockerId}`, { // Submit to admin.php
                         method: 'GET', // Using GET for simplicity as it's a direct link click

@@ -590,7 +590,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <li>
                         <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
                         <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); }">Edit</a> | 
-                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this item?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?delete_item_id=<?= $item['id'] ?>&ajax_action=delete_item<?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); } }" >Delete</a>
+                        <a href="#" onclick="deleteItem(<?= $item['id'] ?>, '<?= $truck_filter ?>', '<?= $locker_filter ?>');" >Delete</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
@@ -699,16 +699,10 @@ function updateItemsList(selectedTruck, selectedLocker) {
                     if (selectedTruck) editParams.append('truck_filter', selectedTruck);
                     if (selectedLocker) editParams.append('locker_filter', selectedLocker);
                     
-                    const deleteParams = new URLSearchParams();
-                    deleteParams.append('delete_item_id', item.id);
-                    deleteParams.append('ajax_action', 'delete_item'); // Add ajax_action for delete
-                    if (selectedTruck) deleteParams.append('truck_filter', selectedTruck);
-                    if (selectedLocker) deleteParams.append('locker_filter', selectedLocker);
-                    
                     html += '<li>' + 
                             item.name + ' (' + item.truck_name + ' - ' + item.locker_name + ') ' +
                             '<a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === \'function\'){ window.parent.loadPage(\'maintain_locker_items.php?' + editParams.toString() + '\'); }">Edit</a> | ' +
-                            '<a href="#" onclick="event.preventDefault(); if(confirm(\'Are you sure you want to delete this item?\')){ if(window.parent && typeof window.parent.loadPage === \'function\'){ window.parent.loadPage(\'maintain_locker_items.php?' + deleteParams.toString() + '\'); } }" >Delete</a>' +
+                            '<a href="#" onclick="event.preventDefault(); deleteItem(' + item.id + ', \'' + selectedTruck + '\', \'' + selectedLocker + '\');" >Delete</a>' +
                             '</li>';
                 });
                 html += '</ul>';
@@ -749,6 +743,41 @@ function updateAddLockerDropdown() {
         addLockerSelect.innerHTML = '<option value="">Select Truck First</option>';
     }
 }
+
+// New function to handle item deletion via AJAX
+function deleteItem(itemId, truckFilter, lockerFilter) {
+    if (confirm('Are you sure you want to delete this item?')) {
+        const params = new URLSearchParams();
+        params.append('delete_item_id', itemId);
+        params.append('ajax_action', 'delete_item'); // This will be caught by admin.php's GET handler
+        
+        fetch('admin.php?' + params.toString(), { // Send GET request to admin.php
+            method: 'GET', // Explicitly set method to GET
+            headers: {
+                'Content-Type': 'application/json', // Indicate expected response type
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.parent && typeof window.parent.loadPage === 'function') {
+                    // Reload the page to show updated list, preserving filters
+                    let reloadParams = '';
+                    if (truckFilter) reloadParams += `truck_filter=${truckFilter}`;
+                    if (lockerFilter) reloadParams += `${reloadParams ? '&' : ''}locker_filter=${lockerFilter}`;
+                    window.parent.loadPage('maintain_locker_items.php' + (reloadParams ? '?' + reloadParams : ''));
+                }
+            } else {
+                alert('Error deleting item: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting item:', error);
+            alert('Error deleting item. Please try again.');
+        });
+    }
+}
+
 
 // Handle form submissions via AJAX
 document.addEventListener('DOMContentLoaded', function() {

@@ -445,8 +445,7 @@ try {
                     <div class="truck-actions">
                         <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php?edit_id=<?= $truck['id'] ?>'); }" class="edit-link">Edit</a>
                         <?php if ($truck['locker_count'] == 0): ?>
-                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this truck?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php?delete_truck_id=<?= $truck['id'] ?>&ajax_action=delete_truck'); } }"
-                               class="delete-link">Delete</a>
+                            <a href="#" data-truck-id="<?= $truck['id'] ?>" class="delete-link">Delete</a>
                         <?php else: ?>
                             <span class="delete-link disabled" 
                                   title="Cannot delete truck with lockers">Delete</span>
@@ -525,8 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (confirm('Are you sure you want to delete this truck?')) {
-                    const url = new URL(this.href);
-                    const truckId = url.searchParams.get('delete_truck_id');
+                    const truckId = this.dataset.truckId; // Get truck ID from data attribute
                     
                     fetch(`admin.php?ajax_action=delete_truck&delete_truck_id=${truckId}`, { // Submit to admin.php
                         method: 'GET', // Using GET for simplicity as it's a direct link click
