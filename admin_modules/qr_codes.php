@@ -231,7 +231,7 @@ $qr_code_target_base_url = $protocol . $host . rtrim(dirname($_SERVER['SCRIPT_NA
 
     <h1>Locker QR Codes</h1>
     <div class="button-container-qr">
-        <a href="<?= $basePath ?>qr-codes-pdf.php?station_id=<?= $current_station_id ?>" class="button" target="_blank">A4 PDF of QR Codes</a>
+        <a href="<?= htmlspecialchars($qr_code_target_base_url . '/qr-codes-pdf.php?station_id=' . $current_station_id) ?>" class="button" target="_blank">A4 PDF of QR Codes</a>
     </div>
     <div class="msg-container-qr">
         <div>
