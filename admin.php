@@ -116,30 +116,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     $userRole = $user['role'];
     $userName = $user['username'];
 
-    $currentStation = null; 
+    // $currentStation = null; // This was the old initialization
     $userStations = []; 
+    $currentStation = null; // Initialize $currentStation
 
     if ($userRole === 'superuser') {
-        $station = getCurrentStation(); // Assign to global $station
+        $currentStation = getCurrentStation(); // Assign to $currentStation
     } elseif ($userRole === 'station_admin') {
         try {
             $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
             $stmt_stations->execute([$user['id']]);
-            $userStations = $stmt_stations->fetchAll();
-            if (count($userStations) === 1) {
-                $station = $userStations[0]; // Assign to global $station
-            } else {
-                // If station admin has multiple stations, and no specific station is selected,
-                // or if the current station is not valid for them, default to null or redirect.
-                // For now, we'll ensure $station is null if not explicitly set to a single station.
-                $station = null; 
+            $userStations = $stmt_stations->fetchAll(); // Store for potential use in station selection UI if needed
+            
+            // Determine active station for station_admin
+            if (isset($_SESSION['selected_station_id'])) {
+                foreach ($userStations as $s_admin) {
+                    if ($s_admin['id'] == $_SESSION['selected_station_id']) {
+                        $currentStation = $s_admin;
+                        break;
+                    }
+                }
             }
+            // If no valid station selected in session, or only one station assigned, set it.
+            if (!$currentStation && count($userStations) === 1) {
+                $currentStation = $userStations[0];
+                if (session_status() == PHP_SESSION_ACTIVE) { // Update session if only one station
+                     $_SESSION['selected_station_id'] = $currentStation['id'];
+                }
+            }
+            // If still no currentStation (e.g. multiple stations, none selected, or invalid selection)
+            // $currentStation remains null, and modules should handle this (e.g. prompt to select)
+
         } catch (Exception $e) {
-            error_log('Error getting user stations in AJAX: ' . $e->getMessage());
-            $station = null;
+            error_log('Error getting user stations in AJAX GET: ' . $e->getMessage());
+            $currentStation = null;
         }
     } else {
-        $station = null; // Ensure $station is null for other roles or unhandled cases
+        // For other roles, $currentStation remains null unless specific logic is added
+        $currentStation = null; 
     }
     
     // Security: Only allow specific pages
@@ -149,10 +163,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         // 'admin_modules/maintain_locker_items.php', // Functionality merged into admin_modules/lockers.php
         'admin_modules/lockers.php', // Unified module for Trucks, Lockers, Items
         'admin_modules/qr_codes.php', // Moved QR codes to modules
+        'admin_modules/email_admin.php', // Moved email admin to modules
         'find.php',
         'reset_locker_check.php',
         // 'qr-codes.php', // Removed old path
-        'email_admin.php',
+        // 'email_admin.php', // Removed old path
         'email_results.php',
         'locker_check_report.php',
         'list_all_items_report.php',
@@ -222,25 +237,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $user = getCurrentUser();
     $userRole = $user['role'];
     $userName = $user['username'];
-    
+    $currentStation = null; // Initialize $currentStation for POST actions too
+
     if ($userRole === 'superuser') {
-        $station = getCurrentStation(); // Assign to global $station
+        $currentStation = getCurrentStation(); // Assign to $currentStation
     } elseif ($userRole === 'station_admin') {
         try {
-            $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
-            $stmt_stations->execute([$user['id']]);
-            $userStations = $stmt_stations->fetchAll();
-            if (count($userStations) === 1) {
-                $station = $userStations[0]; // Assign to global $station
-            } else {
-                $station = null;
+            $stmt_stations_post = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+            $stmt_stations_post->execute([$user['id']]);
+            $userStations_post = $stmt_stations_post->fetchAll();
+            
+            if (isset($_SESSION['selected_station_id'])) {
+                foreach ($userStations_post as $s_admin_post) {
+                    if ($s_admin_post['id'] == $_SESSION['selected_station_id']) {
+                        $currentStation = $s_admin_post;
+                        break;
+                    }
+                }
+            }
+            if (!$currentStation && count($userStations_post) === 1) {
+                $currentStation = $userStations_post[0];
+                 if (session_status() == PHP_SESSION_ACTIVE) {
+                     $_SESSION['selected_station_id'] = $currentStation['id'];
+                }
             }
         } catch (Exception $e) {
-            error_log('Error getting user stations in module POST: ' . $e->getMessage());
-            $station = null;
+            error_log('Error getting user stations in AJAX POST: ' . $e->getMessage());
+            $currentStation = null;
         }
     } else {
-        $station = null;
+        $currentStation = null;
     }
     
     // Determine which module to load based on the ajax_action
@@ -708,7 +734,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="javascript:void(0)" onclick="loadPage('email_admin.php', this)" class="nav-item">
+                    <a href="javascript:void(0)" onclick="loadPage('admin_modules/email_admin.php', this)" class="nav-item">
                         <i>📧</i> Manage Email Settings
                     </a>
                     <a href="javascript:void(0)" onclick="loadPage('email_results.php', this)" class="nav-item">
@@ -852,7 +878,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <h3>Communication</h3>
                                 <p>Configure email notifications and send check results to relevant personnel.</p>
                                 <div class="card-buttons">
-                                    <button onclick="loadPage('email_admin.php', this)" class="card-button">Email Settings</button>
+                                    <button onclick="loadPage('admin_modules/email_admin.php', this)" class="card-button">Email Settings</button>
                                     <button onclick="loadPage('email_results.php', this)" class="card-button">Send Results</button>
                                 </div>
                             </div>
