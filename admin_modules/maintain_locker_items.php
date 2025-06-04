@@ -786,8 +786,8 @@ function deleteItem(itemId, truckFilter, lockerFilter) {
 }
 
 
-// Handle form submissions via AJAX
-document.addEventListener('DOMContentLoaded', function() {
+// Function to initialize event listeners and update UI
+function initializeLockerItemsPage() {
     // Handle add item form
     const addForm = document.getElementById('add-item-form');
     if (addForm) {
@@ -875,5 +875,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('truck_filter').value = initialTruckFilter;
     updateLockerDropdown(initialTruckFilter, initialLockerFilter); // Pass initialLockerFilter to select it
     updateItemsList(initialTruckFilter, initialLockerFilter);
-});
+}
+
+// Call the initialization function when the script is loaded
+// This replaces the DOMContentLoaded listener for AJAX-loaded content
+initializeLockerItemsPage();
 </script>

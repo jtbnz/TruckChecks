@@ -929,29 +929,35 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 .then(response => response.text())
                 .then(html => {
                     const contentArea = document.getElementById('content-area');
-                    contentArea.innerHTML = html;
                     
-                    // Execute any scripts that were loaded
-                    const scripts = contentArea.getElementsByTagName('script');
+                    // Create a temporary div to parse the HTML and extract scripts
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+
+                    // Extract and re-execute scripts
+                    const scripts = Array.from(tempDiv.getElementsByTagName('script'));
                     for (let i = 0; i < scripts.length; i++) {
-                        const script = scripts[i];
+                        const oldScript = scripts[i];
                         const newScript = document.createElement('script');
                         
                         // Copy attributes
-                        for (let j = 0; j < script.attributes.length; j++) {
-                            const attr = script.attributes[j];
+                        for (let j = 0; j < oldScript.attributes.length; j++) {
+                            const attr = oldScript.attributes[j];
                             newScript.setAttribute(attr.name, attr.value);
                         }
                         
                         // Copy content
-                        newScript.textContent = script.textContent;
+                        newScript.textContent = oldScript.textContent;
                         
                         // Replace old script with new one to execute it
-                        script.parentNode.replaceChild(newScript, script);
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
                     }
                     
+                    // Insert the remaining HTML (without original script elements) into the content area
+                    contentArea.innerHTML = tempDiv.innerHTML;
+                    
                     document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content-area').style.display = 'block';
+                    contentArea.style.display = 'block';
                     
                     // Update URL without page reload
                     const url = new URL(window.location);
@@ -959,7 +965,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     window.history.pushState({}, '', url);
                 })
                 .catch(error => {
-                    console.error('Error loading page:', error);
+                    console.error('Network or parsing error loading page:', error); // More specific error message
                     document.getElementById('content-area').innerHTML = '<div style="padding: 20px; text-align: center; color: #dc3545;">Error loading page. Please try again.</div>';
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content-area').style.display = 'block';
