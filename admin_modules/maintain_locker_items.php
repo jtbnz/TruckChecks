@@ -792,6 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const addForm = document.getElementById('add-item-form');
     if (addForm) {
         addForm.addEventListener('submit', function(e) {
+            console.log('Add item form submitted via AJAX handler.'); // Debugging line
             e.preventDefault();
             
             const formData = new FormData(this);
