@@ -603,47 +603,109 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
     <?php if ($current_station_id): ?>
         <p class="station-context-info">Managing for Station: <strong><?= htmlspecialchars($current_station_name, ENT_QUOTES, 'UTF-8') ?></strong></p>
         
+        <?php
+        // Populate $trucks_for_list early as it's used by multiple cards/dropdowns
+        $trucks_for_list = []; 
+        if ($current_station_id) {
+            try {
+                $stmt_trucks_list_data = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                $stmt_trucks_list_data->execute([$current_station_id]);
+                $trucks_for_list = $stmt_trucks_list_data->fetchAll(PDO::FETCH_ASSOC); 
+            } catch (PDOException $e_truck_fetch) {
+                error_log("Error fetching trucks for lists in lockers.php: " . $e_truck_fetch->getMessage());
+                // $trucks_for_list remains empty, subsequent checks for count($trucks_for_list) will handle this
+            }
+        }
+        ?>
+
         <div class="lockers-dashboard-grid">
             
-            <!-- Trucks Card -->
-            <div class="lockers-dashboard-card" id="trucks-management-card">
-                <h3><i>🚛</i> Trucks</h3>
-                <div id="add-truck-form-container">
-                    <h4>Add New Truck</h4>
-                    <form id="add-truck-form">
-                        <input type="hidden" name="station_id" value="<?= htmlspecialchars($current_station_id, ENT_QUOTES, 'UTF-8') ?>">
+            <!-- Items Card -->
+            <div class="lockers-dashboard-card" id="items-management-card">
+                <h3><i>📦</i> Items</h3>
+                <div id="add-item-form-container">
+                    <h4>Add New Item</h4>
+                    <form id="add-item-form">
                         <div class="form-group">
-                            <label for="new-truck-name">Truck Name:</label>
-                            <input type="text" id="new-truck-name" name="truck_name" required>
+                            <label for="select-truck-for-item">Select Truck:</label>
+                            <select id="select-truck-for-item" name="truck_id_for_item" required onchange="loadLockersForItemDropdown(this.value)">
+                                <option value="">-- Select Truck --</option>
+                                <?php
+                                if (count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
                         </div>
-                        <button type="submit" class="button">Add Truck</button>
+                        <div class="form-group">
+                            <label for="select-locker-for-item">Select Locker:</label>
+                            <select id="select-locker-for-item" name="locker_id_for_item" required>
+                                <option value="">-- Select Truck First --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-item-name">Item Name:</label>
+                            <input type="text" id="new-item-name" name="item_name" required>
+                        </div>
+                        <button type="submit" class="button">Add Item</button>
                     </form>
                 </div>
-                <div id="trucks-list-container">
-                    <h4>Existing Trucks</h4>
+
+                <div id="items-list-container">
+                    <h4>Existing Items</h4>
+                    <div class="form-group">
+                        <label for="filter-items-by-truck">Filter by Truck:</label>
+                        <select id="filter-items-by-truck" name="filter_truck_id_for_items" onchange="handleTruckFilterChange(this.value)">
+                            <option value="">All Trucks</option>
+                             <?php
+                                if (count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="filter-items-by-locker">Filter by Locker:</label>
+                        <select id="filter-items-by-locker" name="filter_locker_id_for_items" onchange="loadItemsList(document.getElementById('filter-items-by-truck').value, this.value)">
+                            <option value="">All Lockers</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
                     <div class="scrollable-list-container">
-                        <ul id="trucks-list" class="entity-list">
+                        <ul id="items-list" class="entity-list">
                             <?php
-                            // This $trucks_for_list variable is used by other dropdowns on the page.
-                            // It should be populated here based on the $current_station_id.
-                            $trucks_for_list = []; // Initialize
                             if ($current_station_id) {
                                 try {
-                                    $stmt_trucks_list = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
-                                    $stmt_trucks_list->execute([$current_station_id]);
-                                    $trucks_for_list = $stmt_trucks_list->fetchAll(PDO::FETCH_ASSOC); 
-                                    if (count($trucks_for_list) > 0) {
-                                        foreach ($trucks_for_list as $truck_item) {
-                                            echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                    // Initial load of items for the current station (no truck/locker filter yet from JS)
+                                    $stmt_items = $db->prepare("
+                                        SELECT li.id, li.name AS item_name, l.id AS locker_id, l.name AS locker_name, t.id AS truck_id, t.name AS truck_name
+                                        FROM items li
+                                        JOIN lockers l ON li.locker_id = l.id
+                                        JOIN trucks t ON l.truck_id = t.id
+                                        WHERE t.station_id = ?
+                                        ORDER BY t.name, l.name, li.name
+                                    ");
+                                    $stmt_items->execute([$current_station_id]);
+                                    $items_list_data = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+                                    if (count($items_list_data) > 0) {
+                                        foreach ($items_list_data as $item_entry) {
+                                            echo '<li><span>' . htmlspecialchars($item_entry['item_name'], ENT_QUOTES, 'UTF-8') . 
+                                                 ' (Locker: ' . htmlspecialchars($item_entry['locker_name'], ENT_QUOTES, 'UTF-8') . 
+                                                 ', Truck: ' . htmlspecialchars($item_entry['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span>'.
+                                                 ' <span class="actions"><button class="button secondary" style="padding:3px 6px; font-size:10px;" onclick="openEditItemModal('.$item_entry['id'].', \''.htmlspecialchars(addslashes($item_entry['item_name']), ENT_QUOTES).'\', '.$item_entry['locker_id'].', '.$item_entry['truck_id'].')">Edit</button></span></li>';
                                         }
                                     } else {
-                                        echo '<li>No trucks found for this station.</li>';
+                                        echo '<li>No items found for this station.</li>';
                                     }
                                 } catch (PDOException $e) {
-                                    echo '<li>Error fetching trucks: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
+                                    echo '<li>Error fetching items: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
                                 }
                             } else {
-                                 echo '<li>Select a station to view trucks.</li>';
+                                 echo '<li>Select a station to view items.</li>';
                             }
                             ?>
                         </ul>
@@ -662,7 +724,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             <select id="select-truck-for-locker" name="truck_id_for_locker" required>
                                 <option value="">-- Select Truck --</option>
                                 <?php
-                                if (count($trucks_for_list) > 0) { // Use $trucks_for_list populated above
+                                if (count($trucks_for_list) > 0) { 
                                     foreach ($trucks_for_list as $truck_item) {
                                         echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
                                     }
@@ -712,95 +774,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                 </div>
             </div>
 
-            <!-- Items Card -->
-            <div class="lockers-dashboard-card" id="items-management-card">
-                <h3><i>📦</i> Items</h3>
-                <div id="add-item-form-container">
-                    <h4>Add New Item</h4>
-                    <form id="add-item-form">
+            <!-- Trucks Card -->
+            <div class="lockers-dashboard-card" id="trucks-management-card">
+                <h3><i>🚛</i> Trucks</h3>
+                <div id="add-truck-form-container">
+                    <h4>Add New Truck</h4>
+                    <form id="add-truck-form">
+                        <input type="hidden" name="station_id" value="<?= htmlspecialchars($current_station_id, ENT_QUOTES, 'UTF-8') ?>">
                         <div class="form-group">
-                            <label for="select-truck-for-item">Select Truck:</label>
-                            <select id="select-truck-for-item" name="truck_id_for_item" required onchange="loadLockersForItemDropdown(this.value)">
-                                <option value="">-- Select Truck --</option>
-                                <?php
-                                if (count($trucks_for_list) > 0) { // Use $trucks_for_list populated above
-                                    foreach ($trucks_for_list as $truck_item) {
-                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
+                            <label for="new-truck-name">Truck Name:</label>
+                            <input type="text" id="new-truck-name" name="truck_name" required>
                         </div>
-                        <div class="form-group">
-                            <label for="select-locker-for-item">Select Locker:</label>
-                            <select id="select-locker-for-item" name="locker_id_for_item" required>
-                                <option value="">-- Select Truck First --</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-item-name">Item Name:</label>
-                            <input type="text" id="new-item-name" name="item_name" required>
-                        </div>
-                        <button type="submit" class="button">Add Item</button>
+                        <button type="submit" class="button">Add Truck</button>
                     </form>
                 </div>
-
-                <div id="items-list-container">
-                    <h4>Existing Items</h4>
-                    <div class="form-group">
-                        <label for="filter-items-by-truck">Filter by Truck:</label>
-                        <select id="filter-items-by-truck" name="filter_truck_id_for_items" onchange="handleTruckFilterChange(this.value)">
-                            <option value="">All Trucks</option>
-                             <?php
-                                if (count($trucks_for_list) > 0) { // Use $trucks_for_list populated above
-                                    foreach ($trucks_for_list as $truck_item) {
-                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
-                                    }
-                                }
-                            ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="filter-items-by-locker">Filter by Locker:</label>
-                        <select id="filter-items-by-locker" name="filter_locker_id_for_items" onchange="loadItemsList(document.getElementById('filter-items-by-truck').value, this.value)">
-                            <option value="">All Lockers</option>
-                            <!-- Populated by JS -->
-                        </select>
-                    </div>
+                <div id="trucks-list-container">
+                    <h4>Existing Trucks</h4>
                     <div class="scrollable-list-container">
-                        <ul id="items-list" class="entity-list">
+                        <ul id="trucks-list" class="entity-list">
                             <?php
                             if ($current_station_id) {
-                                try {
-                                    // Initial load of items for the current station (no truck/locker filter yet from JS)
-                                    $stmt_items = $db->prepare("
-                                        SELECT li.id, li.name AS item_name, l.id AS locker_id, l.name AS locker_name, t.id AS truck_id, t.name AS truck_name
-                                        FROM items li
-                                        JOIN lockers l ON li.locker_id = l.id
-                                        JOIN trucks t ON l.truck_id = t.id
-                                        WHERE t.station_id = ?
-                                        ORDER BY t.name, l.name, li.name
-                                    ");
-                                    $stmt_items->execute([$current_station_id]);
-                                    $items_list_data = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
-                                    if (count($items_list_data) > 0) {
-                                        foreach ($items_list_data as $item_entry) {
-                                            // JS will populate this list dynamically on filter changes.
-                                            // This initial PHP loop is mostly for non-JS scenarios or initial state.
-                                            // The JS loadItemsList will overwrite this.
-                                            echo '<li><span>' . htmlspecialchars($item_entry['item_name'], ENT_QUOTES, 'UTF-8') . 
-                                                 ' (Locker: ' . htmlspecialchars($item_entry['locker_name'], ENT_QUOTES, 'UTF-8') . 
-                                                 ', Truck: ' . htmlspecialchars($item_entry['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span>'.
-                                                 ' <span class="actions"><button class="button secondary" style="padding:3px 6px; font-size:10px;" onclick="openEditItemModal('.$item_entry['id'].', \''.htmlspecialchars(addslashes($item_entry['item_name']), ENT_QUOTES).'\', '.$item_entry['locker_id'].', '.$item_entry['truck_id'].')">Edit</button></span></li>';
-                                        }
-                                    } else {
-                                        echo '<li>No items found for this station.</li>';
+                                if (count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
                                     }
-                                } catch (PDOException $e) {
-                                    echo '<li>Error fetching items: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
+                                } else {
+                                    echo '<li>No trucks found for this station.</li>';
                                 }
                             } else {
-                                 echo '<li>Select a station to view items.</li>';
+                                 echo '<li>Select a station to view trucks.</li>';
                             }
                             ?>
                         </ul>
@@ -1056,10 +1058,10 @@ function escapeHTML(str) {
     if (str === null || str === undefined) return '';
     return String(str).replace(/[&<>"']/g, function (match) {
         return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
+            '&': '&',
+            '<': '<',
+            '>': '>',
+            '"': '"',
             "'": '&#39;'
         }[match];
     });
