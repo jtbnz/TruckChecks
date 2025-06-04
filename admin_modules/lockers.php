@@ -1,56 +1,162 @@
 <?php
 // admin_modules/lockers.php
-// This file is intended to be included as an AJAX module within admin.php
-// It assumes auth.php, config.php, and db.php have already been included
-// and $pdo, $user, $userRole, $userName, $station, DEBUG are available.
+// Assumes auth.php, config.php, db.php are included via admin.php
+// and $pdo, $user, $userRole, $userName, $station (can be null) are available.
 
-// Ensure necessary variables are available from admin.php
-global $pdo, $user, $userRole, $userName, $station, $DEBUG;
-
-if (!isset($pdo) || !isset($user) || !isset($station)) {
-    // If $station is not set, it might mean the user needs to select one first.
-    // Or, if this module is accessible without a station, this check might need adjustment.
-    // For now, assume $station is required as per most other modules.
-    die('This module must be loaded through admin.php and a station must be selected.');
-}
+global $pdo, $user, $userRole, $userName, $station, $DEBUG, $userStations; // $userStations is available in admin.php context
 
 $db = $pdo; // Use the PDO connection from admin.php
 $error_message = '';
 $success_message = '';
-$current_station_id = $station['id'];
-$current_station_name = $station['name'];
 
-// Handle AJAX actions (will be expanded significantly)
+$current_station_id = null;
+$current_station_name = "No station selected";
+
+if (isset($station) && is_array($station) && isset($station['id'])) {
+    $current_station_id = $station['id'];
+    $current_station_name = $station['name'];
+}
+
+// Handle AJAX actions (POST for CUD operations)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     header('Content-Type: application/json');
     $action = $_POST['ajax_action'];
-    $response = ['success' => false, 'message' => 'Invalid action.'];
+    $response = ['success' => false, 'message' => 'Invalid action or station not selected.'];
 
-    // Placeholder for actions
-    // switch ($action) {
-    //     case 'add_truck':
-    //         // ... logic ...
-    //         break;
-    //     // ... other cases ...
-    // }
+    if (!$current_station_id && !in_array($action, ['get_lockers_for_truck'])) { // Allow get_lockers_for_truck even if station not globally set, if truck_id is passed
+        echo json_encode($response);
+        exit;
+    }
+
+    if ($action === 'add_truck') {
+        $truck_name = trim($_POST['truck_name'] ?? '');
+        if (!empty($truck_name) && $current_station_id) {
+            try {
+                $stmt_check = $pdo->prepare("SELECT id FROM trucks WHERE name = ? AND station_id = ?");
+                $stmt_check->execute([$truck_name, $current_station_id]);
+                if ($stmt_check->fetch()) {
+                    $response = ['success' => false, 'message' => 'A truck with this name already exists for this station.'];
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO trucks (name, station_id) VALUES (?, ?)");
+                    $stmt->execute([$truck_name, $current_station_id]);
+                    $truck_id = $pdo->lastInsertId();
+                    $response = ['success' => true, 'message' => 'Truck added successfully.', 'truck_id' => $truck_id, 'truck_name' => $truck_name];
+                }
+            } catch (PDOException $e) {
+                error_log("Error adding truck: " . $e->getMessage());
+                $response['message'] = 'Database error adding truck. ' . ($DEBUG ? $e->getMessage() : '');
+            }
+        } else if (empty($truck_name)) {
+            $response['message'] = 'Truck name cannot be empty.';
+        } else {
+            $response['message'] = 'Station not selected or invalid truck name.';
+        }
+    } elseif ($action === 'add_locker') {
+        $locker_name = trim($_POST['locker_name'] ?? '');
+        $truck_id = $_POST['truck_id_for_locker'] ?? '';
+
+        if (!empty($locker_name) && !empty($truck_id) && $current_station_id) {
+            try {
+                $stmt_truck_check = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_truck_check->execute([$truck_id, $current_station_id]);
+                if (!$stmt_truck_check->fetch()) {
+                    $response = ['success' => false, 'message' => 'Selected truck does not belong to this station.'];
+                } else {
+                    $stmt_check = $pdo->prepare("SELECT id FROM lockers WHERE name = ? AND truck_id = ?");
+                    $stmt_check->execute([$locker_name, $truck_id]);
+                    if ($stmt_check->fetch()) {
+                        $response = ['success' => false, 'message' => 'A locker with this name already exists for this truck.'];
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO lockers (name, truck_id, station_id) VALUES (?, ?, ?)");
+                        $stmt->execute([$locker_name, $truck_id, $current_station_id]);
+                        $locker_id = $pdo->lastInsertId();
+                        $response = ['success' => true, 'message' => 'Locker added successfully.', 'locker_id' => $locker_id, 'locker_name' => $locker_name, 'truck_id' => $truck_id];
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error adding locker: " . $e->getMessage());
+                $response['message'] = 'Database error adding locker. ' . ($DEBUG ? $e->getMessage() : '');
+            }
+        } else if (empty($locker_name)) {
+            $response['message'] = 'Locker name cannot be empty.';
+        } else if (empty($truck_id)) {
+            $response['message'] = 'Please select a truck to assign the locker to.';
+        } else {
+            $response['message'] = 'Station not selected or invalid locker/truck details.';
+        }
+    } elseif ($action === 'add_item') {
+        $item_name = trim($_POST['item_name'] ?? '');
+        $locker_id = $_POST['locker_id_for_item'] ?? '';
+
+        if (!empty($item_name) && !empty($locker_id) && $current_station_id) {
+            try {
+                $stmt_locker_check = $pdo->prepare("SELECT id FROM lockers WHERE id = ? AND station_id = ?");
+                $stmt_locker_check->execute([$locker_id, $current_station_id]);
+                if (!$stmt_locker_check->fetch()) {
+                    $response = ['success' => false, 'message' => 'Selected locker does not belong to this station.'];
+                } else {
+                    $stmt_check = $pdo->prepare("SELECT id FROM locker_items WHERE name = ? AND locker_id = ?");
+                    $stmt_check->execute([$item_name, $locker_id]);
+                    if ($stmt_check->fetch()) {
+                        $response = ['success' => false, 'message' => 'An item with this name already exists in this locker.'];
+                    } else {
+                        // Using user['id'] for last_checked_by. Ensure $user is available and has 'id'.
+                        $user_id_to_log = isset($user['id']) ? $user['id'] : null; 
+                        $stmt = $pdo->prepare("INSERT INTO locker_items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
+                        $stmt->execute([$item_name, $locker_id, $current_station_id, $user_id_to_log]);
+                        $item_id = $pdo->lastInsertId();
+                        $response = ['success' => true, 'message' => 'Item added successfully.', 'item_id' => $item_id, 'item_name' => $item_name, 'locker_id' => $locker_id];
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error adding item: " . $e->getMessage());
+                $response['message'] = 'Database error adding item. ' . ($DEBUG ? $e->getMessage() : '');
+            }
+        } else if (empty($item_name)) {
+            $response['message'] = 'Item name cannot be empty.';
+        } else if (empty($locker_id)) {
+            $response['message'] = 'Please select a locker to assign the item to.';
+        } else {
+            $response['message'] = 'Station not selected or invalid item/locker details.';
+        }
+    }
+    // TODO: Implement other CUD operations (edit, delete etc.)
 
     echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
-// Handle GET AJAX actions (e.g., fetching lists)
+// Handle GET AJAX actions (e.g., fetching lists for dynamic updates)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
     header('Content-Type: application/json');
     $action = $_GET['ajax_action'];
     $response = ['success' => false, 'message' => 'Invalid action.', 'data' => []];
 
-    // Placeholder for actions
-    // switch ($action) {
-    //     case 'list_items':
-    //         // ... logic ...
-    //         break;
-    //     // ... other cases ...
-    // }
+    // $current_station_id might be null here if a superuser hasn't selected a station.
+    // Actions like get_lockers_for_truck need truck_id, which implies a station context.
+
+    if ($action === 'get_lockers_for_truck') {
+        $truck_id_filter = $_GET['truck_id'] ?? null;
+        // We need station_id to ensure the truck belongs to the active station context if set
+        // If $current_station_id is null (superuser, no station selected), this might be problematic
+        // For now, assume $current_station_id is required for this to make sense.
+        if ($truck_id_filter && $current_station_id) {
+            try {
+                $stmt = $pdo->prepare("SELECT id, name FROM lockers WHERE truck_id = ? AND station_id = ? ORDER BY name");
+                $stmt->execute([$truck_id_filter, $current_station_id]);
+                $lockers_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $response = ['success' => true, 'data' => $lockers_data];
+            } catch (PDOException $e) {
+                error_log("Error fetching lockers for truck: " . $e->getMessage());
+                $response['message'] = 'Database error fetching lockers. ' . ($DEBUG ? $e->getMessage() : '');
+            }
+        } else if (!$current_station_id) {
+             $response['message'] = 'Please select a station first.';
+        } else {
+            $response['message'] = 'Truck ID missing.';
+        }
+    }
+    // TODO: Implement other GET AJAX actions if needed (e.g., get_items_for_locker_or_truck)
     
     echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
@@ -59,161 +165,534 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
 ?>
 
 <style>
-    /* Basic styling for the Lockers module */
     .lockers-page-container {
         padding: 20px;
         font-family: Arial, sans-serif;
     }
-    .lockers-section {
-        margin-bottom: 30px;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        background-color: #f9f9f9;
+    .station-context-info {
+        font-size: 1.1em;
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #e9ecef;
+        border-left: 4px solid #12044C; /* Accent color */
+        border-radius: 4px;
     }
-    .lockers-section h2 {
-        margin-top: 0;
-        border-bottom: 1px solid #ccc;
+    .notice {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    .notice-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+    }
+    .notice i { /* For Font Awesome icons if used */
+        margin-right: 8px;
+    }
+
+    /* Dashboard-like grid and cards */
+    .lockers-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Adjusted minmax for potentially wider cards */
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .lockers-dashboard-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 4px solid #12044C; /* Primary accent color */
+        display: flex;
+        flex-direction: column; /* Ensure cards can grow if content is large */
+    }
+    
+    .lockers-dashboard-card h3 {
+        margin: 0 0 15px 0;
+        color: #12044C;
+        font-size: 18px;
+        border-bottom: 1px solid #eee;
         padding-bottom: 10px;
     }
+    .lockers-dashboard-card h3 i { /* Emoji styling */
+        margin-right: 8px;
+        font-style: normal; /* Prevent italics for emojis */
+    }
+    
+    .lockers-dashboard-card h4 {
+        margin-top: 20px;
+        margin-bottom: 10px;
+        font-size: 16px;
+        color: #333;
+    }
+    .lockers-dashboard-card p {
+        color: #666;
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+
     .form-group {
         margin-bottom: 15px;
     }
     .form-group label {
         display: block;
         margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
     }
     .form-group input[type="text"],
     .form-group select {
         width: 100%;
-        padding: 8px;
+        padding: 10px;
         border: 1px solid #ccc;
         border-radius: 4px;
         box-sizing: border-box;
+        font-size: 14px;
     }
-    .button {
+    .button, button { /* General button styling */
         padding: 10px 15px;
         background-color: #12044C;
         color: white;
         border: none;
         border-radius: 4px;
         cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.3s;
     }
-    .button:hover {
-        background-color: #0056b3;
+    .button:hover, button:hover {
+        background-color: #0056b3; /* Darker shade on hover */
     }
-    .item-list ul {
+    .button.secondary {
+        background-color: #6c757d;
+    }
+    .button.secondary:hover {
+        background-color: #545b62;
+    }
+
+    .entity-list {
         list-style-type: none;
         padding: 0;
+        max-height: 300px; /* Add scroll for long lists */
+        overflow-y: auto;
+        border: 1px solid #eee;
+        border-radius: 4px;
     }
-    .item-list li {
-        padding: 8px;
+    .entity-list li {
+        padding: 10px;
         border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .item-list li:last-child {
+    .entity-list li:last-child {
         border-bottom: none;
     }
-    .filter-controls {
-        margin-bottom: 20px;
+    .entity-list .actions button {
+        margin-left: 5px;
+        padding: 5px 8px;
+        font-size: 12px;
+    }
+    .scrollable-list-container { /* Wrapper for lists that might get long */
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 0; /* Reset padding if ul has its own */
+        margin-top: 10px;
+    }
+    .scrollable-list-container .entity-list {
+        max-height: none; /* Disable max-height on ul if parent has it */
+        border: none;
     }
 </style>
 
 <div class="lockers-page-container">
-    <h1>Lockers Management (Station: <?= htmlspecialchars($current_station_name, ENT_QUOTES, 'UTF-8') ?>)</h1>
-    <p>This new module will consolidate management of Trucks, Lockers, and Items.</p>
+    <h1>Lockers & Items Management</h1>
 
-    <!-- Section for Adding/Managing Trucks -->
-    <div class="lockers-section" id="trucks-management-section">
-        <h2>Trucks</h2>
-        <!-- Add Truck Form -->
-        <form id="add-truck-form" class="form-group">
-            <label for="new-truck-name">Truck Name:</label>
-            <input type="text" id="new-truck-name" name="truck_name" required>
-            <button type="submit" class="button">Add Truck</button>
-        </form>
-        <div id="trucks-list">
-            <!-- Trucks will be listed here -->
-        </div>
-    </div>
-
-    <!-- Section for Adding/Managing Lockers -->
-    <div class="lockers-section" id="lockers-management-section">
-        <h2>Lockers</h2>
-        <!-- Add Locker Form -->
-        <form id="add-locker-form" class="form-group">
-            <label for="select-truck-for-locker">Select Truck:</label>
-            <select id="select-truck-for-locker" name="truck_id_for_locker" required>
-                <!-- Options populated by JS -->
-            </select>
-            <label for="new-locker-name">Locker Name:</label>
-            <input type="text" id="new-locker-name" name="locker_name" required>
-            <button type="submit" class="button">Add Locker</button>
-        </form>
-        <div id="lockers-list">
-            <!-- Lockers will be listed here -->
-        </div>
-    </div>
-
-    <!-- Section for Adding/Managing Items -->
-    <div class="lockers-section" id="items-management-section">
-        <h2>Items</h2>
-        <!-- Add Item Form -->
-        <form id="add-item-form" class="form-group">
-            <label for="select-truck-for-item">Select Truck:</label>
-            <select id="select-truck-for-item" name="truck_id_for_item" required>
-                <!-- Options populated by JS -->
-            </select>
-            <label for="select-locker-for-item">Select Locker:</label>
-            <select id="select-locker-for-item" name="locker_id_for_item" required>
-                <!-- Options populated by JS -->
-            </select>
-            <label for="new-item-name">Item Name:</label>
-            <input type="text" id="new-item-name" name="item_name" required>
-            <button type="submit" class="button">Add Item</button>
-        </form>
+    <?php if ($current_station_id): ?>
+        <p class="station-context-info">Managing for Station: <strong><?= htmlspecialchars($current_station_name, ENT_QUOTES, 'UTF-8') ?></strong></p>
         
-        <h3>Existing Items</h3>
-        <div class="filter-controls form-group">
-            <label for="filter-items-by-truck">Filter by Truck:</label>
-            <select id="filter-items-by-truck" name="filter_truck_id">
-                <option value="">All Trucks</option>
-                <!-- Options populated by JS -->
-            </select>
-        </div>
-        <div id="items-list" class="item-list">
-            <ul><!-- Items will be listed here --></ul>
-        </div>
-    </div>
+        <div class="lockers-dashboard-grid">
+            
+            <!-- Trucks Card -->
+            <div class="lockers-dashboard-card" id="trucks-management-card">
+                <h3><i>🚛</i> Trucks</h3>
+                <div id="add-truck-form-container">
+                    <h4>Add New Truck</h4>
+                    <form id="add-truck-form">
+                        <input type="hidden" name="station_id" value="<?= htmlspecialchars($current_station_id, ENT_QUOTES, 'UTF-8') ?>">
+                        <div class="form-group">
+                            <label for="new-truck-name">Truck Name:</label>
+                            <input type="text" id="new-truck-name" name="truck_name" required>
+                        </div>
+                        <button type="submit" class="button">Add Truck</button>
+                    </form>
+                </div>
+                <div id="trucks-list-container">
+                    <h4>Existing Trucks</h4>
+                    <div class="scrollable-list-container">
+                        <ul id="trucks-list" class="entity-list">
+                            <?php
+                            try {
+                                $stmt_trucks_list = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                                $stmt_trucks_list->execute([$current_station_id]);
+                                $trucks_for_list = $stmt_trucks_list->fetchAll(PDO::FETCH_ASSOC); // Use a different variable name
+                                if (count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                    }
+                                } else {
+                                    echo '<li>No trucks found for this station.</li>';
+                                }
+                            } catch (PDOException $e) {
+                                echo '<li>Error fetching trucks: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
+                            }
+                            ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
 
+            <!-- Lockers Card -->
+            <div class="lockers-dashboard-card" id="lockers-management-card">
+                <h3><i>🗄️</i> Lockers</h3>
+                 <div id="add-locker-form-container">
+                    <h4>Add New Locker</h4>
+                    <form id="add-locker-form">
+                        <div class="form-group">
+                            <label for="select-truck-for-locker">Assign to Truck:</label>
+                            <select id="select-truck-for-locker" name="truck_id_for_locker" required>
+                                <option value="">-- Select Truck --</option>
+                                <?php
+                                // $trucks_for_list should be available from the Trucks card query if on the same load
+                                if (isset($trucks_for_list) && count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-locker-name">Locker Name:</label>
+                            <input type="text" id="new-locker-name" name="locker_name" required>
+                        </div>
+                        <button type="submit" class="button">Add Locker</button>
+                    </form>
+                </div>
+                <div id="lockers-list-container">
+                    <h4>Existing Lockers</h4>
+                    <div class="scrollable-list-container">
+                        <ul id="lockers-list" class="entity-list">
+                            <?php
+                            try {
+                                $stmt_lockers = $db->prepare("
+                                    SELECT l.id, l.name AS locker_name, t.name AS truck_name 
+                                    FROM lockers l
+                                    JOIN trucks t ON l.truck_id = t.id
+                                    WHERE l.station_id = ? 
+                                    ORDER BY t.name, l.name
+                                ");
+                                $stmt_lockers->execute([$current_station_id]);
+                                $lockers_list_data = $stmt_lockers->fetchAll(PDO::FETCH_ASSOC);
+                                if (count($lockers_list_data) > 0) {
+                                    foreach ($lockers_list_data as $locker_item) {
+                                        echo '<li><span>' . htmlspecialchars($locker_item['locker_name'], ENT_QUOTES, 'UTF-8') . ' (Truck: ' . htmlspecialchars($locker_item['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                    }
+                                } else {
+                                    echo '<li>No lockers found for this station.</li>';
+                                }
+                            } catch (PDOException $e) {
+                                echo '<li>Error fetching lockers: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
+                            }
+                            ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Items Card -->
+            <div class="lockers-dashboard-card" id="items-management-card">
+                <h3><i>📦</i> Items</h3>
+                <div id="add-item-form-container">
+                    <h4>Add New Item</h4>
+                    <form id="add-item-form">
+                        <div class="form-group">
+                            <label for="select-truck-for-item">Select Truck:</label>
+                            <select id="select-truck-for-item" name="truck_id_for_item" required onchange="loadLockersForItemDropdown(this.value)">
+                                <option value="">-- Select Truck --</option>
+                                <?php
+                                if (isset($trucks_for_list) && count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="select-locker-for-item">Select Locker:</label>
+                            <select id="select-locker-for-item" name="locker_id_for_item" required>
+                                <option value="">-- Select Truck First --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-item-name">Item Name:</label>
+                            <input type="text" id="new-item-name" name="item_name" required>
+                        </div>
+                        <button type="submit" class="button">Add Item</button>
+                    </form>
+                </div>
+
+                <div id="items-list-container">
+                    <h4>Existing Items</h4>
+                    <div class="form-group">
+                        <label for="filter-items-by-truck">Filter by Truck:</label>
+                        <select id="filter-items-by-truck" name="filter_truck_id_for_items" onchange="loadItemsList(this.value)">
+                            <option value="">All Trucks</option>
+                             <?php
+                                if (isset($trucks_for_list) && count($trucks_for_list) > 0) {
+                                    foreach ($trucks_for_list as $truck_item) {
+                                        echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                    }
+                                }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="scrollable-list-container">
+                        <ul id="items-list" class="entity-list">
+                            <?php
+                            try {
+                                $stmt_items = $db->prepare("
+                                    SELECT li.id, li.name AS item_name, l.name AS locker_name, t.name AS truck_name
+                                    FROM locker_items li
+                                    JOIN lockers l ON li.locker_id = l.id
+                                    JOIN trucks t ON l.truck_id = t.id
+                                    WHERE li.station_id = ?
+                                    ORDER BY t.name, l.name, li.name
+                                ");
+                                $stmt_items->execute([$current_station_id]);
+                                $items_list_data = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+                                if (count($items_list_data) > 0) {
+                                    foreach ($items_list_data as $item_entry) {
+                                        echo '<li><span>' . htmlspecialchars($item_entry['item_name'], ENT_QUOTES, 'UTF-8') . 
+                                             ' (Locker: ' . htmlspecialchars($item_entry['locker_name'], ENT_QUOTES, 'UTF-8') . 
+                                             ', Truck: ' . htmlspecialchars($item_entry['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span>'.
+                                             ' <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                    }
+                                } else {
+                                    echo '<li>No items found for this station.</li>';
+                                }
+                            } catch (PDOException $e) {
+                                echo '<li>Error fetching items: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</li>';
+                            }
+                            ?>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    <?php else: ?>
+        <div class="notice notice-warning">
+            <p><i>⚠️</i> Please select a station to manage its trucks, lockers, and items.</p>
+            <?php if ($userRole === 'superuser'): ?>
+                <p>As a superuser, you can select a station using the dropdown in the sidebar header.</p>
+            <?php elseif ($userRole === 'station_admin' && (!isset($userStations) || count($userStations) !== 1)): ?>
+                 <p>As a station admin, please ensure a single station is active or selected. If you manage multiple stations, pick one. If you manage none, please contact a superuser.</p>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
 <script>
-// JavaScript for the Lockers module will go here.
-// This will handle AJAX submissions, dynamic population of dropdowns,
-// listing entities, handling edits, deletes, and moves.
-
-document.addEventListener('DOMContentLoaded', function() {
-    // This event listener might not fire correctly if loaded via AJAX into admin.php
-    // We will need to ensure JS is initialized correctly when the module loads.
-    // For now, we'll assume admin.php's loadPage function might re-evaluate scripts or we'll call an init function.
-    console.log('Lockers module script loaded.');
-    initializeLockersPage();
-});
-
-function initializeLockersPage() {
-    // Initial data loading (trucks for dropdowns, items list)
-    // loadTrucksForDropdowns();
-    // loadItemsList();
-
-    // Add event listeners for forms
-    // document.getElementById('add-truck-form').addEventListener('submit', handleAddTruck);
-    // ... etc.
-    console.log('Lockers page initialized.');
+function handleAjaxResponse(response, successCallback, errorCallback) {
+    if (response.success) {
+        if (successCallback) successCallback(response);
+        console.log('Success:', response.message || 'Operation successful.');
+        // Consider a less disruptive way to show success, like a toast notification
+    } else {
+        if (errorCallback) errorCallback(response);
+        alert('Error: ' + (response.message || 'An unknown error occurred.'));
+        console.error('Error:', response.message);
+    }
 }
 
-// Placeholder functions for AJAX calls and DOM manipulation
-// function loadTrucksForDropdowns() { /* ... */ }
-// function loadItemsList(truckFilterId = '') { /* ... */ }
-// function handleAddTruck(event) { /* event.preventDefault(); ... */ }
+function handleAddTruck(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.append('ajax_action', 'add_truck'); 
+
+    const truckName = formData.get('truck_name').trim();
+    if (!truckName) {
+        alert('Truck name cannot be empty.');
+        return;
+    }
+    
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        handleAjaxResponse(data, function(res) {
+            alert(res.message || 'Truck added successfully!'); 
+            form.reset();
+            loadPage('admin_modules/lockers.php'); 
+        });
+    })
+    .catch(error => {
+        console.error('Network error:', error);
+        alert('Network error. Could not add truck.');
+    });
+}
+
+function handleAddLocker(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.append('ajax_action', 'add_locker');
+
+    const lockerName = formData.get('locker_name').trim();
+    const truckId = formData.get('truck_id_for_locker');
+
+    if (!lockerName || !truckId) {
+        alert('Truck and Locker name are required.');
+        return;
+    }
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        handleAjaxResponse(data, function(res) {
+            alert(res.message || 'Locker added successfully!');
+            form.reset();
+            loadPage('admin_modules/lockers.php'); 
+        });
+    })
+    .catch(error => {
+        console.error('Network error:', error);
+        alert('Network error. Could not add locker.');
+    });
+}
+
+function handleAddItem(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.append('ajax_action', 'add_item');
+
+    const itemName = formData.get('item_name').trim();
+    const lockerId = formData.get('locker_id_for_item');
+
+    if (!itemName || !lockerId) {
+        alert('Locker and Item name are required.');
+        return;
+    }
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        handleAjaxResponse(data, function(res) {
+            alert(res.message || 'Item added successfully!');
+            form.reset();
+            document.getElementById('select-locker-for-item').innerHTML = '<option value="">-- Select Truck First --</option>'; // Reset locker dropdown
+            loadPage('admin_modules/lockers.php'); // Reload to see new item
+        });
+    })
+    .catch(error => {
+        console.error('Network error:', error);
+        alert('Network error. Could not add item.');
+    });
+}
+
+function loadLockersForItemDropdown(truckId) {
+    const lockerSelect = document.getElementById('select-locker-for-item');
+    lockerSelect.innerHTML = '<option value="">Loading lockers...</option>';
+
+    if (!truckId) {
+        lockerSelect.innerHTML = '<option value="">-- Select Truck First --</option>';
+        return;
+    }
+
+    fetch(`admin_modules/lockers.php?ajax_action=get_lockers_for_truck&truck_id=${truckId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.data) {
+            lockerSelect.innerHTML = '<option value="">-- Select Locker --</option>';
+            if (data.data.length > 0) {
+                data.data.forEach(locker => {
+                    const option = document.createElement('option');
+                    option.value = locker.id;
+                    option.textContent = locker.name;
+                    lockerSelect.appendChild(option);
+                });
+            } else {
+                lockerSelect.innerHTML = '<option value="">No lockers found for this truck</option>';
+            }
+        } else {
+            lockerSelect.innerHTML = '<option value="">Error loading lockers</option>';
+            console.error('Error fetching lockers:', data.message);
+        }
+    })
+    .catch(error => {
+        lockerSelect.innerHTML = '<option value="">Error loading lockers</option>';
+        console.error('Network error fetching lockers:', error);
+    });
+}
+
+function loadItemsList(truckIdFilter = '') {
+    // This function would be used for dynamic client-side filtering of items.
+    // For now, the initial list is loaded by PHP.
+    // If implementing dynamic filtering:
+    // 1. Fetch items via AJAX based on truckIdFilter.
+    // 2. Clear the current #items-list.
+    // 3. Populate #items-list with new items.
+    console.log('loadItemsList called with truck ID:', truckIdFilter);
+    // Placeholder: alert(`Would filter items for truck ID: ${truckIdFilter || 'All'}`);
+    // To make this work, you'd need an AJAX endpoint like `get_items_for_truck`
+    // and then update the DOM similar to `loadLockersForItemDropdown`.
+    // For now, rely on page reload to show filtered items if PHP handles the filter.
+    // Or, if PHP always loads all, then client-side filtering would hide/show LIs.
+}
+
+
+function initializeLockersModule() {
+    console.log('Lockers module initialized via JS.');
+    const addTruckForm = document.getElementById('add-truck-form');
+    if (addTruckForm) {
+        addTruckForm.onsubmit = handleAddTruck; // Use onsubmit for simplicity here
+    }
+    const addLockerForm = document.getElementById('add-locker-form');
+    if (addLockerForm) {
+        addLockerForm.onsubmit = handleAddLocker;
+    }
+    const addItemForm = document.getElementById('add-item-form');
+    if (addItemForm) {
+        addItemForm.onsubmit = handleAddItem;
+    }
+    
+    // Attach onchange to truck filter for items (if needed for dynamic JS filtering)
+    // const filterItemsByTruckSelect = document.getElementById('filter-items-by-truck');
+    // if (filterItemsByTruckSelect) {
+    //     filterItemsByTruckSelect.onchange = function() { loadItemsList(this.value); };
+    // }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeLockersModule);
+} else {
+    initializeLockersModule();
+}
 
 </script>
