@@ -13,22 +13,27 @@ if (!defined('DEBUG')) {
     define('DEBUG', false);
 }
 
-if (DEBUG) {
-    error_log("maintain_trucks.php: Script started. Station ID: " . ($station['id'] ?? 'Not Set'));
-}
-
 // Require authentication and station context
 $station = requireStation();
 $user = getCurrentUser();
+
+if (DEBUG) {
+    error_log("maintain_trucks.php: Script started. Station ID: " . ($station['id'] ?? 'Not Set'));
+}
 
 $db = get_db_connection();
 $error_message = '';
 $success_message = '';
 
+// Check if we're in AJAX context
+$isAjax = isset($_GET['ajax']) && $_GET['ajax'] === '1';
+
 // Handle adding a new truck
+$formProcessed = false;
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to add truck. POST data: " . print_r($_POST, true));
+        echo "<script>console.log('Processing add truck form submission');</script>";
     }
     $truck_name = trim($_POST['truck_name']);
     if (!empty($truck_name)) {
@@ -36,30 +41,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
             $query = $db->prepare('INSERT INTO trucks (name, station_id) VALUES (:name, :station_id)');
             $query->execute(['name' => $truck_name, 'station_id' => $station['id']]);
             $success_message = "Truck '{$truck_name}' added successfully.";
+            $formProcessed = true;
             if (DEBUG) {
                 error_log("maintain_trucks.php: Truck '{$truck_name}' added successfully for station ID: " . $station['id']);
+                echo "<script>console.log('Truck added successfully: " . addslashes($truck_name) . "');</script>";
             }
-            // Reload content via parent's loadPage function
-            echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
-            exit; // Stop further script execution to prevent rendering the rest of the page
         } catch (Exception $e) {
             $error_message = "Error adding truck: " . $e->getMessage();
             if (DEBUG) {
                 error_log("maintain_trucks.php: Error adding truck: " . $e->getMessage());
+                echo "<script>console.error('Error adding truck: " . addslashes($e->getMessage()) . "');</script>";
             }
         }
     } else {
         $error_message = "Truck name cannot be empty.";
         if (DEBUG) {
             error_log("maintain_trucks.php: Truck name was empty.");
+            echo "<script>console.error('Truck name was empty');</script>";
         }
     }
 }
 
 // Handle editing a truck
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck']) && !$formProcessed) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to edit truck. POST data: " . print_r($_POST, true));
+        echo "<script>console.log('Processing edit truck form submission');</script>";
     }
     $truck_id = $_POST['truck_id'];
     $truck_name = trim($_POST['truck_name']);
@@ -73,36 +80,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck'])) {
                 $query = $db->prepare('UPDATE trucks SET name = :name WHERE id = :id AND station_id = :station_id');
                 $query->execute(['name' => $truck_name, 'id' => $truck_id, 'station_id' => $station['id']]);
                 $success_message = "Truck updated successfully.";
+                $formProcessed = true;
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Truck ID {$truck_id} updated successfully.");
+                    echo "<script>console.log('Truck updated successfully: ID " . $truck_id . "');</script>";
                 }
-                // Reload content via parent's loadPage function
-                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
-                exit; // Stop further script execution
             } else {
                 $error_message = "Truck not found or access denied.";
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Edit failed - truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
+                    echo "<script>console.error('Edit failed - truck not found or access denied');</script>";
                 }
             }
         } catch (Exception $e) {
             $error_message = "Error updating truck: " . $e->getMessage();
             if (DEBUG) {
                 error_log("maintain_trucks.php: Error updating truck: " . $e->getMessage());
+                echo "<script>console.error('Error updating truck: " . addslashes($e->getMessage()) . "');</script>";
             }
         }
     } else {
         $error_message = "Truck name cannot be empty.";
         if (DEBUG) {
             error_log("maintain_trucks.php: Edit failed - truck name or ID was empty.");
+            echo "<script>console.error('Edit failed - truck name or ID was empty');</script>";
         }
     }
 }
 
 // Handle deleting a truck
-if (isset($_GET['delete_truck_id'])) {
+if (isset($_GET['delete_truck_id']) && !$formProcessed) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to delete truck ID: " . $_GET['delete_truck_id']);
+        echo "<script>console.log('Processing delete truck request for ID: " . $_GET['delete_truck_id'] . "');</script>";
     }
     $truck_id = $_GET['delete_truck_id'];
     try {
@@ -114,6 +124,7 @@ if (isset($_GET['delete_truck_id'])) {
             $error_message = "Truck not found or access denied.";
             if (DEBUG) {
                 error_log("maintain_trucks.php: Delete failed - truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
+                echo "<script>console.error('Delete failed - truck not found or access denied');</script>";
             }
         } else {
             // Check if truck has any lockers
@@ -125,23 +136,24 @@ if (isset($_GET['delete_truck_id'])) {
                 $error_message = "Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it. Please delete all lockers first.";
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Delete failed - truck ID {$truck_id} has {$locker_count} lockers.");
+                    echo "<script>console.error('Delete failed - truck has lockers');</script>";
                 }
             } else {
                 $query = $db->prepare('DELETE FROM trucks WHERE id = :id AND station_id = :station_id');
                 $query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
                 $success_message = "Truck deleted successfully.";
+                $formProcessed = true;
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Truck ID {$truck_id} deleted successfully.");
+                    echo "<script>console.log('Truck deleted successfully: ID " . $truck_id . "');</script>";
                 }
-                // Reload content via parent's loadPage function
-                echo "<script>if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); } else { console.error('parent.loadPage not found'); window.location.reload(); }</script>";
-                exit; // Stop further script execution
             }
         }
     } catch (Exception $e) {
         $error_message = "Error deleting truck: " . $e->getMessage();
         if (DEBUG) {
             error_log("maintain_trucks.php: Error deleting truck: " . $e->getMessage());
+            echo "<script>console.error('Error deleting truck: " . addslashes($e->getMessage()) . "');</script>";
         }
     }
 }
@@ -509,6 +521,28 @@ if (DEBUG) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
-
-    </div>
 </div>
+
+<?php if ($formProcessed && $success_message): ?>
+<script>
+// Reload the page after successful form submission
+setTimeout(function() {
+    if (window.parent && typeof window.parent.loadPage === 'function') {
+        console.log('Reloading page after successful operation...');
+        window.parent.loadPage('maintain_trucks.php');
+    } else {
+        console.error('parent.loadPage not found, reloading normally');
+        window.location.reload();
+    }
+}, 100); // Small delay to ensure the success message is visible
+</script>
+<?php endif; ?>
+
+<?php if (DEBUG): ?>
+<script>
+console.log('maintain_trucks.php loaded successfully');
+console.log('Form processed:', <?= $formProcessed ? 'true' : 'false' ?>);
+console.log('Success message:', <?= json_encode($success_message) ?>);
+console.log('Error message:', <?= json_encode($error_message) ?>);
+</script>
+<?php endif; ?>
