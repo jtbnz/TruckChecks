@@ -39,15 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                 $truck_id = $_POST['truck_id'] ?? '';
                 
                 if (empty($locker_name) || empty($truck_id)) {
-                    throw new Exception('Locker name and truck are required');
+                    throw new Exception('Locker name and truck selection are required');
                 }
                 
                 // Verify truck belongs to current station
-                $check_query = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
-                $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
+                $truck_check = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
+                $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
                 
-                if (!$check_query->fetch()) {
-                    throw new Exception('Invalid truck selection');
+                if (!$truck_check->fetch()) {
+                    throw new Exception('Selected truck not found or access denied');
                 }
                 
                 $query = $db->prepare('INSERT INTO lockers (name, truck_id) VALUES (:name, :truck_id)');
@@ -70,14 +70,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                     throw new Exception('All fields are required');
                 }
                 
-                // Verify locker belongs to a truck in current station
+                // Verify both locker and truck belong to current station
                 $check_query = $db->prepare('
                     SELECT l.id 
                     FROM lockers l 
                     JOIN trucks t ON l.truck_id = t.id 
-                    WHERE l.id = :id AND t.station_id = :station_id
+                    WHERE l.id = :locker_id AND t.station_id = :station_id
                 ');
-                $check_query->execute(['id' => $locker_id, 'station_id' => $station['id']]);
+                $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
                 
                 if (!$check_query->fetch()) {
                     throw new Exception('Locker not found or access denied');
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                 $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
                 
                 if (!$truck_check->fetch()) {
-                    throw new Exception('Invalid truck selection');
+                    throw new Exception('Selected truck not found or access denied');
                 }
                 
                 $query = $db->prepare('UPDATE lockers SET name = :name, truck_id = :truck_id WHERE id = :id');
@@ -109,26 +109,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                     throw new Exception('Locker ID is required');
                 }
                 
-                // Verify locker belongs to a truck in current station
+                // Verify locker belongs to current station
                 $check_query = $db->prepare('
                     SELECT l.id 
                     FROM lockers l 
                     JOIN trucks t ON l.truck_id = t.id 
-                    WHERE l.id = :id AND t.station_id = :station_id
+                    WHERE l.id = :locker_id AND t.station_id = :station_id
                 ');
-                $check_query->execute(['id' => $locker_id, 'station_id' => $station['id']]);
+                $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
                 
                 if (!$check_query->fetch()) {
                     throw new Exception('Locker not found or access denied');
                 }
                 
                 // Check if locker has any items
-                $item_check = $db->prepare('SELECT COUNT(*) FROM locker_items WHERE locker_id = :locker_id');
+                $item_check = $db->prepare('SELECT COUNT(*) FROM items WHERE locker_id = :locker_id');
                 $item_check->execute(['locker_id' => $locker_id]);
                 $item_count = $item_check->fetchColumn();
                 
                 if ($item_count > 0) {
-                    throw new Exception("Cannot delete locker: This locker has {$item_count} item(s) assigned to it.");
+                    throw new Exception("Cannot delete locker: This locker has {$item_count} item(s) assigned to it. Please delete all items first.");
                 }
                 
                 $query = $db->prepare('DELETE FROM lockers WHERE id = :id');
@@ -180,23 +180,25 @@ if (isset($_GET['edit_id'])) {
     }
 }
 
-// Get all trucks for current station
+// Fetch all trucks for current station for the dropdown
 try {
     $trucks_query = $db->prepare('SELECT * FROM trucks WHERE station_id = :station_id ORDER BY name');
     $trucks_query->execute(['station_id' => $station['id']]);
     $trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
+    $error_message = "Error loading trucks: " . $e->getMessage();
     $trucks = [];
 }
 
-// Fetch all lockers for current station with item counts
+// Fetch all lockers for current station with truck names and item counts
 try {
     $lockers_query = $db->prepare('
-        SELECT l.*, t.name as truck_name,
-               COUNT(li.id) as item_count
+        SELECT l.*, 
+               t.name as truck_name,
+               COUNT(i.id) as item_count
         FROM lockers l 
-        JOIN trucks t ON l.truck_id = t.id
-        LEFT JOIN locker_items li ON l.id = li.locker_id
+        JOIN trucks t ON l.truck_id = t.id 
+        LEFT JOIN items i ON l.id = i.locker_id
         WHERE t.station_id = :station_id 
         GROUP BY l.id 
         ORDER BY t.name, l.name
@@ -206,6 +208,13 @@ try {
 } catch (Exception $e) {
     $error_message = "Error loading lockers: " . $e->getMessage();
     $lockers = [];
+    if (DEBUG) {
+        error_log("maintain_lockers module: Error loading lockers: " . $e->getMessage());
+    }
+}
+
+if (DEBUG) {
+    error_log("maintain_lockers module: Rendering page. Lockers count: " . count($lockers) . ". Edit locker ID: " . ($edit_locker['id'] ?? 'None'));
 }
 ?>
 
@@ -259,7 +268,8 @@ try {
         margin-bottom: 15px;
     }
 
-    .input-container input, .input-container select {
+    .input-container input,
+    .input-container select {
         width: 100%;
         padding: 10px;
         border: 1px solid #ccc;
@@ -370,6 +380,7 @@ try {
     .delete-link {
         background-color: #dc3545;
         color: white;
+        min-width: 70px;
     }
 
     .delete-link:hover {
@@ -380,6 +391,7 @@ try {
         background-color: #6c757d;
         cursor: not-allowed;
         opacity: 0.6;
+        min-width: 70px;
     }
 
     .alert {
@@ -409,6 +421,15 @@ try {
     .empty-state h3 {
         color: #12044C;
         margin-bottom: 10px;
+    }
+
+    .no-trucks-warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #856404;
     }
 
     /* Mobile responsive */
@@ -445,8 +466,9 @@ try {
     <div id="message-container"></div>
 
     <?php if (empty($trucks)): ?>
-        <div class="alert alert-error">
-            No trucks found for this station. Please add trucks first before adding lockers.
+        <div class="no-trucks-warning">
+            <h3>No Trucks Available</h3>
+            <p>You need to add trucks before you can create lockers. <button onclick="loadPage('maintain_trucks.php')" class="button secondary">Go to Maintain Trucks</button> to add your first truck.</p>
         </div>
     <?php else: ?>
         <?php if ($edit_locker): ?>
@@ -501,7 +523,7 @@ try {
         <?php if (empty($lockers)): ?>
             <div class="empty-state">
                 <h3>No Lockers Found</h3>
-                <p>No lockers have been added to this station yet. Add your first locker using the form above.</p>
+                <p>No lockers have been added to this station yet. <?= empty($trucks) ? 'Add trucks first, then' : 'Add your first locker using the form above.' ?></p>
             </div>
         <?php else: ?>
             <?php foreach ($lockers as $locker): ?>
@@ -521,7 +543,8 @@ try {
                         <?php if ($locker['item_count'] == 0): ?>
                             <button onclick="deleteLocker(<?= $locker['id'] ?>, '<?= htmlspecialchars($locker['name'], ENT_QUOTES) ?>')" class="delete-link">Delete</button>
                         <?php else: ?>
-                            <span class="delete-link disabled" title="Cannot delete locker with items">Delete</span>
+                            <span class="delete-link disabled" 
+                                  title="Cannot delete locker with items">Delete</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -635,7 +658,7 @@ if (typeof window !== 'undefined') {
             formData.append('ajax_action', 'edit_locker');
             formData.append('locker_id', this.dataset.lockerId);
             
-            fetch('admin_modules/maintain_lockers.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })
@@ -664,7 +687,6 @@ if (typeof window !== 'undefined') {
     console.log('Maintain Lockers module loaded');
     console.log('Station:', <?= json_encode($station['name']) ?>);
     console.log('Lockers count:', <?= count($lockers) ?>);
-    console.log('Trucks count:', <?= count($trucks) ?>);
     console.log('deleteLocker function available:', typeof deleteLocker !== 'undefined');
     <?php endif; ?>
 })();

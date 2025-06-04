@@ -37,14 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
             case 'add_item':
                 $item_name = trim($_POST['item_name'] ?? '');
                 $locker_id = $_POST['locker_id'] ?? '';
-                $quantity = intval($_POST['quantity'] ?? 1);
                 
                 if (empty($item_name) || empty($locker_id)) {
                     throw new Exception('Item name and locker are required');
-                }
-                
-                if ($quantity < 1) {
-                    throw new Exception('Quantity must be at least 1');
                 }
                 
                 // Verify locker belongs to current station
@@ -189,6 +184,19 @@ if (isset($_GET['edit_id'])) {
     }
 }
 
+// Get filter parameters
+$filter_truck_id = $_GET['filter_truck_id'] ?? '';
+$filter_locker_id = $_GET['filter_locker_id'] ?? '';
+
+// Get all trucks for current station
+try {
+    $trucks_query_all = $db->prepare('SELECT id, name FROM trucks WHERE station_id = :station_id ORDER BY name');
+    $trucks_query_all->execute(['station_id' => $station['id']]);
+    $all_trucks = $trucks_query_all->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    $all_trucks = [];
+}
+
 // Get all lockers for current station grouped by truck
 try {
     $lockers_query = $db->prepare('
@@ -204,17 +212,30 @@ try {
     $lockers = [];
 }
 
-// Fetch all items for current station
+// Fetch all items for current station with filters
 try {
-    $items_query = $db->prepare('
+    $sql = '
         SELECT i.*, l.name as locker_name, t.name as truck_name
         FROM items i 
         JOIN lockers l ON i.locker_id = l.id
         JOIN trucks t ON l.truck_id = t.id
         WHERE t.station_id = :station_id 
-        ORDER BY t.name, l.name, i.name
-    ');
-    $items_query->execute(['station_id' => $station['id']]);
+    ';
+    $params = ['station_id' => $station['id']];
+
+    if (!empty($filter_truck_id)) {
+        $sql .= ' AND t.id = :truck_id';
+        $params['truck_id'] = $filter_truck_id;
+    }
+    if (!empty($filter_locker_id)) {
+        $sql .= ' AND l.id = :locker_id';
+        $params['locker_id'] = $filter_locker_id;
+    }
+
+    $sql .= ' ORDER BY t.name, l.name, i.name';
+
+    $items_query = $db->prepare($sql);
+    $items_query->execute($params);
     $items = $items_query->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $error_message = "Error loading items: " . $e->getMessage();
@@ -422,16 +443,6 @@ try {
         margin-bottom: 10px;
     }
 
-    .quantity-badge {
-        background-color: #007bff;
-        color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: bold;
-        margin-left: 10px;
-    }
-
     /* Mobile responsive */
     @media (max-width: 768px) {
         .maintain-container {
@@ -496,10 +507,6 @@ try {
                             <?php if ($current_truck != '') echo '</optgroup>'; ?>
                         </select>
                     </div>
-                    <div class="input-container">
-                        <label>Quantity:</label>
-                        <input type="number" name="quantity" min="1" value="<?= $edit_item['quantity'] ?>" required>
-                    </div>
                     <div class="button-container">
                         <button type="submit" class="button">Update Item</button>
                         <button type="button" onclick="loadPage('maintain_locker_items.php')" class="button secondary">Cancel</button>
@@ -530,10 +537,6 @@ try {
                             <?php if ($current_truck != '') echo '</optgroup>'; ?>
                         </select>
                     </div>
-                    <div class="input-container">
-                        <label>Quantity:</label>
-                        <input type="number" name="quantity" min="1" value="1" required>
-                    </div>
                     <div class="button-container">
                         <button type="submit" class="button">Add Item</button>
                     </div>
@@ -556,9 +559,6 @@ try {
                     <div class="item-info">
                         <div class="item-name">
                             <?= htmlspecialchars($item['name']) ?>
-                            <?php if ($item['quantity'] > 1): ?>
-                                <span class="quantity-badge">Qty: <?= $item['quantity'] ?></span>
-                            <?php endif; ?>
                         </div>
                         <div class="item-details">
                             Truck: <?= htmlspecialchars($item['truck_name']) ?> | 
@@ -713,4 +713,74 @@ if (typeof window !== 'undefined') {
     console.log('deleteItem function available:', typeof deleteItem !== 'undefined');
     <?php endif; ?>
 })();
+</script>
+
+<div class="form-section" style="margin-top: 20px;">
+    <h2>Filter Items</h2>
+    <form id="filter-items-form">
+        <div class="input-container">
+            <label for="filter_truck_id">Filter by Truck:</label>
+            <select name="filter_truck_id" id="filter_truck_id">
+                <option value="">All Trucks</option>
+                <?php foreach ($all_trucks as $truck): ?>
+                    <option value="<?= $truck['id'] ?>" <?= ($filter_truck_id == $truck['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($truck['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="input-container">
+            <label for="filter_locker_id">Filter by Locker:</label>
+            <select name="filter_locker_id" id="filter_locker_id">
+                <option value="">All Lockers</option>
+                <?php 
+                $current_truck_filter = '';
+                foreach ($lockers as $locker): 
+                    if ($current_truck_filter != $locker['truck_name']): 
+                        if ($current_truck_filter != '') echo '</optgroup>';
+                        $current_truck_filter = $locker['truck_name'];
+                        echo '<optgroup label="' . htmlspecialchars($locker['truck_name']) . '">';
+                    endif;
+                ?>
+                    <option value="<?= $locker['id'] ?>" <?= ($filter_locker_id == $locker['id']) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($locker['name']) ?>
+                    </option>
+                <?php endforeach; ?>
+                <?php if ($current_truck_filter != '') echo '</optgroup>'; ?>
+            </select>
+        </div>
+        <div class="button-container">
+            <button type="submit" class="button">Apply Filter</button>
+            <button type="button" onclick="loadPage('maintain_locker_items.php')" class="button secondary">Clear Filter</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Handle filter form submission
+    const filterForm = document.getElementById('filter-items-form');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const truckId = document.getElementById('filter_truck_id').value;
+            const lockerId = document.getElementById('filter_locker_id').value;
+            
+            let url = 'maintain_locker_items.php';
+            const params = [];
+            if (truckId) {
+                params.push(`filter_truck_id=${encodeURIComponent(truckId)}`);
+            }
+            if (lockerId) {
+                params.push(`filter_locker_id=${encodeURIComponent(lockerId)}`);
+            }
+            
+            if (params.length > 0) {
+                url += '?' + params.join('&');
+            }
+            
+            if (window.loadPage) {
+                window.loadPage(url);
+            }
+        });
+    }
 </script>

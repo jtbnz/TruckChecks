@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
         switch ($_POST['ajax_action']) {
             case 'add_truck':
                 $truck_name = trim($_POST['truck_name'] ?? '');
+                
                 if (empty($truck_name)) {
                     throw new Exception('Truck name cannot be empty');
                 }
@@ -99,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                 $locker_count = $locker_check->fetchColumn();
                 
                 if ($locker_count > 0) {
-                    throw new Exception("Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it.");
+                    throw new Exception("Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it. Please delete all lockers first.");
                 }
                 
                 $query = $db->prepare('DELETE FROM trucks WHERE id = :id AND station_id = :station_id');
@@ -162,6 +163,13 @@ try {
 } catch (Exception $e) {
     $error_message = "Error loading trucks: " . $e->getMessage();
     $trucks = [];
+    if (DEBUG) {
+        error_log("maintain_trucks module: Error loading trucks: " . $e->getMessage());
+    }
+}
+
+if (DEBUG) {
+    error_log("maintain_trucks module: Rendering page. Trucks count: " . count($trucks) . ". Edit truck ID: " . ($edit_truck['id'] ?? 'None'));
 }
 ?>
 
@@ -255,6 +263,20 @@ try {
         background-color: #545b62;
     }
 
+    .button.danger {
+        background-color: #dc3545;
+    }
+
+    .button.danger:hover {
+        background-color: #c82333;
+    }
+
+    .button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
     .trucks-list {
         background: white;
         border: 1px solid #ddd;
@@ -304,7 +326,7 @@ try {
         gap: 10px;
     }
 
-    .truck-actions a, .truck-actions button {
+    .truck-actions button {
         padding: 6px 12px;
         text-decoration: none;
         border-radius: 3px;
@@ -452,7 +474,8 @@ try {
                         <?php if ($truck['locker_count'] == 0): ?>
                             <button onclick="deleteTruck(<?= $truck['id'] ?>, '<?= htmlspecialchars($truck['name'], ENT_QUOTES) ?>')" class="delete-link">Delete</button>
                         <?php else: ?>
-                            <span class="delete-link disabled" title="Cannot delete truck with lockers">Delete</span>
+                            <span class="delete-link disabled" 
+                                  title="Cannot delete truck with lockers">Delete</span>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -566,7 +589,7 @@ if (typeof window !== 'undefined') {
             formData.append('ajax_action', 'edit_truck');
             formData.append('truck_id', this.dataset.truckId);
             
-            fetch('admin_modules/maintain_trucks.php', {
+            fetch('admin.php', {
                 method: 'POST',
                 body: formData
             })
