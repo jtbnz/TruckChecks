@@ -11,7 +11,7 @@ include('db.php');
 include('auth.php');
 
 // If DEBUG is explicitly enabled in config.php, re-enable error reporting for non-AJAX requests
-if (defined('DEBUG') && DEBUG && (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') && (!isset($_POST['ajax_action']) && !isset($_POST['action']))) {
+if (defined('DEBUG') && DEBUG && (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') && (!isset($_POST['ajax_action']) && !isset($_POST['action']) && !isset($_GET['page']))) { // Also check if not a POST to a page
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
@@ -48,6 +48,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
     exit;
 }
+
+// --- START: Handle POST requests targeted at a specific page/module ---
+// This block allows included pages to process their own form submissions
+// when the form action is like admin.php?page=module/name.php
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['page'])) {
+    $targetPageForPost = $_GET['page'];
+    
+    // Basic security: ensure the target page is in a similar format to allowed pages
+    // This is not a full security check against $allowedPages here, as that's for content loading.
+    // This is to allow the module to process its own POST data.
+    if (preg_match('/^[a-zA-Z0-9_\-\/\.]+\.php$/', $targetPageForPost) && file_exists($targetPageForPost)) {
+        
+        // Setup context variables needed by the included page for POST processing
+        $pdo = get_db_connection(); // Ensure $pdo is available
+        requireAuth(); // Ensure user is authenticated
+        $user = getCurrentUser(); // Ensure $user is available
+        $userRole = $user['role'] ?? null;
+        
+        // Determine $currentStation for the included page context
+        $currentStation = null;
+        if ($userRole === 'superuser') {
+            $currentStation = getCurrentStation();
+        } elseif ($userRole === 'station_admin') {
+            // Simplified station logic for POST context, assumes session might be set
+            // or module handles it if multiple stations and none selected.
+            $userStationsForPostCtx = [];
+             try {
+                if (isset($user['id'])) {
+                    $stmt_uspc = $pdo->prepare("SELECT s.id, s.name FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+                    $stmt_uspc->execute([$user['id']]);
+                    $userStationsForPostCtx = $stmt_uspc->fetchAll(PDO::FETCH_ASSOC);
+                }
+            } catch (PDOException $e) { /* log */ }
+
+            if (isset($_SESSION['selected_station_id'])) {
+                foreach ($userStationsForPostCtx as $s_post_ctx) {
+                    if ($s_post_ctx['id'] == $_SESSION['selected_station_id']) {
+                        $currentStation = $s_post_ctx;
+                        break;
+                    }
+                }
+            } elseif (count($userStationsForPostCtx) === 1) {
+                $currentStation = $userStationsForPostCtx[0];
+            }
+        }
+        // The included page ($targetPageForPost) will now execute.
+        // It can check $_SERVER['REQUEST_METHOD'] == 'POST' and process $_POST data.
+        // It can set $success_message or $error_message which will be available when the page is later rendered.
+        // We don't want its output here, just its processing.
+        // Output buffering here is to capture and discard any accidental echos from the POST processing.
+        ob_start();
+        include($targetPageForPost);
+        ob_end_clean(); 
+        
+        // After POST processing, the script will continue, and typically the page will be re-rendered
+        // (either by initial load or by the AJAX GET content loading if the JS reloads the content).
+        // The $success_message/$error_message set by $targetPageForPost will be displayed.
+    }
+}
+// --- END: Handle POST requests targeted at a specific page/module ---
+
 
 // Handle AJAX GET requests for JSON data (e.g., for dropdowns, filters)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] !== '1') { // Exclude ajax=1 which is for HTML content
@@ -279,17 +340,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     
     // Determine which module to load based on the ajax_action
     $module = '';
-    $action = $_POST['ajax_action'];
+    $action = $_POST['ajax_action']; // This is the specific action for JSON-returning modules
     
+    // This block is for specific AJAX actions that return JSON.
+    // The email_admin.php actions are now handled by the new POST-to-page block above,
+    // so they should NOT be routed here if they are not returning JSON.
+    // If email_admin.php had true AJAX actions that returned JSON, they would be listed here.
+    // For now, we assume its forms are full-page reloads.
+
     if (in_array($action, [
         'add_truck', 'edit_truck', 'delete_truck',
         'add_locker', 'edit_locker', 'delete_locker',
         'add_item', 'edit_item', 'delete_item'
     ])) {
-        $module = 'lockers.php'; // All these actions are handled by the unified lockers.php module
+        $module = 'lockers.php'; 
     } elseif (in_array($action, ['add_station', 'edit_station', 'delete_station'])) {
         $module = 'manage_stations.php';
-    }
+    } 
+    // Removed email_admin.php actions from this JSON-specific block.
+    // Their forms now POST to admin.php?page=admin_modules/email_admin.php
+    // and are handled by the new block at the top of admin.php.
     
     if ($module && file_exists('admin_modules/' . $module)) {
         ob_clean(); // Clean buffer right before including the module

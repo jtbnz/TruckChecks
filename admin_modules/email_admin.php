@@ -350,7 +350,6 @@ $email_is_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined
                 <?php foreach ($current_station_emails_display as $email_disp): ?>
                     <li>
                         <span><?= htmlspecialchars($email_disp) ?></span>
-                        <!-- Form action needs to point to admin.php with correct page parameter -->
                         <form method="POST" action="admin.php?page=admin_modules/email_admin.php" style="display: inline;">
                             <input type="hidden" name="remove_email" value="1">
                             <input type="hidden" name="email_to_remove" value="<?= htmlspecialchars($email_disp) ?>">
@@ -366,8 +365,8 @@ $email_is_configured = defined('EMAIL_HOST') && defined('EMAIL_USER') && defined
         <form method="POST" action="admin.php?page=admin_modules/email_admin.php" style="margin-top:15px;">
             <input type="hidden" name="add_emails" value="1">
             <div class="input-container-ea">
-                <label for="email_list_input">Add Email Addresses (comma or new line separated):</label>
-                <textarea name="email_list" id="email_list_input" placeholder="e.g., manager@example.com, team@example.com"></textarea>
+                <div><label for="email_list_input">Add Email Addresses (comma or new line separated):</label></div>
+                <div><textarea name="email_list" id="email_list_input" placeholder="e.g., manager@example.com, team@example.com" style="width: 100%; min-height: 80px;"></textarea></div>
             </div>
             <button type="submit" class="button-ea">Add Addresses</button>
         </form>
