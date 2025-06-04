@@ -834,7 +834,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 <div class="card-buttons">
                                     <button onclick="loadPage('find.php', this)" class="card-button">Find Items</button>
                                     <button onclick="loadPage('reset_locker_check.php', this)" class="card-button secondary">Reset Checks</button>
-                                    <button onclick="loadPage('qr-codes.php', this)" class="card-button">QR Codes</button>
+                                    <button onclick="loadPage('admin_modules/qr_codes.php', this)" class="card-button">QR Codes</button>
                                 </div>
                             </div>
                             
