@@ -598,7 +598,7 @@ $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <li>
                         <?= htmlspecialchars($item['name']) ?> (<?= htmlspecialchars($item['truck_name']) ?> - <?= htmlspecialchars($item['locker_name']) ?>) 
                         <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_locker_items.php?edit_id=<?= $item['id'] ?><?= !empty($truck_filter) || !empty($locker_filter) ? '&' . http_build_query(array_filter(['truck_filter' => $truck_filter, 'locker_filter' => $locker_filter])) : '' ?>'); }">Edit</a> | 
-                        <a href="#" onclick="deleteItem(<?= $item['id'] ?>, '<?= $truck_filter ?>', '<?= $locker_filter ?>');" >Delete</a>
+                        <a href="#" onclick="event.preventDefault(); deleteItem(<?= $item['id'] ?>, '<?= $truck_filter ?>', '<?= $locker_filter ?>');" >Delete</a>
                     </li>
                 <?php endforeach; ?>
             </ul>
