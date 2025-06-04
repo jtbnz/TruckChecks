@@ -559,6 +559,7 @@ if (DEBUG) {
 </div>
 
 <script>
+(function() { // Start IIFE
 // Module-specific functions - defined immediately in global scope
 function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
@@ -718,7 +719,6 @@ function loadStationTrucks(stationId, elementId) {
 
 // Set up form handlers - use immediate execution instead of DOMContentLoaded
 // since the module is loaded via AJAX after DOM is ready
-(function() {
     // Handle add station form
     const addForm = document.getElementById('add-station-form');
     if (addForm) {

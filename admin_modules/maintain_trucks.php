@@ -485,6 +485,7 @@ if (DEBUG) {
 </div>
 
 <script>
+(function() { // Start IIFE
 // Module-specific functions - defined immediately in global scope
 function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
@@ -542,7 +543,6 @@ if (typeof window !== 'undefined') {
 
 // Set up form handlers - use immediate execution instead of DOMContentLoaded
 // since the module is loaded via AJAX after DOM is ready
-(function() {
     // Handle add truck form
     const addForm = document.getElementById('add-truck-form');
     if (addForm) {
@@ -620,5 +620,5 @@ if (typeof window !== 'undefined') {
     console.log('Trucks count:', <?= count($trucks) ?>);
     console.log('deleteTruck function available:', typeof deleteTruck !== 'undefined');
     <?php endif; ?>
-})();
+})(); // End IIFE
 </script>

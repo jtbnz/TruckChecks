@@ -554,6 +554,7 @@ if (DEBUG) {
 </div>
 
 <script>
+(function() { // Start IIFE
 // Module-specific functions - defined immediately in global scope
 function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
@@ -611,7 +612,6 @@ if (typeof window !== 'undefined') {
 
 // Set up form handlers - use immediate execution instead of DOMContentLoaded
 // since the module is loaded via AJAX after DOM is ready
-(function() {
     // Handle add locker form
     const addForm = document.getElementById('add-locker-form');
     if (addForm) {
@@ -689,5 +689,5 @@ if (typeof window !== 'undefined') {
     console.log('Lockers count:', <?= count($lockers) ?>);
     console.log('deleteLocker function available:', typeof deleteLocker !== 'undefined');
     <?php endif; ?>
-})();
+})(); // End IIFE
 </script>
