@@ -745,7 +745,28 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
                 .then(response => response.text())
                 .then(html => {
-                    document.getElementById('content-area').innerHTML = html;
+                    const contentArea = document.getElementById('content-area');
+                    contentArea.innerHTML = html;
+                    
+                    // Execute any scripts that were loaded
+                    const scripts = contentArea.getElementsByTagName('script');
+                    for (let i = 0; i < scripts.length; i++) {
+                        const script = scripts[i];
+                        const newScript = document.createElement('script');
+                        
+                        // Copy attributes
+                        for (let j = 0; j < script.attributes.length; j++) {
+                            const attr = script.attributes[j];
+                            newScript.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Copy content
+                        newScript.textContent = script.textContent;
+                        
+                        // Replace old script with new one to execute it
+                        script.parentNode.replaceChild(newScript, script);
+                    }
+                    
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('content-area').style.display = 'block';
                     
