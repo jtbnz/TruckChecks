@@ -581,8 +581,8 @@ try {
 </div>
 
 <script>
-// Module-specific functions
-function showMessage(message, isError = false) {
+// Module-specific functions - defined in global scope for onclick handlers
+window.showMessage = function(message, isError = false) {
     const container = document.getElementById('message-container');
     container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
     
@@ -594,7 +594,7 @@ function showMessage(message, isError = false) {
     }
 }
 
-function deleteItem(itemId, itemName) {
+window.deleteItem = function(itemId, itemName) {
     if (!confirm(`Are you sure you want to delete item "${itemName}"?`)) {
         return;
     }
