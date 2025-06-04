@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     $action = $_POST['ajax_action'];
     $response = ['success' => false, 'message' => 'Invalid action or station not selected.'];
 
-    if (!$current_station_id && !in_array($action, ['get_lockers_for_truck'])) { // Allow get_lockers_for_truck even if station not globally set, if truck_id is passed
+    if (!$current_station_id) { // Most POST actions require a station context
         echo json_encode($response);
         exit;
     }
@@ -57,18 +57,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
         if (!empty($locker_name) && !empty($truck_id) && $current_station_id) {
             try {
+                // Verify the truck belongs to the current station
                 $stmt_truck_check = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
                 $stmt_truck_check->execute([$truck_id, $current_station_id]);
                 if (!$stmt_truck_check->fetch()) {
                     $response = ['success' => false, 'message' => 'Selected truck does not belong to this station.'];
                 } else {
+                    // Check if locker with the same name already exists for this truck
                     $stmt_check = $pdo->prepare("SELECT id FROM lockers WHERE name = ? AND truck_id = ?");
                     $stmt_check->execute([$locker_name, $truck_id]);
                     if ($stmt_check->fetch()) {
                         $response = ['success' => false, 'message' => 'A locker with this name already exists for this truck.'];
                     } else {
-                        $stmt = $pdo->prepare("INSERT INTO lockers (name, truck_id, station_id) VALUES (?, ?, ?)");
-                        $stmt->execute([$locker_name, $truck_id, $current_station_id]);
+                        // Corrected: Remove station_id from lockers insert, it's derived from truck
+                        $stmt = $pdo->prepare("INSERT INTO lockers (name, truck_id) VALUES (?, ?)");
+                        $stmt->execute([$locker_name, $truck_id]);
                         $locker_id = $pdo->lastInsertId();
                         $response = ['success' => true, 'message' => 'Locker added successfully.', 'locker_id' => $locker_id, 'locker_name' => $locker_name, 'truck_id' => $truck_id];
                     }
@@ -90,20 +93,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
         if (!empty($item_name) && !empty($locker_id) && $current_station_id) {
             try {
-                $stmt_locker_check = $pdo->prepare("SELECT id FROM lockers WHERE id = ? AND station_id = ?");
-                $stmt_locker_check->execute([$locker_id, $current_station_id]);
-                if (!$stmt_locker_check->fetch()) {
-                    $response = ['success' => false, 'message' => 'Selected locker does not belong to this station.'];
+                // Corrected: Verify the locker (via its truck) belongs to the current station
+                $stmt_locker_station_check = $pdo->prepare("
+                    SELECT l.id 
+                    FROM lockers l
+                    JOIN trucks t ON l.truck_id = t.id
+                    WHERE l.id = ? AND t.station_id = ?
+                ");
+                $stmt_locker_station_check->execute([$locker_id, $current_station_id]);
+
+                if (!$stmt_locker_station_check->fetch()) {
+                    $response = ['success' => false, 'message' => 'Selected locker does not belong to the current station or does not exist.'];
                 } else {
-                    $stmt_check = $pdo->prepare("SELECT id FROM locker_items WHERE name = ? AND locker_id = ?");
-                    $stmt_check->execute([$item_name, $locker_id]);
-                    if ($stmt_check->fetch()) {
+                    // Check if item with the same name already exists in this locker
+                    $stmt_check_item_exists = $pdo->prepare("SELECT id FROM locker_items WHERE name = ? AND locker_id = ?");
+                    $stmt_check_item_exists->execute([$item_name, $locker_id]);
+                    if ($stmt_check_item_exists->fetch()) {
                         $response = ['success' => false, 'message' => 'An item with this name already exists in this locker.'];
                     } else {
-                        // Using user['id'] for last_checked_by. Ensure $user is available and has 'id'.
                         $user_id_to_log = isset($user['id']) ? $user['id'] : null; 
-                        $stmt = $pdo->prepare("INSERT INTO locker_items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
-                        $stmt->execute([$item_name, $locker_id, $current_station_id, $user_id_to_log]);
+                        // locker_items table DOES have station_id, so $current_station_id is correct here.
+                        $stmt_insert_item = $pdo->prepare("INSERT INTO locker_items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
+                        $stmt_insert_item->execute([$item_name, $locker_id, $current_station_id, $user_id_to_log]);
                         $item_id = $pdo->lastInsertId();
                         $response = ['success' => true, 'message' => 'Item added successfully.', 'item_id' => $item_id, 'item_name' => $item_name, 'locker_id' => $locker_id];
                     }
@@ -132,17 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
     $action = $_GET['ajax_action'];
     $response = ['success' => false, 'message' => 'Invalid action.', 'data' => []];
 
-    // $current_station_id might be null here if a superuser hasn't selected a station.
-    // Actions like get_lockers_for_truck need truck_id, which implies a station context.
-
     if ($action === 'get_lockers_for_truck') {
         $truck_id_filter = $_GET['truck_id'] ?? null;
-        // We need station_id to ensure the truck belongs to the active station context if set
-        // If $current_station_id is null (superuser, no station selected), this might be problematic
-        // For now, assume $current_station_id is required for this to make sense.
+        // $current_station_id is crucial here to ensure security and context
         if ($truck_id_filter && $current_station_id) {
             try {
-                $stmt = $pdo->prepare("SELECT id, name FROM lockers WHERE truck_id = ? AND station_id = ? ORDER BY name");
+                // Corrected: Ensure the truck itself belongs to the current station before fetching its lockers
+                $stmt = $pdo->prepare("
+                    SELECT l.id, l.name 
+                    FROM lockers l
+                    JOIN trucks t ON l.truck_id = t.id
+                    WHERE l.truck_id = ? AND t.station_id = ? 
+                    ORDER BY l.name
+                ");
                 $stmt->execute([$truck_id_filter, $current_station_id]);
                 $lockers_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $response = ['success' => true, 'data' => $lockers_data];
@@ -153,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
         } else if (!$current_station_id) {
              $response['message'] = 'Please select a station first.';
         } else {
-            $response['message'] = 'Truck ID missing.';
+            $response['message'] = 'Truck ID missing or invalid context.';
         }
     }
     // TODO: Implement other GET AJAX actions if needed (e.g., get_items_for_locker_or_truck)
@@ -339,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             try {
                                 $stmt_trucks_list = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
                                 $stmt_trucks_list->execute([$current_station_id]);
-                                $trucks_for_list = $stmt_trucks_list->fetchAll(PDO::FETCH_ASSOC); // Use a different variable name
+                                $trucks_for_list = $stmt_trucks_list->fetchAll(PDO::FETCH_ASSOC); 
                                 if (count($trucks_for_list) > 0) {
                                     foreach ($trucks_for_list as $truck_item) {
                                         echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
@@ -367,7 +380,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             <select id="select-truck-for-locker" name="truck_id_for_locker" required>
                                 <option value="">-- Select Truck --</option>
                                 <?php
-                                // $trucks_for_list should be available from the Trucks card query if on the same load
                                 if (isset($trucks_for_list) && count($trucks_for_list) > 0) {
                                     foreach ($trucks_for_list as $truck_item) {
                                         echo '<option value="' . htmlspecialchars($truck_item['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</option>';
@@ -389,11 +401,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                         <ul id="lockers-list" class="entity-list">
                             <?php
                             try {
+                                // Corrected: Filter by t.station_id
                                 $stmt_lockers = $db->prepare("
                                     SELECT l.id, l.name AS locker_name, t.name AS truck_name 
                                     FROM lockers l
                                     JOIN trucks t ON l.truck_id = t.id
-                                    WHERE l.station_id = ? 
+                                    WHERE t.station_id = ? 
                                     ORDER BY t.name, l.name
                                 ");
                                 $stmt_lockers->execute([$current_station_id]);
@@ -471,7 +484,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                                     FROM locker_items li
                                     JOIN lockers l ON li.locker_id = l.id
                                     JOIN trucks t ON l.truck_id = t.id
-                                    WHERE li.station_id = ?
+                                    WHERE li.station_id = ? 
                                     ORDER BY t.name, l.name, li.name
                                 ");
                                 $stmt_items->execute([$current_station_id]);
@@ -514,7 +527,6 @@ function handleAjaxResponse(response, successCallback, errorCallback) {
     if (response.success) {
         if (successCallback) successCallback(response);
         console.log('Success:', response.message || 'Operation successful.');
-        // Consider a less disruptive way to show success, like a toast notification
     } else {
         if (errorCallback) errorCallback(response);
         alert('Error: ' + (response.message || 'An unknown error occurred.'));
@@ -606,8 +618,8 @@ function handleAddItem(event) {
         handleAjaxResponse(data, function(res) {
             alert(res.message || 'Item added successfully!');
             form.reset();
-            document.getElementById('select-locker-for-item').innerHTML = '<option value="">-- Select Truck First --</option>'; // Reset locker dropdown
-            loadPage('admin_modules/lockers.php'); // Reload to see new item
+            document.getElementById('select-locker-for-item').innerHTML = '<option value="">-- Select Truck First --</option>'; 
+            loadPage('admin_modules/lockers.php'); 
         });
     })
     .catch(error => {
@@ -642,7 +654,7 @@ function loadLockersForItemDropdown(truckId) {
             }
         } else {
             lockerSelect.innerHTML = '<option value="">Error loading lockers</option>';
-            console.error('Error fetching lockers:', data.message);
+            console.error('Error fetching lockers:', data.message || 'No specific message from server.');
         }
     })
     .catch(error => {
@@ -652,18 +664,9 @@ function loadLockersForItemDropdown(truckId) {
 }
 
 function loadItemsList(truckIdFilter = '') {
-    // This function would be used for dynamic client-side filtering of items.
-    // For now, the initial list is loaded by PHP.
-    // If implementing dynamic filtering:
-    // 1. Fetch items via AJAX based on truckIdFilter.
-    // 2. Clear the current #items-list.
-    // 3. Populate #items-list with new items.
     console.log('loadItemsList called with truck ID:', truckIdFilter);
-    // Placeholder: alert(`Would filter items for truck ID: ${truckIdFilter || 'All'}`);
-    // To make this work, you'd need an AJAX endpoint like `get_items_for_truck`
-    // and then update the DOM similar to `loadLockersForItemDropdown`.
-    // For now, rely on page reload to show filtered items if PHP handles the filter.
-    // Or, if PHP always loads all, then client-side filtering would hide/show LIs.
+    // Placeholder for future dynamic client-side filtering.
+    // For now, PHP handles initial load and full page reload updates lists.
 }
 
 
@@ -671,7 +674,7 @@ function initializeLockersModule() {
     console.log('Lockers module initialized via JS.');
     const addTruckForm = document.getElementById('add-truck-form');
     if (addTruckForm) {
-        addTruckForm.onsubmit = handleAddTruck; // Use onsubmit for simplicity here
+        addTruckForm.onsubmit = handleAddTruck; 
     }
     const addLockerForm = document.getElementById('add-locker-form');
     if (addLockerForm) {
@@ -681,12 +684,6 @@ function initializeLockersModule() {
     if (addItemForm) {
         addItemForm.onsubmit = handleAddItem;
     }
-    
-    // Attach onchange to truck filter for items (if needed for dynamic JS filtering)
-    // const filterItemsByTruckSelect = document.getElementById('filter-items-by-truck');
-    // if (filterItemsByTruckSelect) {
-    //     filterItemsByTruckSelect.onchange = function() { loadItemsList(this.value); };
-    // }
 }
 
 if (document.readyState === 'loading') {
