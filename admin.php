@@ -95,10 +95,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         'demo_clean_tables.php'
     ];
     
-    if (in_array($page, $allowedPages) && file_exists($page)) {
+    // Check if we should load from admin_modules directory
+    $modulePath = 'admin_modules/' . $page;
+    $legacyPath = $page;
+    
+    if (in_array($page, $allowedPages)) {
         // Capture the output
         ob_start();
-        include($page);
+        
+        // Try module path first, then legacy path
+        if (file_exists($modulePath)) {
+            include($modulePath);
+        } elseif (file_exists($legacyPath)) {
+            include($legacyPath);
+        } else {
+            echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found.</div>';
+        }
+        
         $content = ob_get_clean();
         
         // If the content includes full HTML structure, extract just the body content
@@ -118,6 +131,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         }
     } else {
         echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found or access denied.</div>';
+    }
+    exit;
+}
+
+// Handle AJAX requests to modules
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && strpos($_SERVER['REQUEST_URI'], '/admin_modules/') !== false) {
+    requireAuth();
+    
+    // Setup context for the module
+    $pdo = get_db_connection();
+    $user = getCurrentUser();
+    $userRole = $user['role'];
+    $userName = $user['username'];
+    
+    $currentStation = null;
+    if ($userRole === 'superuser') {
+        $currentStation = getCurrentStation();
+    } elseif ($userRole === 'station_admin') {
+        try {
+            $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+            $stmt_stations->execute([$user['id']]);
+            $userStations = $stmt_stations->fetchAll();
+            if (count($userStations) === 1) {
+                $currentStation = $userStations[0];
+            }
+        } catch (Exception $e) {
+            error_log('Error getting user stations in module POST: ' . $e->getMessage());
+        }
+    }
+    
+    // Extract module name from URL
+    preg_match('/admin_modules\/([^\/]+\.php)/', $_SERVER['REQUEST_URI'], $matches);
+    if (isset($matches[1])) {
+        $module = $matches[1];
+        $allowedModules = [
+            'maintain_trucks.php',
+            'maintain_lockers.php',
+            'maintain_locker_items.php',
+            'manage_stations.php'
+        ];
+        
+        if (in_array($module, $allowedModules) && file_exists('admin_modules/' . $module)) {
+            include('admin_modules/' . $module);
+        } else {
+            header('HTTP/1.1 404 Not Found');
+            echo json_encode(['success' => false, 'message' => 'Module not found']);
+        }
     }
     exit;
 }

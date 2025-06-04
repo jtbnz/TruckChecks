@@ -1,13 +1,69 @@
 # Active Context
 
 ## Current Work Focus
+**ADMIN MODULE SYSTEM IMPLEMENTATION**
+
+Just completed a major refactoring of the admin interface to use a modular AJAX-based system. All admin pages referenced by admin.php have been converted into modules that load dynamically within the admin interface, preventing navigation issues and improving user experience.
+
 **ENHANCED AUTOMATED EMAIL SYSTEM WITH STATION-SPECIFIC CONFIGURATION**
 
-Just completed a comprehensive upgrade to the email automation system, building on the V4 station hierarchy to provide sophisticated, station-specific email automation with advanced scheduling and holiday handling.
+Previously completed a comprehensive upgrade to the email automation system, building on the V4 station hierarchy to provide sophisticated, station-specific email automation with advanced scheduling and holiday handling.
 
 **MAJOR VERSION UPGRADE TO V4 - STATION HIERARCHY IMPLEMENTATION**
 
 The system has undergone a major architectural upgrade to introduce the Station concept, creating a new hierarchy: Stations → Trucks → Lockers → Items. This represents the most significant change to the system since its inception.
+
+## Recent Implementation: Admin Module System
+
+### Problem Solved
+- Admin pages (maintain_trucks.php, maintain_lockers.php, etc.) were causing navigation issues when loaded via AJAX
+- Form submissions were posting to admin.php?page=content instead of the actual page
+- Users were losing the admin interface context after operations
+
+### Solution Implemented
+Created a new `admin_modules/` directory with modular versions of admin pages:
+
+1. **Module Architecture**:
+   - Each module is a self-contained PHP file without headers/footers
+   - Modules receive context from admin.php ($pdo, $user, $currentStation)
+   - All forms submit via AJAX to prevent page navigation
+   - Modules handle their own POST requests with JSON responses
+
+2. **Files Created**:
+   - `admin_modules/maintain_trucks.php` - Truck management module
+   - `admin_modules/maintain_lockers.php` - Locker management module
+   - `admin_modules/maintain_locker_items.php` - Item management module
+   - `admin_modules/manage_stations.php` - Station management module
+
+3. **Admin.php Updates**:
+   - Enhanced AJAX loading to check admin_modules/ directory first
+   - Added POST handler for module AJAX requests
+   - Maintains backward compatibility with legacy pages
+
+4. **Key Features**:
+   - **AJAX Form Handling**: All add/edit/delete operations via AJAX
+   - **Real-time Updates**: Success messages and automatic page refresh
+   - **Station Context**: All modules respect station boundaries
+   - **Role-based Access**: Proper permission checks (e.g., manage_stations for superusers only)
+   - **Responsive Design**: Mobile-friendly interfaces
+   - **Debug Support**: Console logging when DEBUG mode enabled
+
+### Module Pattern Established
+```php
+// Standard module structure
+if (!isset($pdo) || !isset($user) || !isset($currentStation)) {
+    die('This module must be loaded through admin.php');
+}
+
+// Handle AJAX actions
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
+    // Process form submissions
+    // Return JSON response
+    exit;
+}
+
+// Regular page display
+```
 
 ## Major V4 Changes Implemented
 
@@ -90,7 +146,7 @@ The system has undergone a major architectural upgrade to introduce the Station 
   - Audit trail preservation
   - User creation for merged station
 
-### 7. Enhanced Automated Email System (NEW)
+### 7. Enhanced Automated Email System
 - **Station-Specific Configuration**:
   - Individual email automation settings per station
   - Custom send times (configurable via station_settings.php)
@@ -128,6 +184,8 @@ The system has undergone a major architectural upgrade to introduce the Station 
 - **Session Management**: Secure token-based sessions with station context
 - **Database Migration**: V4 upgrade and merge scripts ready
 - **Responsive Design**: Mobile-friendly interfaces throughout
+- **Admin Module System**: AJAX-based modular admin interface
+- **Email Automation**: Station-specific automated email system
 
 ### 🔄 Backward Compatibility Maintained
 - **Legacy Authentication**: Original password-based login still works
@@ -136,6 +194,22 @@ The system has undergone a major architectural upgrade to introduce the Station 
 - **Configuration**: Original config.php structure unchanged
 
 ## Recent Fixes
+
+### Admin Page Navigation Issue (RESOLVED)
+- **Problem**: When adding/editing items in admin pages, users were losing the admin interface
+- **Root Cause**: Forms were posting to full pages instead of loading as modules
+- **Solution**: 
+  - Created modular versions of all admin pages in admin_modules/
+  - Implemented AJAX form submissions with JSON responses
+  - Updated admin.php to load modules and handle AJAX requests
+  - All operations now stay within the admin interface
+- **Files Created**: 
+  - `admin_modules/maintain_trucks.php`
+  - `admin_modules/maintain_lockers.php`
+  - `admin_modules/maintain_locker_items.php`
+  - `admin_modules/manage_stations.php`
+- **Files Modified**: `admin.php`
+- **Status**: ✅ RESOLVED - All admin operations now work seamlessly within the interface
 
 ### Security Code Authentication Issue (RESOLVED)
 - **Problem**: Users getting "access denied invalid security code" when checking locker items after scanning QR code
@@ -164,11 +238,21 @@ The system has undergone a major architectural upgrade to introduce the Station 
 
 ## Next Steps & Pending Work
 
-### 1. Update Maintenance Pages (High Priority)
-- **maintain_trucks.php**: Add station assignment and filtering
-- **maintain_lockers.php**: Ensure station context validation
-- **maintain_locker_items.php**: Update for station-aware operations
-- **All pages**: Implement station access control
+### 1. Convert Remaining Admin Pages to Modules
+The following pages still need module versions:
+- **find.php**: Item search functionality
+- **reset_locker_check.php**: Reset check status
+- **qr-codes.php**: QR code generation
+- **email_admin.php**: Email settings management
+- **email_results.php**: Send check results
+- **locker_check_report.php**: Check reports
+- **list_all_items_report.php**: Item reports
+- **list_all_items_report_a3.php**: A3 format reports
+- **deleted_items_report.php**: Deleted items tracking
+- **backups.php**: Database backup
+- **login_logs.php**: Login history
+- **show_code.php**: Security code display
+- **station_settings.php**: Station configuration
 
 ### 2. User Management System
 - **manage_users.php**: Create comprehensive user management interface
@@ -177,20 +261,16 @@ The system has undergone a major architectural upgrade to introduce the Station 
 - **User roles**: Enhanced role management
 
 ### 3. Enhanced Admin Interface
-- **admin.php**: Update for role-based menu options
-- **Station switching**: Quick station change in admin area
-- **Dashboard**: Station-specific statistics and overview
+- **Dashboard improvements**: Station-specific statistics and overview
+- **Quick actions**: Common tasks accessible from dashboard
+- **Activity feed**: Recent changes and updates
 - **Settings**: Station-aware configuration options
 
-### 4. Settings and Configuration
-- **settings.php**: Add station selection and management
-- **Station preferences**: User-specific station settings
-- **Configuration**: Station-specific settings if needed
-
-### 5. Reports and Analytics
+### 4. Reports and Analytics
 - **Station-filtered reports**: All reports respect station context
 - **Cross-station reports**: Superuser-only comprehensive reports
 - **User activity**: Station admin activity tracking
+- **Export options**: PDF/Excel export capabilities
 
 ## Technical Architecture
 
@@ -201,6 +281,16 @@ The system has undergone a major architectural upgrade to introduce the Station 
 3. User authenticates (legacy or user-based)
 4. Station selection (if multiple stations)
 5. Redirect to admin with station context
+```
+
+### Module Loading Flow
+```
+1. User clicks admin menu item
+2. loadPage() function called via JavaScript
+3. AJAX request to admin.php?ajax=1&page=X
+4. admin.php checks admin_modules/ first, then legacy path
+5. Module loaded with proper context ($pdo, $user, $currentStation)
+6. Module content returned and displayed in admin interface
 ```
 
 ### Station Access Control
@@ -246,6 +336,12 @@ users (1) → user_sessions (many)
 - **Mobile optimization**: Touch-friendly forms and buttons
 - **Backward compatibility**: Existing users unaffected
 
+### Admin Interface
+- **AJAX-based**: No page reloads during operations
+- **Real-time feedback**: Success/error messages appear instantly
+- **Consistent navigation**: Always stay within admin context
+- **Responsive design**: Works on all device sizes
+
 ## Development Standards
 
 ### Code Patterns Established
@@ -254,9 +350,12 @@ users (1) → user_sessions (many)
 - **AJAX Handling**: Proper JSON responses with error handling
 - **Database Operations**: Station-aware queries with proper filtering
 - **Error Handling**: Comprehensive logging and user feedback
+- **Module Structure**: Consistent pattern for admin modules
 
 ### File Organization
 - **auth.php**: Central authentication and session management
+- **admin.php**: Main admin interface and module loader
+- **admin_modules/**: Directory for all admin page modules
 - **V4Changes.sql**: Database upgrade script
 - **merge_database.sql**: Database merge utility
 - **manage_stations.php**: Station management interface
