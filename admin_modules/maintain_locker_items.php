@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_item'])) {
     if ($isAjaxAction) {
         ob_end_clean(); // Clear any buffered output before sending JSON
         header('Content-Type: application/json');
-        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_item'])) {
     if ($isAjaxAction) {
         ob_end_clean(); // Clear any buffered output before sending JSON
         header('Content-Type: application/json');
-        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_item_id']) && i
     // Always return JSON response for delete action
     ob_end_clean(); // Clear any buffered output before sending JSON
     header('Content-Type: application/json');
-    echo json_encode(['success' => $response_success, 'message' => $response_message]);
+    echo json_encode(['success' => $response_success, 'message' => $response_message], JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }
 
@@ -127,12 +127,12 @@ if (isset($_GET['ajax'])) {
     if ($_GET['ajax'] === 'get_lockers' && isset($_GET['truck_id'])) {
         $truck_id = $_GET['truck_id'];
         if (empty($truck_id)) {
-            echo json_encode([]);
+            echo json_encode([], JSON_INVALID_UTF8_SUBSTITUTE);
         } else {
             $stmt = $db->prepare('SELECT id, name FROM lockers WHERE truck_id = ? ORDER BY name');
             $stmt->execute([$truck_id]);
             $ajax_lockers = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            echo json_encode($ajax_lockers);
+            echo json_encode($ajax_lockers, JSON_INVALID_UTF8_SUBSTITUTE);
         }
         exit;
     }
@@ -192,7 +192,7 @@ if (isset($_GET['ajax'])) {
             'count' => count($ajax_items),
             'truck_name' => $truck_name,
             'locker_name' => $locker_name
-        ]);
+        ], JSON_INVALID_UTF8_SUBSTITUTE);
         exit;
     }
 }
