@@ -531,8 +531,8 @@ try {
 </div>
 
 <script>
-// Module-specific functions - defined in global scope for onclick handlers
-window.showMessage = function(message, isError = false) {
+// Module-specific functions - defined immediately in global scope
+function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
     container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
     
@@ -544,7 +544,7 @@ window.showMessage = function(message, isError = false) {
     }
 }
 
-window.deleteLocker = function(lockerId, lockerName) {
+function deleteLocker(lockerId, lockerName) {
     if (!confirm(`Are you sure you want to delete locker "${lockerName}"?`)) {
         return;
     }
@@ -577,8 +577,15 @@ window.deleteLocker = function(lockerId, lockerName) {
     });
 }
 
-// Set up form handlers when the module loads
-document.addEventListener('DOMContentLoaded', function() {
+// Ensure functions are available globally
+if (typeof window !== 'undefined') {
+    window.showMessage = showMessage;
+    window.deleteLocker = deleteLocker;
+}
+
+// Set up form handlers - use immediate execution instead of DOMContentLoaded
+// since the module is loaded via AJAX after DOM is ready
+(function() {
     // Handle add locker form
     const addForm = document.getElementById('add-locker-form');
     if (addForm) {
@@ -649,12 +656,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-});
-
-<?php if (DEBUG): ?>
-console.log('Maintain Lockers module loaded');
-console.log('Station:', <?= json_encode($station['name']) ?>);
-console.log('Lockers count:', <?= count($lockers) ?>);
-console.log('Trucks count:', <?= count($trucks) ?>);
-<?php endif; ?>
+    
+    <?php if (DEBUG): ?>
+    console.log('Maintain Lockers module loaded');
+    console.log('Station:', <?= json_encode($station['name']) ?>);
+    console.log('Lockers count:', <?= count($lockers) ?>);
+    console.log('Trucks count:', <?= count($trucks) ?>);
+    console.log('deleteLocker function available:', typeof deleteLocker !== 'undefined');
+    <?php endif; ?>
+})();
 </script>

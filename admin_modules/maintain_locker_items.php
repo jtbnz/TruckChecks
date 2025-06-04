@@ -581,8 +581,8 @@ try {
 </div>
 
 <script>
-// Module-specific functions - defined in global scope for onclick handlers
-window.showMessage = function(message, isError = false) {
+// Module-specific functions - defined immediately in global scope
+function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
     container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
     
@@ -594,7 +594,7 @@ window.showMessage = function(message, isError = false) {
     }
 }
 
-window.deleteItem = function(itemId, itemName) {
+function deleteItem(itemId, itemName) {
     if (!confirm(`Are you sure you want to delete item "${itemName}"?`)) {
         return;
     }
@@ -627,8 +627,15 @@ window.deleteItem = function(itemId, itemName) {
     });
 }
 
-// Set up form handlers when the module loads
-document.addEventListener('DOMContentLoaded', function() {
+// Ensure functions are available globally
+if (typeof window !== 'undefined') {
+    window.showMessage = showMessage;
+    window.deleteItem = deleteItem;
+}
+
+// Set up form handlers - use immediate execution instead of DOMContentLoaded
+// since the module is loaded via AJAX after DOM is ready
+(function() {
     // Handle add item form
     const addForm = document.getElementById('add-item-form');
     if (addForm) {
@@ -699,12 +706,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-});
-
-<?php if (DEBUG): ?>
-console.log('Maintain Locker Items module loaded');
-console.log('Station:', <?= json_encode($station['name']) ?>);
-console.log('Items count:', <?= count($items) ?>);
-console.log('Lockers count:', <?= count($lockers) ?>);
-<?php endif; ?>
+    
+    <?php if (DEBUG): ?>
+    console.log('Maintain Locker Items module loaded');
+    console.log('Station:', <?= json_encode($station['name']) ?>);
+    console.log('Items count:', <?= count($items) ?>);
+    console.log('Lockers count:', <?= count($lockers) ?>);
+    console.log('deleteItem function available:', typeof deleteItem !== 'undefined');
+    <?php endif; ?>
+})();
 </script>

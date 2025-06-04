@@ -493,8 +493,8 @@ try {
 </div>
 
 <script>
-// Module-specific functions - defined in global scope for onclick handlers
-window.showMessage = function(message, isError = false) {
+// Module-specific functions - defined immediately in global scope
+function showMessage(message, isError = false) {
     const container = document.getElementById('message-container');
     container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
     
@@ -506,7 +506,7 @@ window.showMessage = function(message, isError = false) {
     }
 }
 
-window.deleteStation = function(stationId, stationName) {
+function deleteStation(stationId, stationName) {
     if (!confirm(`Are you sure you want to delete station "${stationName}"?`)) {
         return;
     }
@@ -539,8 +539,15 @@ window.deleteStation = function(stationId, stationName) {
     });
 }
 
-// Set up form handlers when the module loads
-document.addEventListener('DOMContentLoaded', function() {
+// Ensure functions are available globally
+if (typeof window !== 'undefined') {
+    window.showMessage = showMessage;
+    window.deleteStation = deleteStation;
+}
+
+// Set up form handlers - use immediate execution instead of DOMContentLoaded
+// since the module is loaded via AJAX after DOM is ready
+(function() {
     // Handle add station form
     const addForm = document.getElementById('add-station-form');
     if (addForm) {
@@ -611,10 +618,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-});
-
-<?php if (DEBUG): ?>
-console.log('Manage Stations module loaded');
-console.log('Stations count:', <?= count($stations) ?>);
-<?php endif; ?>
+    
+    <?php if (DEBUG): ?>
+    console.log('Manage Stations module loaded');
+    console.log('Stations count:', <?= count($stations) ?>);
+    console.log('deleteStation function available:', typeof deleteStation !== 'undefined');
+    <?php endif; ?>
+})();
 </script>
