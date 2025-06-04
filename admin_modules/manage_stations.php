@@ -1,168 +1,158 @@
 <?php
-// This is a module file - it should only be included from admin.php
-// No headers, footers, or standalone functionality
+// This file is intended to be included as an AJAX module within admin.php
+// It assumes auth.php, config.php, and db.php have already been included
+// and $pdo, $user, $userRole, $userName, $station, DEBUG are available.
 
-// Ensure we have required context from admin.php
-if (!isset($pdo) || !isset($user) || !isset($currentStation)) {
-    die('This module must be loaded through admin.php');
-}
-
-// Only superusers can access this module
-if ($user['role'] !== 'superuser') {
-    echo '<div class="alert alert-error">Access Denied: Only superusers can manage stations.</div>';
-    return;
-}
+// Ensure necessary variables are available from admin.php
+global $pdo, $user, $userRole, $userName, $station, $DEBUG;
 
 $db = $pdo; // Use the PDO connection from admin.php
-$error_message = '';
-$success_message = '';
+$error = '';
+$success = '';
 
-// Initialize DEBUG if not defined
-if (!defined('DEBUG')) {
-    define('DEBUG', false);
-}
+// Check if we're handling an AJAX action from a form submission or delete link
+$isAjaxAction = isset($_POST['ajax_action']) || (isset($_GET['ajax_action']) && in_array($_GET['ajax_action'], ['delete_station']));
 
-if (DEBUG) {
-    error_log("manage_stations module: Started.");
-}
-
-// Handle AJAX form submissions and data requests
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
-    header('Content-Type: application/json');
-    $response = ['success' => false, 'message' => ''];
-    
-    try {
-        switch ($_POST['ajax_action']) {
-            case 'add_station':
-                $name = trim($_POST['station_name'] ?? '');
-                $description = trim($_POST['station_description'] ?? '');
-                
-                if (empty($name)) {
-                    throw new Exception('Station name is required.');
-                }
-                
+// Handle form submissions
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['add_station'])) {
+        $name = trim($_POST['station_name']);
+        $description = trim($_POST['station_description']);
+        
+        if (empty($name)) {
+            $error = "Station name is required.";
+        } else {
+            try {
                 $stmt = $db->prepare("INSERT INTO stations (name, description) VALUES (?, ?)");
                 $stmt->execute([$name, $description]);
-                
-                $response['success'] = true;
-                $response['message'] = "Station '{$name}' added successfully.";
-                
-                if (DEBUG) {
-                    error_log("manage_stations module: Station '{$name}' added successfully.");
+                $success = "Station added successfully.";
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                    $error = "A station with this name already exists.";
+                } else {
+                    $error = "Error adding station: " . $e->getMessage();
                 }
-                break;
-                
-            case 'edit_station':
-                $stationId = (int)($_POST['station_id'] ?? 0);
-                $name = trim($_POST['station_name'] ?? '');
-                $description = trim($_POST['station_description'] ?? '');
-                
-                if (empty($stationId) || empty($name)) {
-                    throw new Exception('Station ID and name are required.');
-                }
-                
-                $stmt = $db->prepare("UPDATE stations SET name = ?, description = ? WHERE id = ?");
-                $stmt->execute([$name, $description, $stationId]);
-                
-                $response['success'] = true;
-                $response['message'] = "Station updated successfully.";
-                
-                if (DEBUG) {
-                    error_log("manage_stations module: Station ID {$stationId} updated successfully.");
-                }
-                break;
-                
-            case 'delete_station':
-                $stationId = (int)($_POST['station_id'] ?? 0);
-                
-                if (empty($stationId)) {
-                    throw new Exception('Station ID is required.');
-                }
-                
-                // Check if station has trucks
-                $stmt = $db->prepare("SELECT COUNT(*) FROM trucks WHERE station_id = ?");
-                $stmt->execute([$stationId]);
-                $truckCount = $stmt->fetchColumn();
-                
-                if ($truckCount > 0) {
-                    throw new Exception("Cannot delete station: it has {$truckCount} truck(s) assigned. Please reassign or delete the trucks first.");
-                }
-                
-                // Delete user assignments first
-                $stmt_users = $db->prepare("DELETE FROM user_stations WHERE station_id = ?");
-                $stmt_users->execute([$stationId]);
-                
-                // Delete station
-                $stmt_station = $db->prepare("DELETE FROM stations WHERE id = ?");
-                $stmt_station->execute([$stationId]);
-                
-                $response['success'] = true;
-                $response['message'] = "Station deleted successfully.";
-                
-                if (DEBUG) {
-                    error_log("manage_stations module: Station ID {$stationId} deleted successfully.");
-                }
-                break;
-
-            case 'get_station_users':
-                $stationId = (int)($_POST['station_id'] ?? 0);
-                if (empty($stationId)) {
-                    throw new Exception('Station ID is required.');
-                }
-                
-                $stmt = $db->prepare("
-                    SELECT u.id, u.username, u.email, u.role, u.last_login,
-                           us.created_at as assigned_at
-                    FROM users u
-                    JOIN user_stations us ON u.id = us.user_id
-                    WHERE us.station_id = ? AND u.is_active = 1
-                    ORDER BY u.username
-                ");
-                $stmt->execute([$stationId]);
-                $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                $response['success'] = true;
-                $response['users'] = $users;
-                break;
-                
-            case 'get_station_trucks':
-                $stationId = (int)($_POST['station_id'] ?? 0);
-                if (empty($stationId)) {
-                    throw new Exception('Station ID is required.');
-                }
-                
-                $stmt = $db->prepare("
-                    SELECT t.id, t.name, t.relief,
-                           COUNT(DISTINCT l.id) as locker_count,
-                           COUNT(DISTINCT i.id) as item_count
-                    FROM trucks t
-                    LEFT JOIN lockers l ON t.id = l.truck_id
-                    LEFT JOIN items i ON l.id = i.locker_id
-                    WHERE t.station_id = ?
-                    GROUP BY t.id, t.name, t.relief
-                    ORDER BY t.name
-                ");
-                $stmt->execute([$stationId]);
-                $trucks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                $response['success'] = true;
-                $response['trucks'] = $trucks;
-                break;
-                
-            default:
-                throw new Exception('Invalid action');
+            }
         }
-    } catch (Exception $e) {
-        $response['success'] = false;
-        $response['message'] = $e->getMessage();
-        
-        if (DEBUG) {
-            error_log("manage_stations module: Error - " . $e->getMessage());
+        // For AJAX actions, return JSON response
+        if ($isAjaxAction) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => empty($error), 'message' => $success ?: $error]);
+            exit;
         }
     }
     
-    echo json_encode($response);
+    if (isset($_POST['edit_station'])) {
+        $stationId = (int)$_POST['station_id'];
+        $name = trim($_POST['station_name']);
+        $description = trim($_POST['station_description']);
+        
+        if (empty($name)) {
+            $error = "Station name is required.";
+        } else {
+            try {
+                $stmt = $db->prepare("UPDATE stations SET name = ?, description = ? WHERE id = ?");
+                $stmt->execute([$name, $description, $stationId]);
+                $success = "Station updated successfully.";
+            } catch (Exception $e) {
+                if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                    $error = "A station with this name already exists.";
+                } else {
+                    $error = "Error updating station: " . $e->getMessage();
+                }
+            }
+        }
+        // For AJAX actions, return JSON response
+        if ($isAjaxAction) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => empty($error), 'message' => $success ?: $error]);
+            exit;
+        }
+    }
+}
+
+// Handle station deletion
+if (isset($_GET['delete_station']) && isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'delete_station') {
+    $stationId = (int)$_GET['delete_station'];
+    
+    try {
+        // Check if station has trucks
+        $stmt = $db->prepare("SELECT COUNT(*) FROM trucks WHERE station_id = ?");
+        $stmt->execute([$stationId]);
+        $truckCount = $stmt->fetchColumn();
+        
+        if ($truckCount > 0) {
+            $error = "Cannot delete station: it has $truckCount truck(s) assigned. Please reassign or delete the trucks first.";
+        } else {
+            // Delete user assignments first
+            $stmt_users = $db->prepare("DELETE FROM user_stations WHERE station_id = ?");
+            $stmt_users->execute([$stationId]);
+            
+            // Delete station
+            $stmt_station = $db->prepare("DELETE FROM stations WHERE id = ?");
+            $stmt_station->execute([$stationId]);
+            
+            $success = "Station deleted successfully.";
+        }
+    } catch (Exception $e) {
+        $error = "Error deleting station: " . $e->getMessage();
+    }
+    // Always return JSON response for delete action
+    header('Content-Type: application/json');
+    echo json_encode(['success' => empty($error), 'message' => $success ?: $error]);
     exit;
+}
+
+// Handle AJAX requests for getting station users/trucks (GET requests)
+if (isset($_GET['ajax'])) {
+    header('Content-Type: application/json');
+    
+    if ($_GET['ajax'] === 'get_station_users') {
+        $stationId = (int)$_GET['station_id'];
+        
+        try {
+            $stmt = $db->prepare("
+                SELECT u.id, u.username, u.email, u.role, u.last_login,
+                       us.created_at as assigned_at
+                FROM users u
+                JOIN user_stations us ON u.id = us.user_id
+                WHERE us.station_id = ? AND u.is_active = 1
+                ORDER BY u.username
+            ");
+            $stmt->execute([$stationId]);
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode(['success' => true, 'users' => $users]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+    
+    if ($_GET['ajax'] === 'get_station_trucks') {
+        $stationId = (int)$_GET['station_id'];
+        
+        try {
+            $stmt = $db->prepare("
+                SELECT t.id, t.name, t.relief,
+                       COUNT(DISTINCT l.id) as locker_count,
+                       COUNT(DISTINCT i.id) as item_count
+                FROM trucks t
+                LEFT JOIN lockers l ON t.id = l.truck_id
+                LEFT JOIN items i ON l.id = i.locker_id
+                WHERE t.station_id = ?
+                GROUP BY t.id, t.name, t.relief
+                ORDER BY t.name
+            ");
+            $stmt->execute([$stationId]);
+            $trucks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode(['success' => true, 'trucks' => $trucks]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 
 // Get all stations for display
@@ -180,15 +170,8 @@ try {
     $stmt->execute();
     $stations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    $error_message = "Error loading stations: " . $e->getMessage();
+    $error = "Error loading stations: " . $e->getMessage();
     $stations = [];
-    if (DEBUG) {
-        error_log("manage_stations module: Error loading stations: " . $e->getMessage());
-    }
-}
-
-if (DEBUG) {
-    error_log("manage_stations module: Rendering page. Stations count: " . count($stations));
 }
 ?>
 
@@ -452,12 +435,19 @@ if (DEBUG) {
         <h1 class="page-title">Station Management</h1>
     </div>
 
-    <div id="message-container"></div>
+    <?php if ($error): ?>
+        <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <?php if ($success): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
 
     <!-- Add Station Form -->
     <div class="form-container">
         <h3 class="form-title">Add New Station</h3>
-        <form id="add-station-form">
+        <form method="post" action="admin.php" id="add-station-form">
+            <input type="hidden" name="ajax_action" value="add_station">
             <div class="form-group">
                 <label for="station_name">Station Name:</label>
                 <input type="text" name="station_name" id="station_name" required>
@@ -466,7 +456,7 @@ if (DEBUG) {
                 <label for="station_description">Description:</label>
                 <textarea name="station_description" id="station_description" placeholder="Optional description"></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Add Station</button>
+            <button type="submit" name="add_station" class="btn btn-primary">Add Station</button>
         </form>
     </div>
 
@@ -478,7 +468,7 @@ if (DEBUG) {
                     <h3 class="station-name"><?= htmlspecialchars($station['name']) ?></h3>
                     <div class="station-actions">
                         <button class="btn btn-primary btn-sm" onclick="editStation(<?= $station['id'] ?>, '<?= htmlspecialchars(addslashes($station['name'])) ?>', '<?= htmlspecialchars(addslashes($station['description'] ?? '')) ?>')">Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteStation(<?= $station['id'] ?>, '<?= htmlspecialchars(addslashes($station['name'])) ?>')">Delete</button>
+                        <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this station? This action cannot be undone.')){ deleteStation(<?= $station['id'] ?>); }" class="btn btn-danger btn-sm">Delete</a>
                     </div>
                 </div>
 
@@ -500,9 +490,9 @@ if (DEBUG) {
                 <div class="station-details">
                     <div class="detail-section">
                         <div class="detail-title">
-                            <button class="btn btn-secondary btn-sm" onclick="toggleDetails('users-<?= $station['id'] ?>', <?= $station['id'] ?>)">
+                            <a href="#" onclick="toggleDetails('users-<?= $station['id'] ?>', <?= $station['id'] ?>); return false;">
                                 View Users (<?= $station['user_count'] ?>)
-                            </button>
+                            </a>
                         </div>
                         <div class="detail-content" id="users-<?= $station['id'] ?>">
                             <div class="loading">Loading users...</div>
@@ -511,9 +501,9 @@ if (DEBUG) {
 
                     <div class="detail-section">
                         <div class="detail-title">
-                            <button class="btn btn-secondary btn-sm" onclick="toggleDetails('trucks-<?= $station['id'] ?>', <?= $station['id'] ?>)">
+                            <a href="#" onclick="toggleDetails('trucks-<?= $station['id'] ?>', <?= $station['id'] ?>); return false;">
                                 View Trucks (<?= $station['truck_count'] ?>)
-                            </button>
+                            </a>
                         </div>
                         <div class="detail-content" id="trucks-<?= $station['id'] ?>">
                             <div class="loading">Loading trucks...</div>
@@ -540,7 +530,8 @@ if (DEBUG) {
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;">
         <h3 style="margin-top: 0; color: #12044C;">Edit Station</h3>
-        <form id="edit-station-form">
+        <form method="post" action="admin.php" id="edit-station-form">
+            <input type="hidden" name="ajax_action" value="edit_station">
             <input type="hidden" name="station_id" id="edit_station_id">
             <div class="form-group">
                 <label for="edit_station_name">Station Name:</label>
@@ -552,27 +543,13 @@ if (DEBUG) {
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Update Station</button>
+                <button type="submit" name="edit_station" class="btn btn-primary">Update Station</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-(function() { // Start IIFE
-// Module-specific functions - defined immediately in global scope
-function showMessage(message, isError = false) {
-    const container = document.getElementById('message-container');
-    container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
-    
-    // Auto-hide success messages after 3 seconds
-    if (!isError) {
-        setTimeout(() => {
-            container.innerHTML = '';
-        }, 3000);
-    }
-}
-
 function editStation(id, name, description) {
     document.getElementById('edit_station_id').value = id;
     document.getElementById('edit_station_name').value = name;
@@ -582,42 +559,6 @@ function editStation(id, name, description) {
 
 function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
-}
-
-function deleteStation(stationId, stationName) {
-    if (!confirm(`Are you sure you want to delete station "${stationName}"? This action cannot be undone.`)) {
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('ajax_action', 'delete_station');
-    formData.append('station_id', stationId);
-    
-    fetch('admin.php', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message);
-            // Reload the module
-            setTimeout(() => {
-                if (window.loadPage) {
-                    window.loadPage('manage_stations.php');
-                }
-            }, 1000);
-        } else {
-            showMessage(data.message, true);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred while deleting the station.', true);
-    });
 }
 
 function toggleDetails(elementId, stationId) {
@@ -641,84 +582,89 @@ function toggleDetails(elementId, stationId) {
 }
 
 function loadStationUsers(stationId, elementId) {
-    const formData = new FormData();
-    formData.append('ajax_action', 'get_station_users');
-    formData.append('station_id', stationId);
-
-    fetch('admin.php', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        const element = document.getElementById(elementId);
-        if (data.success) {
-            if (data.users.length === 0) {
-                element.innerHTML = '<em>No users assigned to this station</em>';
+    fetch(`admin.php?ajax=get_station_users&station_id=${stationId}`)
+        .then(response => response.json())
+        .then(data => {
+            const element = document.getElementById(elementId);
+            if (data.success) {
+                if (data.users.length === 0) {
+                    element.innerHTML = '<em>No users assigned to this station</em>';
+                } else {
+                    let html = '<ul style="margin: 0; padding-left: 20px;">';
+                    data.users.forEach(user => {
+                        html += `<li><strong>${user.username}</strong> (${user.role})`;
+                        if (user.email) html += ` - ${user.email}`;
+                        if (user.last_login) {
+                            html += `<br><small>Last login: ${new Date(user.last_login).toLocaleDateString()}</small>`;
+                        }
+                        html += '</li>';
+                    });
+                    html += '</ul>';
+                    element.innerHTML = html;
+                }
             } else {
-                let html = '<ul style="margin: 0; padding-left: 20px;">';
-                data.users.forEach(user => {
-                    html += `<li><strong>${user.username}</strong> (${user.role})`;
-                    if (user.email) html += ` - ${user.email}`;
-                    if (user.last_login) {
-                        html += `<br><small>Last login: ${new Date(user.last_login).toLocaleDateString()}</small>`;
-                    }
-                    html += '</li>';
-                });
-                html += '</ul>';
-                element.innerHTML = html;
+                element.innerHTML = `<em>Error loading users: ${data.message}</em>`;
             }
-        } else {
-            element.innerHTML = `<em>Error loading users: ${data.message}</em>`;
-        }
-    })
-    .catch(error => {
-        document.getElementById(elementId).innerHTML = `<em>Error loading users: ${error.message}</em>`;
-    });
+        })
+        .catch(error => {
+            document.getElementById(elementId).innerHTML = `<em>Error loading users: ${error.message}</em>`;
+        });
 }
 
 function loadStationTrucks(stationId, elementId) {
-    const formData = new FormData();
-    formData.append('ajax_action', 'get_station_trucks');
-    formData.append('station_id', stationId);
-
-    fetch('admin.php', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        const element = document.getElementById(elementId);
-        if (data.success) {
-            if (data.trucks.length === 0) {
-                element.innerHTML = '<em>No trucks assigned to this station</em>';
+    fetch(`admin.php?ajax=get_station_trucks&station_id=${stationId}`)
+        .then(response => response.json())
+        .then(data => {
+            const element = document.getElementById(elementId);
+            if (data.success) {
+                if (data.trucks.length === 0) {
+                    element.innerHTML = '<em>No trucks assigned to this station</em>';
+                } else {
+                    let html = '<ul style="margin: 0; padding-left: 20px;">';
+                    data.trucks.forEach(truck => {
+                        html += `<li><strong>${truck.name}</strong>`;
+                        if (truck.relief == 1) html += ' <span style="color: #666;">(Relief)</span>';
+                        html += `<br><small>${truck.locker_count} lockers, ${truck.item_count} items</small></li>`;
+                    });
+                    html += '</ul>';
+                    element.innerHTML = html;
+                }
             } else {
-                let html = '<ul style="margin: 0; padding-left: 20px;">';
-                data.trucks.forEach(truck => {
-                    html += `<li><strong>${truck.name}</strong>`;
-                    if (truck.relief == 1) html += ' <span style="color: #666;">(Relief)</span>';
-                    html += `<br><small>${truck.locker_count} lockers, ${truck.item_count} items</small></li>`;
-                });
-                html += '</ul>';
-                element.innerHTML = html;
+                element.innerHTML = `<em>Error loading trucks: ${data.message}</em>`;
             }
-        } else {
-            element.innerHTML = `<em>Error loading trucks: ${data.message}</em>`;
-        }
-    })
-    .catch(error => {
-        document.getElementById(elementId).innerHTML = `<em>Error loading trucks: ${error.message}</em>`;
-    });
+        })
+        .catch(error => {
+            document.getElementById(elementId).innerHTML = `<em>Error loading trucks: ${error.message}</em>`;
+        });
 }
 
-// Set up form handlers - use immediate execution instead of DOMContentLoaded
-// since the module is loaded via AJAX after DOM is ready
+function deleteStation(stationId) {
+    fetch(`admin.php?ajax_action=delete_station&delete_station=${stationId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (window.parent && typeof window.parent.loadPage === 'function') {
+                    window.parent.loadPage('manage_stations.php'); // Reload the page to show updated list
+                }
+            } else {
+                alert('Error deleting station: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting station:', error);
+            alert('Error deleting station. Please try again.');
+        });
+}
+
+// Close modal when clicking outside
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+
+// Handle form submissions via AJAX
+document.addEventListener('DOMContentLoaded', function() {
     // Handle add station form
     const addForm = document.getElementById('add-station-form');
     if (addForm) {
@@ -726,31 +672,24 @@ function loadStationTrucks(stationId, elementId) {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'add_station');
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    // Clear the form
-                    this.reset();
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('manage_stations.php');
-                        }
-                    }, 1000);
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('manage_stations.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error adding station: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while adding the station.', true);
+                console.error('Error submitting add station form:', error);
+                alert('Error adding station. Please try again.');
             });
         });
     }
@@ -762,40 +701,27 @@ function loadStationTrucks(stationId, elementId) {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'edit_station');
-            formData.append('station_id', this.dataset.stationId || document.getElementById('edit_station_id').value);
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    closeEditModal();
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('manage_stations.php');
-                        }
-                    }, 1000);
+                    closeEditModal(); // Close modal on success
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('manage_stations.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error updating station: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while updating the station.', true);
+                console.error('Error submitting edit station form:', error);
+                alert('Error updating station. Please try again.');
             });
         });
-    }
-})();
-
-// Close modal when clicking outside
-document.getElementById('editModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeEditModal();
     }
 });
 </script>

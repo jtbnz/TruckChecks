@@ -85,9 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     
     // Security: Only allow specific pages
     $allowedPages = [
-        'maintain_trucks.php',
-        'maintain_lockers.php', 
-        'maintain_locker_items.php',
+        'admin_modules/maintain_trucks.php',
+        'admin_modules/maintain_lockers.php', 
+        'admin_modules/maintain_locker_items.php',
         'find.php',
         'reset_locker_check.php',
         'qr-codes.php',
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
         'deleted_items_report.php',
         'backups.php',
         'login_logs.php',
-        'manage_stations.php',
+        'admin_modules/manage_stations.php',
         'manage_users.php',
         'show_code.php',
         'station_settings.php',
@@ -318,18 +318,32 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             position: fixed;
             height: 100vh;
             overflow-y: auto;
+            z-index: 100; /* Ensure sidebar is above content */
         }
         
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             background-color: rgba(0,0,0,0.2);
+            display: flex; /* For hamburger icon */
+            justify-content: space-between; /* For hamburger icon */
+            align-items: center; /* For hamburger icon */
         }
         
         .sidebar-header h2 {
             margin: 0 0 5px 0;
             font-size: 18px;
             color: white;
+        }
+
+        .hamburger {
+            display: none; /* Hidden by default, shown on mobile */
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            padding: 0;
         }
         
         .user-info {
@@ -518,17 +532,30 @@ $currentPage = $_GET['page'] ?? 'dashboard';
         
         @media (max-width: 768px) {
             .sidebar {
-                width: 100%;
-                position: relative;
-                height: auto;
+                width: 250px; /* Fixed width for mobile sidebar when open */
+                position: fixed;
+                height: 100vh;
+                top: 0;
+                left: -250px; /* Hidden by default */
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+            }
+
+            .sidebar.sidebar-visible {
+                left: 0; /* Slide in */
             }
             
             .main-content {
                 margin-left: 0;
+                width: 100%;
             }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
+
+            .hamburger {
+                display: block; /* Show hamburger on mobile */
+            }
+
+            .sidebar-header {
+                padding-right: 10px; /* Adjust padding for hamburger */
             }
         }
     </style>
@@ -536,9 +563,10 @@ $currentPage = $_GET['page'] ?? 'dashboard';
 <body>
     <div class="admin-container">
         <!-- Sidebar -->
-        <div class="sidebar">
+        <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>TruckChecks Admin</h2>
+                <button class="hamburger" id="hamburger-menu">☰</button>
                 <div class="user-info">
                     Welcome, <?= htmlspecialchars($userName) ?>
                     <div class="role-badge role-<?= str_replace('_', '-', $userRole) ?>">
@@ -826,6 +854,11 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 });
             }
             
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-visible');
+            }
+
             // Load content via AJAX
             fetch(`admin.php?ajax=1&page=${encodeURIComponent(page)}`)
                 .then(response => response.text())
@@ -857,7 +890,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     
                     // Update URL without page reload
                     const url = new URL(window.location);
-                    url.searchParams.set('page', page.replace('.php', '')); // Clean URL for history
+                    url.searchParams.set('page', page); // Keep full filename for history
                     window.history.pushState({}, '', url);
                 })
                 .catch(error => {
@@ -886,6 +919,11 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             // Add active class to dashboard
             document.getElementById('dashboard-link').classList.add('active');
             
+            // Close sidebar on mobile after navigation
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('sidebar-visible');
+            }
+
             // Redirect to dashboard
             window.location.href = '?page=dashboard';
         }
@@ -916,5 +954,15 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                     alert('Failed to change station');
                 });
             }
+        }
+
+        // Mobile sidebar toggle
+        const hamburgerMenu = document.getElementById('hamburger-menu');
+        const sidebar = document.getElementById('sidebar');
+
+        if (hamburgerMenu && sidebar) {
+            hamburgerMenu.addEventListener('click', () => {
+                sidebar.classList.toggle('sidebar-visible');
+            });
         }
     </script>

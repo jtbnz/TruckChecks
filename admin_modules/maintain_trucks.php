@@ -1,132 +1,101 @@
 <?php
-// This is a module file - it should only be included from admin.php
-// No headers, footers, or standalone functionality
+// This file is intended to be included as an AJAX module within admin.php
+// It assumes auth.php, config.php, and db.php have already been included
+// and $pdo, $user, $userRole, $userName, $station, DEBUG are available.
 
-// Ensure we have required context from admin.php
-if (!isset($pdo) || !isset($user) || !isset($currentStation)) {
-    die('This module must be loaded through admin.php');
-}
-
-// Use the station from admin context
-$station = $currentStation;
-if (!$station) {
-    echo '<div class="alert alert-error">No station selected. Please select a station first.</div>';
-    return;
-}
+// Ensure necessary variables are available from admin.php
+global $pdo, $user, $userRole, $userName, $station, $DEBUG;
 
 $db = $pdo; // Use the PDO connection from admin.php
 $error_message = '';
 $success_message = '';
 
-// Initialize DEBUG if not defined
-if (!defined('DEBUG')) {
-    define('DEBUG', false);
+// Check if we're handling an AJAX action from a form submission
+$isAjaxAction = isset($_POST['ajax_action']);
+
+// Handle adding a new truck
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
+    $truck_name = trim($_POST['truck_name']);
+    if (!empty($truck_name)) {
+        try {
+            $query = $db->prepare('INSERT INTO trucks (name, station_id) VALUES (:name, :station_id)');
+            $query->execute(['name' => $truck_name, 'station_id' => $station['id']]);
+            $success_message = "Truck '{$truck_name}' added successfully.";
+        } catch (Exception $e) {
+            $error_message = "Error adding truck: " . $e->getMessage();
+        }
+    } else {
+        $error_message = "Truck name cannot be empty.";
+    }
+    // For AJAX actions, return JSON response
+    if ($isAjaxAction) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        exit;
+    }
 }
 
-if (DEBUG) {
-    error_log("maintain_trucks module: Started. Station ID: " . $station['id']);
-}
-
-// Handle AJAX form submissions
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
-    header('Content-Type: application/json');
-    $response = ['success' => false, 'message' => ''];
-    
-    try {
-        switch ($_POST['ajax_action']) {
-            case 'add_truck':
-                $truck_name = trim($_POST['truck_name'] ?? '');
-                
-                if (empty($truck_name)) {
-                    throw new Exception('Truck name cannot be empty');
-                }
-                
-                $query = $db->prepare('INSERT INTO trucks (name, station_id) VALUES (:name, :station_id)');
-                $query->execute(['name' => $truck_name, 'station_id' => $station['id']]);
-                
-                $response['success'] = true;
-                $response['message'] = "Truck '{$truck_name}' added successfully.";
-                
-                if (DEBUG) {
-                    error_log("maintain_trucks module: Truck '{$truck_name}' added successfully");
-                }
-                break;
-                
-            case 'edit_truck':
-                $truck_id = $_POST['truck_id'] ?? '';
-                $truck_name = trim($_POST['truck_name'] ?? '');
-                
-                if (empty($truck_id) || empty($truck_name)) {
-                    throw new Exception('Truck ID and name are required');
-                }
-                
-                // Verify truck belongs to current station
-                $check_query = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
-                $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
-                
-                if (!$check_query->fetch()) {
-                    throw new Exception('Truck not found or access denied');
-                }
-                
+// Handle editing a truck
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck'])) {
+    $truck_id = $_POST['truck_id'];
+    $truck_name = trim($_POST['truck_name']);
+    if (!empty($truck_name) && !empty($truck_id)) {
+        try {
+            // Verify truck belongs to current station
+            $check_query = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
+            $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
+            
+            if ($check_query->fetch()) {
                 $query = $db->prepare('UPDATE trucks SET name = :name WHERE id = :id AND station_id = :station_id');
                 $query->execute(['name' => $truck_name, 'id' => $truck_id, 'station_id' => $station['id']]);
-                
-                $response['success'] = true;
-                $response['message'] = 'Truck updated successfully.';
-                
-                if (DEBUG) {
-                    error_log("maintain_trucks module: Truck ID {$truck_id} updated successfully");
-                }
-                break;
-                
-            case 'delete_truck':
-                $truck_id = $_POST['truck_id'] ?? '';
-                
-                if (empty($truck_id)) {
-                    throw new Exception('Truck ID is required');
-                }
-                
-                // Verify truck belongs to current station
-                $check_query = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
-                $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
-                
-                if (!$check_query->fetch()) {
-                    throw new Exception('Truck not found or access denied');
-                }
-                
-                // Check if truck has any lockers
-                $locker_check = $db->prepare('SELECT COUNT(*) FROM lockers WHERE truck_id = :truck_id');
-                $locker_check->execute(['truck_id' => $truck_id]);
-                $locker_count = $locker_check->fetchColumn();
-                
-                if ($locker_count > 0) {
-                    throw new Exception("Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it. Please delete all lockers first.");
-                }
-                
+                $success_message = "Truck updated successfully.";
+            } else {
+                $error_message = "Truck not found or access denied.";
+            }
+        } catch (Exception $e) {
+            $error_message = "Error updating truck: " . $e->getMessage();
+        }
+    } else {
+        $error_message = "Truck name cannot be empty.";
+    }
+    // For AJAX actions, return JSON response
+    if ($isAjaxAction) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        exit;
+    }
+}
+
+// Handle deleting a truck
+if (isset($_GET['delete_truck_id']) && isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'delete_truck') {
+    $truck_id = $_GET['delete_truck_id'];
+    try {
+        // First check if truck belongs to current station
+        $check_query = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
+        $check_query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
+        
+        if (!$check_query->fetch()) {
+            $error_message = "Truck not found or access denied.";
+        } else {
+            // Check if truck has any lockers
+            $locker_check = $db->prepare('SELECT COUNT(*) FROM lockers WHERE truck_id = :truck_id');
+            $locker_check->execute(['truck_id' => $truck_id]);
+            $locker_count = $locker_check->fetchColumn();
+            
+            if ($locker_count > 0) {
+                $error_message = "Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it. Please delete all lockers first.";
+            } else {
                 $query = $db->prepare('DELETE FROM trucks WHERE id = :id AND station_id = :station_id');
                 $query->execute(['id' => $truck_id, 'station_id' => $station['id']]);
-                
-                $response['success'] = true;
-                $response['message'] = 'Truck deleted successfully.';
-                
-                if (DEBUG) {
-                    error_log("maintain_trucks module: Truck ID {$truck_id} deleted successfully");
-                }
-                break;
-                
-            default:
-                throw new Exception('Invalid action');
+                $success_message = "Truck deleted successfully.";
+            }
         }
     } catch (Exception $e) {
-        $response['success'] = false;
-        $response['message'] = $e->getMessage();
-        
-        if (DEBUG) {
-            error_log("maintain_trucks module: Error - " . $e->getMessage());
-        }
+        $error_message = "Error deleting truck: " . $e->getMessage();
     }
-    
-    echo json_encode($response);
+    // Always return JSON response for delete action
+    header('Content-Type: application/json');
+    echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
     exit;
 }
 
@@ -163,13 +132,6 @@ try {
 } catch (Exception $e) {
     $error_message = "Error loading trucks: " . $e->getMessage();
     $trucks = [];
-    if (DEBUG) {
-        error_log("maintain_trucks module: Error loading trucks: " . $e->getMessage());
-    }
-}
-
-if (DEBUG) {
-    error_log("maintain_trucks module: Rendering page. Trucks count: " . count($trucks) . ". Edit truck ID: " . ($edit_truck['id'] ?? 'None'));
 }
 ?>
 
@@ -326,14 +288,12 @@ if (DEBUG) {
         gap: 10px;
     }
 
-    .truck-actions button {
+    .truck-actions a {
         padding: 6px 12px;
         text-decoration: none;
         border-radius: 3px;
         font-size: 14px;
         transition: background-color 0.3s;
-        border: none;
-        cursor: pointer;
     }
 
     .edit-link {
@@ -415,35 +375,48 @@ if (DEBUG) {
 
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
-        <?php if (!empty($station['description'])): ?>
+        <?php if ($station['description']): ?>
             <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
         <?php endif; ?>
     </div>
 
-    <div id="message-container"></div>
+    <?php if ($error_message): ?>
+        <div class="alert alert-error">
+            <?= htmlspecialchars($error_message) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($success_message): ?>
+        <div class="alert alert-success">
+            <?= htmlspecialchars($success_message) ?>
+        </div>
+    <?php endif; ?>
 
     <?php if ($edit_truck): ?>
         <div class="form-section">
             <h2>Edit Truck</h2>
-            <form id="edit-truck-form" data-truck-id="<?= $edit_truck['id'] ?>">
+            <form method="POST" action="admin.php" id="edit-truck-form">
+                <input type="hidden" name="ajax_action" value="edit_truck">
+                <input type="hidden" name="truck_id" value="<?= $edit_truck['id'] ?>">
                 <div class="input-container">
                     <input type="text" name="truck_name" placeholder="Truck Name" value="<?= htmlspecialchars($edit_truck['name']) ?>" required>
                 </div>
                 <div class="button-container">
-                    <button type="submit" class="button">Update Truck</button>
-                    <button type="button" onclick="loadPage('maintain_trucks.php')" class="button secondary">Cancel</button>
+                    <button type="submit" name="edit_truck" class="button">Update Truck</button>
+                    <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); }" class="button secondary">Cancel</a>
                 </div>
             </form>
         </div>
     <?php else: ?>
         <div class="form-section">
             <h2>Add New Truck</h2>
-            <form id="add-truck-form">
+            <form method="POST" action="admin.php" id="add-truck-form">
+                <input type="hidden" name="ajax_action" value="add_truck">
                 <div class="input-container">
                     <input type="text" name="truck_name" placeholder="Truck Name" required>
                 </div>
                 <div class="button-container">
-                    <button type="submit" class="button">Add Truck</button>
+                    <button type="submit" name="add_truck" class="button">Add Truck</button>
                 </div>
             </form>
         </div>
@@ -470,9 +443,10 @@ if (DEBUG) {
                         </div>
                     </div>
                     <div class="truck-actions">
-                        <button onclick="loadPage('maintain_trucks.php?edit_id=<?= $truck['id'] ?>')" class="edit-link">Edit</button>
+                        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php?edit_id=<?= $truck['id'] ?>'); }" class="edit-link">Edit</a>
                         <?php if ($truck['locker_count'] == 0): ?>
-                            <button onclick="deleteTruck(<?= $truck['id'] ?>, '<?= htmlspecialchars($truck['name'], ENT_QUOTES) ?>')" class="delete-link">Delete</button>
+                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this truck?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php?delete_truck_id=<?= $truck['id'] ?>&ajax_action=delete_truck'); } }"
+                               class="delete-link">Delete</a>
                         <?php else: ?>
                             <span class="delete-link disabled" 
                                   title="Cannot delete truck with lockers">Delete</span>
@@ -485,64 +459,8 @@ if (DEBUG) {
 </div>
 
 <script>
-(function() { // Start IIFE
-// Module-specific functions - defined immediately in global scope
-function showMessage(message, isError = false) {
-    const container = document.getElementById('message-container');
-    container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
-    
-    // Auto-hide success messages after 3 seconds
-    if (!isError) {
-        setTimeout(() => {
-            container.innerHTML = '';
-        }, 3000);
-    }
-}
-
-function deleteTruck(truckId, truckName) {
-    if (!confirm(`Are you sure you want to delete truck "${truckName}"?`)) {
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('ajax_action', 'delete_truck');
-    formData.append('truck_id', truckId);
-    
-    fetch('admin.php', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message);
-            // Reload the module
-            setTimeout(() => {
-                if (window.loadPage) {
-                    window.loadPage('maintain_trucks.php');
-                }
-            }, 1000);
-        } else {
-            showMessage(data.message, true);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred while deleting the truck.', true);
-    });
-}
-
-// Ensure functions are available globally
-if (typeof window !== 'undefined') {
-    window.showMessage = showMessage;
-    window.deleteTruck = deleteTruck;
-}
-
-// Set up form handlers - use immediate execution instead of DOMContentLoaded
-// since the module is loaded via AJAX after DOM is ready
+// Handle form submissions via AJAX
+document.addEventListener('DOMContentLoaded', function() {
     // Handle add truck form
     const addForm = document.getElementById('add-truck-form');
     if (addForm) {
@@ -550,31 +468,24 @@ if (typeof window !== 'undefined') {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'add_truck');
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    // Clear the form
-                    this.reset();
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('maintain_trucks.php');
-                        }
-                    }, 1000);
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('maintain_trucks.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error adding truck: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while adding the truck.', true);
+                console.error('Error submitting form:', error);
+                alert('Error adding truck. Please try again.');
             });
         });
     }
@@ -586,39 +497,57 @@ if (typeof window !== 'undefined') {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'edit_truck');
-            formData.append('truck_id', this.dataset.truckId);
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('maintain_trucks.php');
-                        }
-                    }, 1000);
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('maintain_trucks.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error updating truck: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while updating the truck.', true);
+                console.error('Error submitting form:', error);
+                alert('Error updating truck. Please try again.');
             });
         });
     }
-    
-    <?php if (DEBUG): ?>
-    console.log('Maintain Trucks module loaded');
-    console.log('Station:', <?= json_encode($station['name']) ?>);
-    console.log('Trucks count:', <?= count($trucks) ?>);
-    console.log('deleteTruck function available:', typeof deleteTruck !== 'undefined');
-    <?php endif; ?>
-})(); // End IIFE
+
+    // Handle delete truck links
+    document.querySelectorAll('.delete-link').forEach(link => {
+        if (!link.classList.contains('disabled')) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to delete this truck?')) {
+                    const url = new URL(this.href);
+                    const truckId = url.searchParams.get('delete_truck_id');
+                    
+                    fetch(`admin.php?ajax_action=delete_truck&delete_truck_id=${truckId}`, { // Submit to admin.php
+                        method: 'GET', // Using GET for simplicity as it's a direct link click
+                    })
+                    .then(response => response.json()) // Expect JSON response
+                    .then(data => {
+                        if (data.success) {
+                            if (window.parent && typeof window.parent.loadPage === 'function') {
+                                window.parent.loadPage('maintain_trucks.php'); // Reload the page to show updated list
+                            }
+                        } else {
+                            alert('Error deleting truck: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting truck:', error);
+                        alert('Error deleting truck. Please try again.');
+                    });
+                }
+            });
+        }
+    });
+});
 </script>

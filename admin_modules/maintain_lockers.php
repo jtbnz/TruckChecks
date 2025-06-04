@@ -1,160 +1,129 @@
 <?php
-// This is a module file - it should only be included from admin.php
-// No headers, footers, or standalone functionality
+// This file is intended to be included as an AJAX module within admin.php
+// It assumes auth.php, config.php, and db.php have already been included
+// and $pdo, $user, $userRole, $userName, $station, DEBUG are available.
 
-// Ensure we have required context from admin.php
-if (!isset($pdo) || !isset($user) || !isset($currentStation)) {
-    die('This module must be loaded through admin.php');
-}
-
-// Use the station from admin context
-$station = $currentStation;
-if (!$station) {
-    echo '<div class="alert alert-error">No station selected. Please select a station first.</div>';
-    return;
-}
+// Ensure necessary variables are available from admin.php
+global $pdo, $user, $userRole, $userName, $station, $DEBUG;
 
 $db = $pdo; // Use the PDO connection from admin.php
 $error_message = '';
 $success_message = '';
 
-// Initialize DEBUG if not defined
-if (!defined('DEBUG')) {
-    define('DEBUG', false);
-}
+// Check if we're handling an AJAX action from a form submission
+$isAjaxAction = isset($_POST['ajax_action']);
 
-if (DEBUG) {
-    error_log("maintain_lockers module: Started. Station ID: " . $station['id']);
-}
-
-// Handle AJAX form submissions
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
-    header('Content-Type: application/json');
-    $response = ['success' => false, 'message' => ''];
-    
-    try {
-        switch ($_POST['ajax_action']) {
-            case 'add_locker':
-                $locker_name = trim($_POST['locker_name'] ?? '');
-                $truck_id = $_POST['truck_id'] ?? '';
-                
-                if (empty($locker_name) || empty($truck_id)) {
-                    throw new Exception('Locker name and truck selection are required');
-                }
-                
-                // Verify truck belongs to current station
-                $truck_check = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
-                $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
-                
-                if (!$truck_check->fetch()) {
-                    throw new Exception('Selected truck not found or access denied');
-                }
-                
+// Handle adding a new locker
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_locker'])) {
+    $locker_name = trim($_POST['locker_name']);
+    $truck_id = $_POST['truck_id'];
+    if (!empty($locker_name) && !empty($truck_id)) {
+        try {
+            // Verify truck belongs to current station
+            $truck_check = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
+            $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
+            
+            if ($truck_check->fetch()) {
                 $query = $db->prepare('INSERT INTO lockers (name, truck_id) VALUES (:name, :truck_id)');
                 $query->execute(['name' => $locker_name, 'truck_id' => $truck_id]);
-                
-                $response['success'] = true;
-                $response['message'] = "Locker '{$locker_name}' added successfully.";
-                
-                if (DEBUG) {
-                    error_log("maintain_lockers module: Locker '{$locker_name}' added successfully");
-                }
-                break;
-                
-            case 'edit_locker':
-                $locker_id = $_POST['locker_id'] ?? '';
-                $locker_name = trim($_POST['locker_name'] ?? '');
-                $truck_id = $_POST['truck_id'] ?? '';
-                
-                if (empty($locker_id) || empty($locker_name) || empty($truck_id)) {
-                    throw new Exception('All fields are required');
-                }
-                
-                // Verify both locker and truck belong to current station
-                $check_query = $db->prepare('
-                    SELECT l.id 
-                    FROM lockers l 
-                    JOIN trucks t ON l.truck_id = t.id 
-                    WHERE l.id = :locker_id AND t.station_id = :station_id
-                ');
-                $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
-                
-                if (!$check_query->fetch()) {
-                    throw new Exception('Locker not found or access denied');
-                }
-                
+                $success_message = "Locker '{$locker_name}' added successfully.";
+            } else {
+                $error_message = "Selected truck not found or access denied.";
+            }
+        } catch (Exception $e) {
+            $error_message = "Error adding locker: " . $e->getMessage();
+        }
+    } else {
+        $error_message = "Locker name and truck selection are required.";
+    }
+    // For AJAX actions, return JSON response
+    if ($isAjaxAction) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        exit;
+    }
+}
+
+// Handle editing a locker
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_locker'])) {
+    $locker_id = $_POST['locker_id'];
+    $locker_name = trim($_POST['locker_name']);
+    $truck_id = $_POST['truck_id'];
+    if (!empty($locker_name) && !empty($truck_id) && !empty($locker_id)) {
+        try {
+            // Verify both locker and truck belong to current station
+            $check_query = $db->prepare('
+                SELECT l.id 
+                FROM lockers l 
+                JOIN trucks t ON l.truck_id = t.id 
+                WHERE l.id = :locker_id AND t.station_id = :station_id
+            ');
+            $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
+            
+            if (!$check_query->fetch()) {
+                $error_message = "Locker not found or access denied.";
+            } else {
                 // Verify new truck belongs to current station
                 $truck_check = $db->prepare('SELECT id FROM trucks WHERE id = :id AND station_id = :station_id');
                 $truck_check->execute(['id' => $truck_id, 'station_id' => $station['id']]);
                 
-                if (!$truck_check->fetch()) {
-                    throw new Exception('Selected truck not found or access denied');
+                if ($truck_check->fetch()) {
+                    $query = $db->prepare('UPDATE lockers SET name = :name, truck_id = :truck_id WHERE id = :id');
+                    $query->execute(['name' => $locker_name, 'truck_id' => $truck_id, 'id' => $locker_id]);
+                    $success_message = "Locker updated successfully.";
+                } else {
+                    $error_message = "Selected truck not found or access denied.";
                 }
-                
-                $query = $db->prepare('UPDATE lockers SET name = :name, truck_id = :truck_id WHERE id = :id');
-                $query->execute(['name' => $locker_name, 'truck_id' => $truck_id, 'id' => $locker_id]);
-                
-                $response['success'] = true;
-                $response['message'] = 'Locker updated successfully.';
-                
-                if (DEBUG) {
-                    error_log("maintain_lockers module: Locker ID {$locker_id} updated successfully");
-                }
-                break;
-                
-            case 'delete_locker':
-                $locker_id = $_POST['locker_id'] ?? '';
-                
-                if (empty($locker_id)) {
-                    throw new Exception('Locker ID is required');
-                }
-                
-                // Verify locker belongs to current station
-                $check_query = $db->prepare('
-                    SELECT l.id 
-                    FROM lockers l 
-                    JOIN trucks t ON l.truck_id = t.id 
-                    WHERE l.id = :locker_id AND t.station_id = :station_id
-                ');
-                $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
-                
-                if (!$check_query->fetch()) {
-                    throw new Exception('Locker not found or access denied');
-                }
-                
-                // Check if locker has any items
-                $item_check = $db->prepare('SELECT COUNT(*) FROM items WHERE locker_id = :locker_id');
-                $item_check->execute(['locker_id' => $locker_id]);
-                $item_count = $item_check->fetchColumn();
-                
-                if ($item_count > 0) {
-                    throw new Exception("Cannot delete locker: This locker has {$item_count} item(s) assigned to it. Please delete all items first.");
-                }
-                
+            }
+        } catch (Exception $e) {
+            $error_message = "Error updating locker: " . $e->getMessage();
+        }
+    } else {
+        $error_message = "Locker name and truck selection are required.";
+    }
+    // For AJAX actions, return JSON response
+    if ($isAjaxAction) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
+        exit;
+    }
+}
+
+// Handle deleting a locker
+if (isset($_GET['delete_locker_id']) && isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'delete_locker') {
+    $locker_id = $_GET['delete_locker_id'];
+    try {
+        // First check if locker belongs to current station
+        $check_query = $db->prepare('
+            SELECT l.id 
+            FROM lockers l 
+            JOIN trucks t ON l.truck_id = t.id 
+            WHERE l.id = :locker_id AND t.station_id = :station_id
+        ');
+        $check_query->execute(['locker_id' => $locker_id, 'station_id' => $station['id']]);
+        
+        if (!$check_query->fetch()) {
+            $error_message = "Locker not found or access denied.";
+        } else {
+            // Check if locker has any items
+            $item_check = $db->prepare('SELECT COUNT(*) FROM items WHERE locker_id = :locker_id');
+            $item_check->execute(['locker_id' => $locker_id]);
+            $item_count = $item_check->fetchColumn();
+            
+            if ($item_count > 0) {
+                $error_message = "Cannot delete locker: This locker has {$item_count} item(s) assigned to it. Please delete all items first.";
+            } else {
                 $query = $db->prepare('DELETE FROM lockers WHERE id = :id');
                 $query->execute(['id' => $locker_id]);
-                
-                $response['success'] = true;
-                $response['message'] = 'Locker deleted successfully.';
-                
-                if (DEBUG) {
-                    error_log("maintain_lockers module: Locker ID {$locker_id} deleted successfully");
-                }
-                break;
-                
-            default:
-                throw new Exception('Invalid action');
+                $success_message = "Locker deleted successfully.";
+            }
         }
     } catch (Exception $e) {
-        $response['success'] = false;
-        $response['message'] = $e->getMessage();
-        
-        if (DEBUG) {
-            error_log("maintain_lockers module: Error - " . $e->getMessage());
-        }
+        $error_message = "Error deleting locker: " . $e->getMessage();
     }
-    
-    echo json_encode($response);
+    // Always return JSON response for delete action
+    header('Content-Type: application/json');
+    echo json_encode(['success' => empty($error_message), 'message' => $success_message ?: $error_message]);
     exit;
 }
 
@@ -208,13 +177,6 @@ try {
 } catch (Exception $e) {
     $error_message = "Error loading lockers: " . $e->getMessage();
     $lockers = [];
-    if (DEBUG) {
-        error_log("maintain_lockers module: Error loading lockers: " . $e->getMessage());
-    }
-}
-
-if (DEBUG) {
-    error_log("maintain_lockers module: Rendering page. Lockers count: " . count($lockers) . ". Edit locker ID: " . ($edit_locker['id'] ?? 'None'));
 }
 ?>
 
@@ -358,14 +320,18 @@ if (DEBUG) {
         gap: 10px;
     }
 
-    .locker-actions button {
-        padding: 6px 12px;
+    .locker-actions a,
+    .locker-actions span {
+        padding: 8px 16px;
         text-decoration: none;
-        border-radius: 3px;
+        border-radius: 4px;
         font-size: 14px;
+        font-weight: 500;
+        text-align: center;
+        min-width: 60px;
+        display: inline-block;
         transition: background-color 0.3s;
-        border: none;
-        cursor: pointer;
+        box-sizing: border-box;
     }
 
     .edit-link {
@@ -458,23 +424,35 @@ if (DEBUG) {
 
     <div class="station-info">
         <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
-        <?php if (!empty($station['description'])): ?>
+        <?php if ($station['description']): ?>
             <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
         <?php endif; ?>
     </div>
 
-    <div id="message-container"></div>
+    <?php if ($error_message): ?>
+        <div class="alert alert-error">
+            <?= htmlspecialchars($error_message) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($success_message): ?>
+        <div class="alert alert-success">
+            <?= htmlspecialchars($success_message) ?>
+        </div>
+    <?php endif; ?>
 
     <?php if (empty($trucks)): ?>
         <div class="no-trucks-warning">
             <h3>No Trucks Available</h3>
-            <p>You need to add trucks before you can create lockers. <button onclick="loadPage('maintain_trucks.php')" class="button secondary">Go to Maintain Trucks</button> to add your first truck.</p>
+            <p>You need to add trucks before you can create lockers. <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_trucks.php'); } else { console.error('parent.loadPage not found'); window.location.href='maintain_trucks.php'; }">Go to Maintain Trucks</a> to add your first truck.</p>
         </div>
     <?php else: ?>
         <?php if ($edit_locker): ?>
             <div class="form-section">
                 <h2>Edit Locker</h2>
-                <form id="edit-locker-form" data-locker-id="<?= $edit_locker['id'] ?>">
+                <form method="POST" action="admin.php" id="edit-locker-form">
+                    <input type="hidden" name="ajax_action" value="edit_locker">
+                    <input type="hidden" name="locker_id" value="<?= $edit_locker['id'] ?>">
                     <div class="input-container">
                         <input type="text" name="locker_name" placeholder="Locker Name" value="<?= htmlspecialchars($edit_locker['name']) ?>" required>
                     </div>
@@ -489,15 +467,16 @@ if (DEBUG) {
                         </select>
                     </div>
                     <div class="button-container">
-                        <button type="submit" class="button">Update Locker</button>
-                        <button type="button" onclick="loadPage('maintain_lockers.php')" class="button secondary">Cancel</button>
+                        <button type="submit" name="edit_locker" class="button">Update Locker</button>
+                        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php'); }" class="button secondary">Cancel</a>
                     </div>
                 </form>
             </div>
         <?php else: ?>
             <div class="form-section">
                 <h2>Add New Locker</h2>
-                <form id="add-locker-form">
+                <form method="POST" action="admin.php" id="add-locker-form">
+                    <input type="hidden" name="ajax_action" value="add_locker">
                     <div class="input-container">
                         <input type="text" name="locker_name" placeholder="Locker Name" required>
                     </div>
@@ -510,7 +489,7 @@ if (DEBUG) {
                         </select>
                     </div>
                     <div class="button-container">
-                        <button type="submit" class="button">Add Locker</button>
+                        <button type="submit" name="add_locker" class="button">Add Locker</button>
                     </div>
                 </form>
             </div>
@@ -539,9 +518,10 @@ if (DEBUG) {
                         </div>
                     </div>
                     <div class="locker-actions">
-                        <button onclick="loadPage('maintain_lockers.php?edit_id=<?= $locker['id'] ?>')" class="edit-link">Edit</button>
+                        <a href="#" onclick="event.preventDefault(); if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?edit_id=<?= $locker['id'] ?>'); }" class="edit-link">Edit</a>
                         <?php if ($locker['item_count'] == 0): ?>
-                            <button onclick="deleteLocker(<?= $locker['id'] ?>, '<?= htmlspecialchars($locker['name'], ENT_QUOTES) ?>')" class="delete-link">Delete</button>
+                            <a href="#" onclick="event.preventDefault(); if(confirm('Are you sure you want to delete this locker?')){ if(window.parent && typeof window.parent.loadPage === 'function'){ window.parent.loadPage('maintain_lockers.php?delete_locker_id=<?= $locker['id'] ?>&ajax_action=delete_locker'); } }"
+                               class="delete-link">Delete</a>
                         <?php else: ?>
                             <span class="delete-link disabled" 
                                   title="Cannot delete locker with items">Delete</span>
@@ -551,67 +531,12 @@ if (DEBUG) {
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    </div>
 </div>
-
 <script>
-(function() { // Start IIFE
-// Module-specific functions - defined immediately in global scope
-function showMessage(message, isError = false) {
-    const container = document.getElementById('message-container');
-    container.innerHTML = `<div class="alert ${isError ? 'alert-error' : 'alert-success'}">${message}</div>`;
-    
-    // Auto-hide success messages after 3 seconds
-    if (!isError) {
-        setTimeout(() => {
-            container.innerHTML = '';
-        }, 3000);
-    }
-}
-
-function deleteLocker(lockerId, lockerName) {
-    if (!confirm(`Are you sure you want to delete locker "${lockerName}"?`)) {
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('ajax_action', 'delete_locker');
-    formData.append('locker_id', lockerId);
-    
-    fetch('admin.php', {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message);
-            // Reload the module
-            setTimeout(() => {
-                if (window.loadPage) {
-                    window.loadPage('maintain_lockers.php');
-                }
-            }, 1000);
-        } else {
-            showMessage(data.message, true);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showMessage('An error occurred while deleting the locker.', true);
-    });
-}
-
-// Ensure functions are available globally
-if (typeof window !== 'undefined') {
-    window.showMessage = showMessage;
-    window.deleteLocker = deleteLocker;
-}
-
-// Set up form handlers - use immediate execution instead of DOMContentLoaded
-// since the module is loaded via AJAX after DOM is ready
+// Handle form submissions via AJAX
+document.addEventListener('DOMContentLoaded', function() {
     // Handle add locker form
     const addForm = document.getElementById('add-locker-form');
     if (addForm) {
@@ -619,31 +544,24 @@ if (typeof window !== 'undefined') {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'add_locker');
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    // Clear the form
-                    this.reset();
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('maintain_lockers.php');
-                        }
-                    }, 1000);
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('maintain_lockers.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error adding locker: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while adding the locker.', true);
+                console.error('Error submitting form:', error);
+                alert('Error adding locker. Please try again.');
             });
         });
     }
@@ -655,39 +573,57 @@ if (typeof window !== 'undefined') {
             e.preventDefault();
             
             const formData = new FormData(this);
-            formData.append('ajax_action', 'edit_locker');
-            formData.append('locker_id', this.dataset.lockerId);
             
-            fetch('admin.php', {
+            fetch('admin.php', { // Submit to admin.php
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => response.json()) // Expect JSON response
             .then(data => {
                 if (data.success) {
-                    showMessage(data.message);
-                    // Reload the module
-                    setTimeout(() => {
-                        if (window.loadPage) {
-                            window.loadPage('maintain_lockers.php');
-                        }
-                    }, 1000);
+                    if (window.parent && typeof window.parent.loadPage === 'function') {
+                        window.parent.loadPage('maintain_lockers.php'); // Reload the page to show updated list
+                    }
                 } else {
-                    showMessage(data.message, true);
+                    alert('Error updating locker: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showMessage('An error occurred while updating the locker.', true);
+                console.error('Error submitting form:', error);
+                alert('Error updating locker. Please try again.');
             });
         });
     }
-    
-    <?php if (DEBUG): ?>
-    console.log('Maintain Lockers module loaded');
-    console.log('Station:', <?= json_encode($station['name']) ?>);
-    console.log('Lockers count:', <?= count($lockers) ?>);
-    console.log('deleteLocker function available:', typeof deleteLocker !== 'undefined');
-    <?php endif; ?>
-})(); // End IIFE
+
+    // Handle delete locker links
+    document.querySelectorAll('.delete-link').forEach(link => {
+        if (!link.classList.contains('disabled')) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to delete this locker?')) {
+                    const url = new URL(this.href);
+                    const lockerId = url.searchParams.get('delete_locker_id');
+                    
+                    fetch(`admin.php?ajax_action=delete_locker&delete_locker_id=${lockerId}`, { // Submit to admin.php
+                        method: 'GET', // Using GET for simplicity as it's a direct link click
+                    })
+                    .then(response => response.json()) // Expect JSON response
+                    .then(data => {
+                        if (data.success) {
+                            if (window.parent && typeof window.parent.loadPage === 'function') {
+                                window.parent.loadPage('maintain_lockers.php'); // Reload the page to show updated list
+                            }
+                        } else {
+                            alert('Error deleting locker: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting locker:', error);
+                        alert('Error deleting locker. Please try again.');
+                    });
+                }
+            });
+        }
+    });
+});
 </script>
