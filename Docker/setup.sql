@@ -3,7 +3,7 @@
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS `check_items`;
 DROP TABLE IF EXISTS `checks`;
-DROP TABLE IF EXISTS `items`;
+DROP TABLE IF EXISTS `items`; -- Reverted to `items`
 DROP TABLE IF EXISTS `lockers`;
 DROP TABLE IF EXISTS `trucks`;
 DROP TABLE IF EXISTS `email_addresses`;
@@ -27,7 +27,7 @@ CREATE TABLE `lockers` (
     FOREIGN KEY (`truck_id`) REFERENCES `trucks`(`id`) ON DELETE CASCADE
 );
 
--- Create the `items` table
+-- Create the `items` table (Reverted from `locker_items`, `quantity` removed)
 CREATE TABLE `items` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE `check_items` (
     `item_id` INT NOT NULL,
     `is_present` BOOLEAN NOT NULL,
     FOREIGN KEY (`check_id`) REFERENCES `checks`(`id`) ON DELETE CASCADE,
-    FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`item_id`) REFERENCES `items`(`id`) ON DELETE CASCADE -- Updated FK
 );
 
 -- Create the `check_notes` table
@@ -145,7 +145,7 @@ CREATE TABLE `swap` (
 
 -- Create audit triggers for deletion tracking (MariaDB compatible)
 
--- Trigger for items table
+-- Trigger for items table (Reverted from locker_items)
 DELIMITER $$
 CREATE TRIGGER audit_items_delete
     BEFORE DELETE ON items

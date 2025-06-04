@@ -60,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                     throw new Exception('Invalid locker selection');
                 }
                 
-                $query = $db->prepare('INSERT INTO locker_items (name, locker_id, quantity) VALUES (:name, :locker_id, :quantity)');
-                $query->execute(['name' => $item_name, 'locker_id' => $locker_id, 'quantity' => $quantity]);
+                $query = $db->prepare('INSERT INTO items (name, locker_id) VALUES (:name, :locker_id)');
+                $query->execute(['name' => $item_name, 'locker_id' => $locker_id]);
                 
                 $response['success'] = true;
                 $response['message'] = "Item '{$item_name}' added successfully.";
@@ -75,23 +75,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                 $item_id = $_POST['item_id'] ?? '';
                 $item_name = trim($_POST['item_name'] ?? '');
                 $locker_id = $_POST['locker_id'] ?? '';
-                $quantity = intval($_POST['quantity'] ?? 1);
                 
                 if (empty($item_id) || empty($item_name) || empty($locker_id)) {
                     throw new Exception('All fields are required');
                 }
                 
-                if ($quantity < 1) {
-                    throw new Exception('Quantity must be at least 1');
-                }
-                
                 // Verify item belongs to current station
                 $check_query = $db->prepare('
-                    SELECT li.id 
-                    FROM locker_items li 
-                    JOIN lockers l ON li.locker_id = l.id 
+                    SELECT i.id 
+                    FROM items i 
+                    JOIN lockers l ON i.locker_id = l.id 
                     JOIN trucks t ON l.truck_id = t.id 
-                    WHERE li.id = :id AND t.station_id = :station_id
+                    WHERE i.id = :id AND t.station_id = :station_id
                 ');
                 $check_query->execute(['id' => $item_id, 'station_id' => $station['id']]);
                 
@@ -112,8 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                     throw new Exception('Invalid locker selection');
                 }
                 
-                $query = $db->prepare('UPDATE locker_items SET name = :name, locker_id = :locker_id, quantity = :quantity WHERE id = :id');
-                $query->execute(['name' => $item_name, 'locker_id' => $locker_id, 'quantity' => $quantity, 'id' => $item_id]);
+                $query = $db->prepare('UPDATE items SET name = :name, locker_id = :locker_id WHERE id = :id');
+                $query->execute(['name' => $item_name, 'locker_id' => $locker_id, 'id' => $item_id]);
                 
                 $response['success'] = true;
                 $response['message'] = 'Item updated successfully.';
@@ -132,11 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                 
                 // Verify item belongs to current station
                 $check_query = $db->prepare('
-                    SELECT li.id 
-                    FROM locker_items li 
-                    JOIN lockers l ON li.locker_id = l.id 
+                    SELECT i.id 
+                    FROM items i 
+                    JOIN lockers l ON i.locker_id = l.id 
                     JOIN trucks t ON l.truck_id = t.id 
-                    WHERE li.id = :id AND t.station_id = :station_id
+                    WHERE i.id = :id AND t.station_id = :station_id
                 ');
                 $check_query->execute(['id' => $item_id, 'station_id' => $station['id']]);
                 
@@ -144,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['ajax_action'])) {
                     throw new Exception('Item not found or access denied');
                 }
                 
-                $query = $db->prepare('DELETE FROM locker_items WHERE id = :id');
+                $query = $db->prepare('DELETE FROM items WHERE id = :id');
                 $query->execute(['id' => $item_id]);
                 
                 $response['success'] = true;
@@ -177,11 +172,11 @@ if (isset($_GET['edit_id'])) {
     $edit_id = $_GET['edit_id'];
     try {
         $query = $db->prepare('
-            SELECT li.* 
-            FROM locker_items li 
-            JOIN lockers l ON li.locker_id = l.id 
+            SELECT i.* 
+            FROM items i 
+            JOIN lockers l ON i.locker_id = l.id 
             JOIN trucks t ON l.truck_id = t.id 
-            WHERE li.id = :id AND t.station_id = :station_id
+            WHERE i.id = :id AND t.station_id = :station_id
         ');
         $query->execute(['id' => $edit_id, 'station_id' => $station['id']]);
         $edit_item = $query->fetch(PDO::FETCH_ASSOC);
@@ -212,12 +207,12 @@ try {
 // Fetch all items for current station
 try {
     $items_query = $db->prepare('
-        SELECT li.*, l.name as locker_name, t.name as truck_name
-        FROM locker_items li 
-        JOIN lockers l ON li.locker_id = l.id
+        SELECT i.*, l.name as locker_name, t.name as truck_name
+        FROM items i 
+        JOIN lockers l ON i.locker_id = l.id
         JOIN trucks t ON l.truck_id = t.id
         WHERE t.station_id = :station_id 
-        ORDER BY t.name, l.name, li.name
+        ORDER BY t.name, l.name, i.name
     ');
     $items_query->execute(['station_id' => $station['id']]);
     $items = $items_query->fetchAll(PDO::FETCH_ASSOC);
