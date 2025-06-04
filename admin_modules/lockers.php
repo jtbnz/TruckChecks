@@ -143,14 +143,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     $response = ['success' => false, 'message' => 'Selected locker does not belong to the current station or does not exist.'];
                 } else {
                     // Check if item with the same name already exists in this locker
-                    $stmt_check_item_exists = $pdo->prepare("SELECT id FROM locker_items WHERE name = ? AND locker_id = ?");
+                    $stmt_check_item_exists = $pdo->prepare("SELECT id FROM items WHERE name = ? AND locker_id = ?");
                     $stmt_check_item_exists->execute([$item_name, $locker_id]);
                     if ($stmt_check_item_exists->fetch()) {
                         $response = ['success' => false, 'message' => 'An item with this name already exists in this locker.'];
                     } else {
                         $user_id_to_log = isset($user['id']) ? $user['id'] : null; 
-                        // locker_items table DOES have station_id, so $current_station_id is correct here.
-                        $stmt_insert_item = $pdo->prepare("INSERT INTO locker_items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
+                        // items table DOES have station_id, so $current_station_id is correct here.
+                        $stmt_insert_item = $pdo->prepare("INSERT INTO items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
                         $stmt_insert_item->execute([$item_name, $locker_id, $current_station_id, $user_id_to_log]);
                         $item_id = $pdo->lastInsertId();
                         $response = ['success' => true, 'message' => 'Item added successfully.', 'item_id' => $item_id, 'item_name' => $item_name, 'locker_id' => $locker_id];
@@ -518,7 +518,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             try {
                                 $stmt_items = $db->prepare("
                                     SELECT li.id, li.name AS item_name, l.name AS locker_name, t.name AS truck_name
-                                    FROM locker_items li
+                                    FROM items li
                                     JOIN lockers l ON li.locker_id = l.id
                                     JOIN trucks t ON l.truck_id = t.id
                                     WHERE li.station_id = ? 
