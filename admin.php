@@ -11,7 +11,13 @@ include('db.php');
 include('auth.php');
 
 // If DEBUG is explicitly enabled in config.php, re-enable error reporting for non-AJAX requests
-if (defined('DEBUG') && DEBUG && (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') && (!isset($_POST['ajax_action']) && !isset($_POST['action']) && !isset($_GET['page']))) { // Also check if not a POST to a page
+// The goal is to show errors if DEBUG is on, UNLESS it's an AJAX request designed to return JSON,
+// where PHP errors would corrupt the JSON output.
+$is_json_ajax_request = (isset($_GET['ajax']) && $_GET['ajax'] !== '1') /* GET JSON data */
+                       || isset($_POST['ajax_action']) /* POST action returning JSON */
+                       || (isset($_POST['action']) && $_POST['action'] === 'change_station'); /* Specific POST action returning JSON */
+
+if (defined('DEBUG') && DEBUG && !$is_json_ajax_request) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
@@ -53,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // This block allows included pages to process their own form submissions
 // when the form action is like admin.php?page=module/name.php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['page'])) {
+    if(defined('DEBUG') && DEBUG) { error_log("Admin.php: POST to page detected. Target: " . $_GET['page'] . " POST data: " . print_r($_POST, true)); }
     $targetPageForPost = $_GET['page'];
     
     // Basic security: ensure the target page is in a similar format to allowed pages
@@ -98,17 +105,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['page'])) {
         // It can set $success_message or $error_message which will be available when the page is later rendered.
         // We don't want its output here, just its processing.
         // Output buffering here is to capture and discard any accidental echos from the POST processing.
+        if(defined('DEBUG') && DEBUG) { error_log("Admin.php: Including target page for POST processing: " . $targetPageForPost); }
         ob_start();
-        include($targetPageForPost);
-        ob_end_clean(); 
+        include($targetPageForPost); // Module processes POST data and sets messages
+        ob_end_clean(); // Discard any direct output from module during POST processing
+        if(defined('DEBUG') && DEBUG) { error_log("Admin.php: Finished including target page for POST processing: " . $targetPageForPost); }
         
         // After POST processing, the script will continue, and typically the page will be re-rendered
         // (either by initial load or by the AJAX GET content loading if the JS reloads the content).
         // The $success_message/$error_message set by $targetPageForPost will be displayed.
+    } else {
+        if(defined('DEBUG') && DEBUG) { error_log("Admin.php: Target page for POST not valid or not found: " . $targetPageForPost); }
     }
 }
 // --- END: Handle POST requests targeted at a specific page/module ---
-
 
 // Handle AJAX GET requests for JSON data (e.g., for dropdowns, filters)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] !== '1') { // Exclude ajax=1 which is for HTML content

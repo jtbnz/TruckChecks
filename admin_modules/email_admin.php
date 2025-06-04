@@ -277,15 +277,124 @@ if ($sub_action === 'send_preview') {
 
 // Handle adding multiple email addresses
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_emails'])) {
-    // This part will be handled by admin.php's main POST routing if we make 'add_emails' an 'ajax_action'
-    // For now, keeping it as direct POST to this script when loaded by admin.php
+    if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: Processing add_emails. POST data: " . print_r($_POST, true)); }
     $email_list = $_POST['email_list'];
-    // ... (rest of the add_emails logic) ...
-    // Ensure $success_message or $error_message is set
+    if (!empty($email_list)) {
+        try {
+            $emails_to_add = preg_split('/[,\n\r]+/', $email_list);
+            $valid_emails = []; $invalid_emails = [];
+            foreach ($emails_to_add as $email_item) {
+                $email_item = trim($email_item);
+                if (!empty($email_item)) {
+                    if (filter_var($email_item, FILTER_VALIDATE_EMAIL)) $valid_emails[] = $email_item;
+                    else $invalid_emails[] = $email_item;
+                }
+            }
+            if (!empty($valid_emails)) {
+                $added_count = 0;
+                foreach ($valid_emails as $email_item) {
+                    $stmt_check = $pdo->prepare('SELECT COUNT(*) FROM email_addresses WHERE email = ? AND station_id = ?');
+                    $stmt_check->execute([$email_item, $station_id]);
+                    if ($stmt_check->fetchColumn() == 0) {
+                        $stmt_insert = $pdo->prepare('INSERT INTO email_addresses (email, station_id) VALUES (?, ?)');
+                        $stmt_insert->execute([$email_item, $station_id]);
+                        $added_count++;
+                    }
+                }
+                $success_message = "Added {$added_count} email address(es) successfully for " . htmlspecialchars($station_name) . "!";
+                if (!empty($invalid_emails)) $success_message .= " Invalid emails skipped: " . implode(', ', array_map('htmlspecialchars', $invalid_emails));
+                if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: add_emails success: " . $success_message); }
+            } else {
+                $error_message = "No valid email addresses found. Invalid emails: " . implode(', ', array_map('htmlspecialchars', $invalid_emails));
+                if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: add_emails error (no valid emails): " . $error_message); }
+            }
+        } catch (Exception $e) { 
+            $error_message = "Error adding email addresses: " . $e->getMessage(); 
+            if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: add_emails exception: " . $e->getMessage()); }
+        }
+    } else { 
+        $error_message = "Please enter at least one email address."; 
+        if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: add_emails error (empty list): " . $error_message); }
+    }
 }
-// ... (rest of the POST handling for remove_email, send_test_email, set_admin_email) ...
-// These will also be POSTs to admin.php which then includes this file.
-// The logic inside these blocks should work as is, as $_POST variables will be available.
+
+// Handle removing email address
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['remove_email'])) {
+    if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: Processing remove_email. POST data: " . print_r($_POST, true)); }
+    $email_to_remove = $_POST['email_to_remove'];
+    try {
+        $stmt = $pdo->prepare('DELETE FROM email_addresses WHERE email = ? AND station_id = ?');
+        $stmt->execute([$email_to_remove, $station_id]);
+        $success_message = "Email address '" . htmlspecialchars($email_to_remove) . "' removed successfully!";
+        if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: remove_email success: " . $success_message); }
+    } catch (Exception $e) { 
+        $error_message = "Error removing email address: " . $e->getMessage(); 
+        if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: remove_email exception: " . $e->getMessage()); }
+    }
+}
+
+// Handle test email sending
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['send_test_email'])) {
+    if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: Processing send_test_email. POST data: " . print_r($_POST, true)); }
+    $test_email_addr = $_POST['test_email'];
+    if (!empty($test_email_addr) && filter_var($test_email_addr, FILTER_VALIDATE_EMAIL)) {
+        try {
+            if (!defined('EMAIL_HOST') || !defined('EMAIL_USER') || !defined('EMAIL_PASS') || !defined('EMAIL_PORT')) {
+                throw new Exception('Email configuration is not set up in config.php');
+            }
+            $mail = new PHPMailer(true);
+            // if (defined('DEBUG') && DEBUG) { $mail->SMTPDebug = 2; $mail->Debugoutput = 'error_log'; } // Enable for deep PHPMailer debugging
+            $mail->isSMTP();
+            $mail->Host = EMAIL_HOST; $mail->SMTPAuth = true; $mail->Username = EMAIL_USER; $mail->Password = EMAIL_PASS;
+            $mail->SMTPSecure = defined('EMAIL_SMTP_SECURE') ? EMAIL_SMTP_SECURE : "ssl"; $mail->Port = EMAIL_PORT;
+            $from_email = filter_var(EMAIL_USER, FILTER_VALIDATE_EMAIL) ? EMAIL_USER : 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'truckchecks.com');
+            $mail->setFrom($from_email, 'TruckChecks System');
+            $mail->addAddress($test_email_addr);
+            $mail->isHTML(true); $mail->Subject = 'TruckChecks Test Email - ' . $station_name;
+            $mail->Body = '<h2>TruckChecks Test Email</h2><p>This is a test email for station: ' . htmlspecialchars($station_name) . '.</p><p>Sent by: ' . htmlspecialchars($user['username']) . '</p>';
+            $mail->send();
+            $test_success_message = "Test email sent successfully to " . htmlspecialchars($test_email_addr) . "!";
+            if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: send_test_email success: " . $test_success_message); }
+        } catch (Exception $e) { 
+            $test_error_message = "Failed to send test email: " . $e->getMessage() . (isset($mail) ? " Mailer Error: " . $mail->ErrorInfo : ""); 
+            if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: send_test_email exception: " . $test_error_message); }
+        }
+    } else { 
+        $test_error_message = "Please enter a valid email address for testing."; 
+        if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: send_test_email error (invalid address): " . $test_error_message); }
+    }
+}
+
+// Handle setting admin email
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['set_admin_email'])) {
+    if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: Processing set_admin_email. POST data: " . print_r($_POST, true)); }
+    $admin_email_val = $_POST['admin_email'];
+    if (!empty($admin_email_val) && filter_var($admin_email_val, FILTER_VALIDATE_EMAIL)) {
+        try {
+            $stmt_check = $pdo->prepare('SELECT COUNT(*) FROM station_settings WHERE setting_key = "admin_email" AND station_id = ?');
+            $stmt_check->execute([$station_id]);
+            if ($stmt_check->fetchColumn() > 0) {
+                $stmt_update = $pdo->prepare('UPDATE station_settings SET setting_value = ? WHERE setting_key = "admin_email" AND station_id = ?');
+                $stmt_update->execute([$admin_email_val, $station_id]);
+            } else {
+                $stmt_insert = $pdo->prepare('INSERT INTO station_settings (setting_key, setting_value, station_id, setting_type, description) VALUES ("admin_email", ?, ?, "string", "Admin email for station")');
+                $stmt_insert->execute([$admin_email_val, $station_id]);
+            }
+            $success_message = "Admin email set successfully for " . htmlspecialchars($station_name) . "!";
+            if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: set_admin_email success: " . $success_message); }
+        } catch (Exception $e) { 
+            $error_message = "Error setting admin email: " . $e->getMessage(); 
+            if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: set_admin_email exception: " . $e->getMessage()); }
+        }
+    } else { 
+        $error_message = "Please enter a valid admin email address."; 
+        if(defined('DEBUG') && DEBUG) { error_log("Email_admin.php: set_admin_email error (invalid address): " . $error_message); }
+    }
+}
+
+<?php if(defined('DEBUG') && DEBUG && $_SERVER['REQUEST_METHOD'] == 'POST'): ?>
+    <?php error_log("Email_admin.php: Finished all POST processing blocks."); ?>
+<?php endif; ?>
 
 // Get current email settings for display
 $current_admin_email_display = null;
