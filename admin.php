@@ -183,22 +183,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     ];
     
     // Check if we should load from admin_modules directory
-    $modulePath = 'admin_modules/' . $page;
-    $legacyPath = $page;
+    // $modulePath = 'admin_modules/' . $page; // Old logic
+    // $legacyPath = $page;                   // Old logic
     
+    $resolvedPagePath = null;
+
+    // Case 1: The $page parameter itself is an exact match in $allowedPages
+    // (e.g., $page = "admin_modules/email_admin.php" or $page = "find.php")
     if (in_array($page, $allowedPages)) {
+        $resolvedPagePath = $page;
+    } 
+    // Case 2: The $page parameter is a short name (e.g., "email_admin.php"), 
+    // and its corresponding path in admin_modules is in $allowedPages.
+    elseif (in_array('admin_modules/' . $page, $allowedPages)) {
+        $resolvedPagePath = 'admin_modules/' . $page;
+    }
+
+    if ($resolvedPagePath && file_exists($resolvedPagePath)) {
         // Capture the output
         ob_start();
-        
-        // Try module path first, then legacy path
-        if (file_exists($modulePath)) {
-            include($modulePath);
-        } elseif (file_exists($legacyPath)) {
-            include($legacyPath);
-        } else {
-            echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found.</div>';
-        }
-        
+        include($resolvedPagePath); // Include the correctly resolved path
         $content = ob_get_clean();
         
         // If the content includes full HTML structure, extract just the body content
@@ -217,7 +221,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
             echo $content;
         }
     } else {
-        echo '<div style="padding: 20px; text-align: center; color: #666;">Page not found or access denied.</div>';
+        // Add more debug info if page is not resolved or doesn't exist
+        $debug_page_val = htmlspecialchars($page);
+        $debug_resolved_path = htmlspecialchars($resolvedPagePath ?? 'null');
+        $debug_file_exists = $resolvedPagePath && file_exists($resolvedPagePath) ? 'true' : 'false';
+        echo "<div style='padding: 20px; text-align: center; color: #666;'>Page not found or access denied. (Debug: page={$debug_page_val}, resolvedPath={$debug_resolved_path}, fileExists={$debug_file_exists})</div>";
     }
     exit;
 }
