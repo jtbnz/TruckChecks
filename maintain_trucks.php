@@ -33,7 +33,6 @@ $formProcessed = false;
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to add truck. POST data: " . print_r($_POST, true));
-        echo "<script>console.log('Processing add truck form submission');</script>";
     }
     $truck_name = trim($_POST['truck_name']);
     if (!empty($truck_name)) {
@@ -44,20 +43,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
             $formProcessed = true;
             if (DEBUG) {
                 error_log("maintain_trucks.php: Truck '{$truck_name}' added successfully for station ID: " . $station['id']);
-                echo "<script>console.log('Truck added successfully: " . addslashes($truck_name) . "');</script>";
             }
         } catch (Exception $e) {
             $error_message = "Error adding truck: " . $e->getMessage();
             if (DEBUG) {
                 error_log("maintain_trucks.php: Error adding truck: " . $e->getMessage());
-                echo "<script>console.error('Error adding truck: " . addslashes($e->getMessage()) . "');</script>";
             }
         }
     } else {
         $error_message = "Truck name cannot be empty.";
         if (DEBUG) {
             error_log("maintain_trucks.php: Truck name was empty.");
-            echo "<script>console.error('Truck name was empty');</script>";
         }
     }
 }
@@ -66,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_truck'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck']) && !$formProcessed) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to edit truck. POST data: " . print_r($_POST, true));
-        echo "<script>console.log('Processing edit truck form submission');</script>";
     }
     $truck_id = $_POST['truck_id'];
     $truck_name = trim($_POST['truck_name']);
@@ -83,27 +78,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck']) && !$for
                 $formProcessed = true;
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Truck ID {$truck_id} updated successfully.");
-                    echo "<script>console.log('Truck updated successfully: ID " . $truck_id . "');</script>";
                 }
             } else {
                 $error_message = "Truck not found or access denied.";
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Edit failed - truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
-                    echo "<script>console.error('Edit failed - truck not found or access denied');</script>";
                 }
             }
         } catch (Exception $e) {
             $error_message = "Error updating truck: " . $e->getMessage();
             if (DEBUG) {
                 error_log("maintain_trucks.php: Error updating truck: " . $e->getMessage());
-                echo "<script>console.error('Error updating truck: " . addslashes($e->getMessage()) . "');</script>";
             }
         }
     } else {
         $error_message = "Truck name cannot be empty.";
         if (DEBUG) {
             error_log("maintain_trucks.php: Edit failed - truck name or ID was empty.");
-            echo "<script>console.error('Edit failed - truck name or ID was empty');</script>";
         }
     }
 }
@@ -112,7 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_truck']) && !$for
 if (isset($_GET['delete_truck_id']) && !$formProcessed) {
     if (DEBUG) {
         error_log("maintain_trucks.php: Attempting to delete truck ID: " . $_GET['delete_truck_id']);
-        echo "<script>console.log('Processing delete truck request for ID: " . $_GET['delete_truck_id'] . "');</script>";
     }
     $truck_id = $_GET['delete_truck_id'];
     try {
@@ -124,7 +114,6 @@ if (isset($_GET['delete_truck_id']) && !$formProcessed) {
             $error_message = "Truck not found or access denied.";
             if (DEBUG) {
                 error_log("maintain_trucks.php: Delete failed - truck ID {$truck_id} not found or access denied for station ID: " . $station['id']);
-                echo "<script>console.error('Delete failed - truck not found or access denied');</script>";
             }
         } else {
             // Check if truck has any lockers
@@ -136,7 +125,6 @@ if (isset($_GET['delete_truck_id']) && !$formProcessed) {
                 $error_message = "Cannot delete truck: This truck has {$locker_count} locker(s) assigned to it. Please delete all lockers first.";
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Delete failed - truck ID {$truck_id} has {$locker_count} lockers.");
-                    echo "<script>console.error('Delete failed - truck has lockers');</script>";
                 }
             } else {
                 $query = $db->prepare('DELETE FROM trucks WHERE id = :id AND station_id = :station_id');
@@ -145,7 +133,6 @@ if (isset($_GET['delete_truck_id']) && !$formProcessed) {
                 $formProcessed = true;
                 if (DEBUG) {
                     error_log("maintain_trucks.php: Truck ID {$truck_id} deleted successfully.");
-                    echo "<script>console.log('Truck deleted successfully: ID " . $truck_id . "');</script>";
                 }
             }
         }
@@ -153,7 +140,6 @@ if (isset($_GET['delete_truck_id']) && !$formProcessed) {
         $error_message = "Error deleting truck: " . $e->getMessage();
         if (DEBUG) {
             error_log("maintain_trucks.php: Error deleting truck: " . $e->getMessage());
-            echo "<script>console.error('Error deleting truck: " . addslashes($e->getMessage()) . "');</script>";
         }
     }
 }
@@ -197,7 +183,6 @@ try {
 }
 
 if (DEBUG) {
-    echo "<script>console.log('maintain_trucks.php: PHP script part finished. Trucks count: " . count($trucks) . ". Edit truck: " . ($edit_truck ? $edit_truck['id'] : 'null') . "');</script>";
     error_log("maintain_trucks.php: Rendering page. Trucks count: " . count($trucks) . ". Edit truck ID: " . ($edit_truck['id'] ?? 'None'));
 }
 ?>
@@ -462,7 +447,7 @@ if (DEBUG) {
     <?php if ($edit_truck): ?>
         <div class="form-section">
             <h2>Edit Truck</h2>
-            <form method="POST">
+            <form method="POST" action="maintain_trucks.php" id="edit-truck-form">
                 <input type="hidden" name="truck_id" value="<?= $edit_truck['id'] ?>">
                 <div class="input-container">
                     <input type="text" name="truck_name" placeholder="Truck Name" value="<?= htmlspecialchars($edit_truck['name']) ?>" required>
@@ -476,7 +461,7 @@ if (DEBUG) {
     <?php else: ?>
         <div class="form-section">
             <h2>Add New Truck</h2>
-            <form method="POST">
+            <form method="POST" action="maintain_trucks.php" id="add-truck-form">
                 <div class="input-container">
                     <input type="text" name="truck_name" placeholder="Truck Name" required>
                 </div>
@@ -523,26 +508,105 @@ if (DEBUG) {
     </div>
 </div>
 
-<?php if ($formProcessed && $success_message): ?>
 <script>
-// Reload the page after successful form submission
-setTimeout(function() {
-    if (window.parent && typeof window.parent.loadPage === 'function') {
-        console.log('Reloading page after successful operation...');
-        window.parent.loadPage('maintain_trucks.php');
-    } else {
-        console.error('parent.loadPage not found, reloading normally');
-        window.location.reload();
-    }
-}, 100); // Small delay to ensure the success message is visible
-</script>
-<?php endif; ?>
-
+// Debug logging
 <?php if (DEBUG): ?>
-<script>
 console.log('maintain_trucks.php loaded successfully');
+console.log('Station:', <?= json_encode($station['name']) ?>);
+console.log('Trucks count:', <?= count($trucks) ?>);
 console.log('Form processed:', <?= $formProcessed ? 'true' : 'false' ?>);
 console.log('Success message:', <?= json_encode($success_message) ?>);
 console.log('Error message:', <?= json_encode($error_message) ?>);
-</script>
 <?php endif; ?>
+
+// Handle form submissions via AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (DEBUG): ?>
+    console.log('DOM loaded, setting up form handlers');
+    <?php endif; ?>
+    
+    // Handle add truck form
+    const addForm = document.getElementById('add-truck-form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            <?php if (DEBUG): ?>
+            console.log('Add truck form submitted');
+            <?php endif; ?>
+            
+            const formData = new FormData(this);
+            
+            // Submit directly to maintain_trucks.php
+            fetch('maintain_trucks.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                <?php if (DEBUG): ?>
+                console.log('Form submission response received');
+                <?php endif; ?>
+                // Reload the page in the admin container
+                if (window.parent && typeof window.parent.loadPage === 'function') {
+                    window.parent.loadPage('maintain_trucks.php');
+                } else {
+                    // Fallback: replace current content
+                    document.querySelector('.maintain-container').outerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                alert('Error adding truck. Please try again.');
+            });
+        });
+    }
+    
+    // Handle edit truck form
+    const editForm = document.getElementById('edit-truck-form');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            <?php if (DEBUG): ?>
+            console.log('Edit truck form submitted');
+            <?php endif; ?>
+            
+            const formData = new FormData(this);
+            
+            // Submit directly to maintain_trucks.php
+            fetch('maintain_trucks.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                <?php if (DEBUG): ?>
+                console.log('Form submission response received');
+                <?php endif; ?>
+                // Reload the page in the admin container
+                if (window.parent && typeof window.parent.loadPage === 'function') {
+                    window.parent.loadPage('maintain_trucks.php');
+                } else {
+                    // Fallback: replace current content
+                    document.querySelector('.maintain-container').outerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting form:', error);
+                alert('Error updating truck. Please try again.');
+            });
+        });
+    }
+});
+
+<?php if ($formProcessed && $success_message): ?>
+// Auto-reload after successful operation
+setTimeout(function() {
+    <?php if (DEBUG): ?>
+    console.log('Auto-reloading after successful operation');
+    <?php endif; ?>
+    if (window.parent && typeof window.parent.loadPage === 'function') {
+        window.parent.loadPage('maintain_trucks.php');
+    }
+}, 1000);
+<?php endif; ?>
+</script>
