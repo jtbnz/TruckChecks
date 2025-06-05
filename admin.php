@@ -906,75 +906,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 <p>Loading...</p>
             </div>
             
-                <?php
-                // This block handles server-side rendering of page content for non-AJAX requests
-                // or when the page is loaded directly with a ?page= parameter (e.g., after a POST).
-
-                // Define allowed pages for server-side rendering (consistent with AJAX $allowedPages)
-                $_allowedPagesForRender = [
-                    'admin_modules/lockers.php',
-                    'admin_modules/qr_codes.php',
-                    'admin_modules/email_admin.php',
-                    'find.php',
-                    'reset_locker_check.php',
-                    'email_results.php',
-                    'locker_check_report.php',
-                    'list_all_items_report.php',
-                    'list_all_items_report_a3.php',
-                    'deleted_items_report.php',
-                    'backups.php',
-                    'login_logs.php',
-                    'admin_modules/manage_stations.php',
-                    // 'manage_users.php', // Typically opened in new tab, not loaded into content-area
-                    'show_code.php',
-                    'station_settings.php',
-                    'demo_clean_tables.php'
-                ];
-
-                $_resolvedPagePathForRender = null;
-                if (in_array($currentPage, $_allowedPagesForRender) && file_exists($currentPage)) {
-                    $_resolvedPagePathForRender = $currentPage;
-                }
-
-                // Ensure $currentStation is correctly set for the included page's context.
-                // $user, $userRole, $userName, $pdo are globally available.
-                // $userStations (for station_admin) is globally available.
-                $_currentStationForPageContext = null; 
-                if ($userRole === 'superuser') {
-                    // getCurrentStation() correctly fetches based on session or DB for superuser.
-                    $_currentStationForPageContext = getCurrentStation();
-                } elseif ($userRole === 'station_admin') {
-                    // Logic to determine station for station_admin, using globally populated $userStations
-                    if (isset($_SESSION['selected_station_id'])) {
-                        foreach ($userStations as $_s_admin_ctx) {
-                            if ($_s_admin_ctx['id'] == $_SESSION['selected_station_id']) {
-                                $_currentStationForPageContext = $_s_admin_ctx;
-                                break;
-                            }
-                        }
-                    }
-                    // If no station selected in session, or only one station assigned, set it.
-                    if (!$_currentStationForPageContext && count($userStations) === 1) {
-                        $_currentStationForPageContext = $userStations[0];
-                        // Optionally update session if it wasn't set or was different
-                        if (session_status() == PHP_SESSION_ACTIVE && 
-                            (!isset($_SESSION['selected_station_id']) || $_SESSION['selected_station_id'] != $_currentStationForPageContext['id'])) {
-                             $_SESSION['selected_station_id'] = $_currentStationForPageContext['id'];
-                        }
-                    }
-                }
-                // Make $currentStation available to the included page with the correct context.
-                // This shadows any $currentStation that might have been set for the sidebar display,
-                // ensuring the page content gets the accurately determined station for its logic.
-                $currentStation = $_currentStationForPageContext;
-
-                if ($_resolvedPagePathForRender) {
-                    // All necessary context variables ($user, $userRole, $userName, $currentStation, $pdo)
-                    // are now set and available to the included page.
-                    include($_resolvedPagePathForRender);
-                } elseif ($currentPage === 'dashboard') {
-                    // Original dashboard content:
-                ?>
+            <div class="content-area" id="content-area">
+                <?php if ($currentPage === 'dashboard'): ?>
                     <div class="dashboard-content">
                         <?php if (isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true): ?>
                             <div class="demo-notice">
@@ -987,21 +920,33 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                             <h1>TruckChecks Administration</h1>
                             <div class="subtitle">
                                 Logged in as <?= htmlspecialchars($userName) ?> (<?= ucfirst(str_replace('_', ' ', $userRole)) ?>)
-                                <?php 
-                                // For dashboard subtitle, re-fetch currentStation if superuser, as the $currentStation
-                                // variable might have been updated for page content context.
-                                // Or, more simply, use the already determined $_currentStationForPageContext if appropriate.
-                                // For simplicity, let's use the $currentStation determined just above for page context.
-                                if ($userRole === 'station_admin' && !empty($userStations)): ?>
+                                <?php if ($userRole === 'station_admin' && !empty($userStations)): ?>
                                     - Managing <?= count($userStations) ?> station(s)
                                 <?php elseif ($userRole === 'superuser'): ?>
                                     <?php 
-                                    // $currentStation for dashboard display should reflect the globally selected one.
-                                    // The $currentStation variable set for page includes is fine here too.
-                                    // If it was determined by getCurrentStation() or session, it's the same.
-                                    $dashboardStationDisplay = $currentStation; // Use the one determined for page context
-                                    if ($dashboardStationDisplay): ?>
-                                        - Current Station: <?= htmlspecialchars($dashboardStationDisplay['name']) ?>
+                                    // For dashboard display, ensure $currentStation is the one from global context (sidebar)
+                                    // This $currentStation is set before the main HTML starts.
+                                    // We need to re-fetch it or ensure the global $currentStation is used.
+                                    // The $currentStation variable might have been changed by the POST processing block.
+                                    // Let's use a fresh call to getCurrentStation() for superuser for clarity here.
+                                    $dashboardDisplayStation = null;
+                                    if ($userRole === 'superuser') {
+                                        $dashboardDisplayStation = getCurrentStation(); 
+                                    } elseif ($userRole === 'station_admin' && isset($_SESSION['selected_station_id'])) {
+                                        // If station admin, try to get selected station for display
+                                        foreach($userStations as $s) {
+                                            if ($s['id'] == $_SESSION['selected_station_id']) {
+                                                $dashboardDisplayStation = $s;
+                                                break;
+                                            }
+                                        }
+                                        if (!$dashboardDisplayStation && count($userStations) === 1) {
+                                            $dashboardDisplayStation = $userStations[0];
+                                        }
+                                    }
+
+                                    if ($dashboardDisplayStation): ?>
+                                        - Current Station: <?= htmlspecialchars($dashboardDisplayStation['name']) ?>
                                     <?php else: ?>
                                         - No station selected
                                     <?php endif; ?>
@@ -1080,11 +1025,7 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                             </div>
                         </div>
                     </div>
-                <?php
-                } else {
-                    echo "<div style='padding: 20px; text-align: center; color: #666;'>Page not found or content could not be loaded server-side. Requested: " . htmlspecialchars($currentPage) . "</div>";
-                }
-                ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
