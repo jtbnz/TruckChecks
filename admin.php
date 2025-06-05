@@ -1131,8 +1131,10 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                 document.getElementById('sidebar').classList.remove('sidebar-visible');
             }
 
-            // Redirect to dashboard
-            window.location.href = '?page=dashboard';
+            // Redirect to dashboard - preserve the current path
+            const url = new URL(window.location);
+            url.searchParams.set('page', 'dashboard');
+            window.location.href = url.toString();
         }
         
         // Handle station change for superusers
