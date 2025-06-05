@@ -173,10 +173,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
 
 // Handle AJAX content loading request
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'] === '1') {
-    // Suppress all errors for AJAX responses to prevent JSON corruption
-    ini_set('display_errors', 0);
-    ini_set('display_startup_errors', 0);
-    error_reporting(0);
+    // Check if this is a sub_action request that should return JSON
+    $sub_action = $_GET['sub_action'] ?? null;
+    if ($sub_action === 'preview' || $sub_action === 'send_preview') {
+        // For JSON-returning sub_actions, suppress errors to prevent JSON corruption
+        ini_set('display_errors', 0);
+        ini_set('display_startup_errors', 0);
+        error_reporting(0);
+    } else {
+        // For HTML content loading, allow errors if DEBUG is enabled
+        if (defined('DEBUG') && DEBUG) {
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+            error_reporting(E_ALL);
+        } else {
+            ini_set('display_errors', 0);
+            ini_set('display_startup_errors', 0);
+            error_reporting(0);
+        }
+    }
 
     requireAuth();
     $page = $_GET['page'] ?? '';
