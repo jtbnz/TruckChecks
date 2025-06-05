@@ -907,7 +907,28 @@ $currentPage = $_GET['page'] ?? 'dashboard';
             </div>
             
             <div class="content-area" id="content-area">
-                <?php if ($currentPage === 'dashboard'): ?>
+                <?php 
+                // Handle server-side rendering for non-AJAX requests
+                $allowedPagesForServerRender = [
+                    'admin_modules/lockers.php',
+                    'admin_modules/qr_codes.php',
+                    'admin_modules/email_admin.php',
+                    'find.php',
+                    'reset_locker_check.php',
+                    'email_results.php',
+                    'locker_check_report.php',
+                    'list_all_items_report.php',
+                    'list_all_items_report_a3.php',
+                    'deleted_items_report.php',
+                    'backups.php',
+                    'login_logs.php',
+                    'admin_modules/manage_stations.php',
+                    'show_code.php',
+                    'station_settings.php',
+                    'demo_clean_tables.php'
+                ];
+
+                if ($currentPage === 'dashboard'): ?>
                     <div class="dashboard-content">
                         <?php if (isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true): ?>
                             <div class="demo-notice">
@@ -1024,6 +1045,39 @@ $currentPage = $_GET['page'] ?? 'dashboard';
                                 </div>
                             </div>
                         </div>
+                    </div>
+                <?php elseif (in_array($currentPage, $allowedPagesForServerRender) && file_exists($currentPage)): ?>
+                    <?php
+                    // Server-side rendering for non-dashboard pages
+                    // Set up context variables that the included page expects
+                    $pdo = get_db_connection();
+                    
+                    // Set up $currentStation for the included page
+                    $currentStation = null;
+                    if ($userRole === 'superuser') {
+                        $currentStation = getCurrentStation();
+                    } elseif ($userRole === 'station_admin') {
+                        if (isset($_SESSION['selected_station_id'])) {
+                            foreach ($userStations as $s) {
+                                if ($s['id'] == $_SESSION['selected_station_id']) {
+                                    $currentStation = $s;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!$currentStation && count($userStations) === 1) {
+                            $currentStation = $userStations[0];
+                        }
+                    }
+                    
+                    // Include the page content
+                    include($currentPage);
+                    ?>
+                <?php else: ?>
+                    <div style="padding: 20px; text-align: center; color: #666;">
+                        Page not found or content could not be loaded server-side. 
+                        <br>Requested: <?= htmlspecialchars($currentPage) ?>
+                        <br><a href="?page=dashboard">Return to Dashboard</a>
                     </div>
                 <?php endif; ?>
             </div>
