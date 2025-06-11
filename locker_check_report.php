@@ -113,17 +113,27 @@ if (!function_exists('countItemsChecked')) {
 // Function to convert UTC to NZST
 if (!function_exists('convertToNZST')) {
     function convertToNZST($utcDate) {
+        if (defined('DEBUG') && DEBUG) {
+            error_log("convertToNZST: Input UTC Date: " . $utcDate);
+        }
         $date = new DateTime($utcDate, new DateTimeZone('UTC'));
         // Use TZ_OFFSET from config.php if available, otherwise default (e.g., UTC or a common fallback)
         $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC'; // Default to UTC if not set
+        if (defined('DEBUG') && DEBUG) {
+            error_log("convertToNZST: Using Timezone: " . $tz);
+        }
         try {
             $date->setTimezone(new DateTimeZone($tz));
         } catch (Exception $e) {
             // Fallback if TZ_OFFSET is invalid, log error or use a hardcoded default
-            error_log("Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage());
+            error_log("convertToNZST: Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage() . ". Falling back to UTC.");
             $date->setTimezone(new DateTimeZone('UTC')); // Safe fallback
         }
-        return $date->format('Y-m-d'); // Display date only
+        $formattedDate = $date->format('Y-m-d'); // Display date only
+        if (defined('DEBUG') && DEBUG) {
+            error_log("convertToNZST: Converted Date: " . $formattedDate);
+        }
+        return $formattedDate;
     }
 }
 
