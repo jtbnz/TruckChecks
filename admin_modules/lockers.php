@@ -263,6 +263,209 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                 $response = ['success' => false, 'message' => 'Database error editing item: ' . $e->getMessage()];
             }
         }
+    } elseif ($action === 'delete_item') {
+        $item_id = $_POST['item_id'] ?? null;
+        
+        if (empty($item_id)) {
+            $response = ['success' => false, 'message' => 'Item ID is required.'];
+        } elseif (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete item.'];
+        } else {
+            try {
+                // Verify the item belongs to the current station (via its locker's truck)
+                $stmt_verify = $pdo->prepare("
+                    SELECT i.id 
+                    FROM items i
+                    JOIN lockers l ON i.locker_id = l.id
+                    JOIN trucks t ON l.truck_id = t.id
+                    WHERE i.id = ? AND t.station_id = ?
+                ");
+                $stmt_verify->execute([$item_id, $current_station_id]);
+                if (!$stmt_verify->fetch()) {
+                    $response = ['success' => false, 'message' => 'Item does not belong to the current station or does not exist.'];
+                } else {
+                    $stmt_delete = $pdo->prepare("DELETE FROM items WHERE id = ?");
+                    $stmt_delete->execute([$item_id]);
+                    
+                    if ($stmt_delete->rowCount() > 0) {
+                        $response = ['success' => true, 'message' => 'Item deleted successfully.'];
+                    } else {
+                        $response = ['success' => false, 'message' => 'Item could not be deleted.'];
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error deleting item: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error deleting item: ' . $e->getMessage()];
+            }
+        }
+    } elseif ($action === 'edit_locker') {
+        $locker_id = $_POST['locker_id'] ?? null;
+        $new_locker_name = trim($_POST['locker_name'] ?? '');
+        $new_truck_id = $_POST['truck_id'] ?? null;
+
+        if (empty($locker_id) || empty($new_locker_name) || empty($new_truck_id)) {
+            $response = ['success' => false, 'message' => 'Locker ID, name, and truck are required.'];
+        } elseif (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Current station context is missing. Cannot edit locker.'];
+        } else {
+            try {
+                // Verify the new truck belongs to the current station
+                $stmt_truck_check = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_truck_check->execute([$new_truck_id, $current_station_id]);
+                if (!$stmt_truck_check->fetch()) {
+                    $response = ['success' => false, 'message' => 'The selected truck does not belong to the current station.'];
+                } else {
+                    // Check if a locker with the new name already exists for the new truck (excluding current locker)
+                    $stmt_locker_exists = $pdo->prepare("SELECT id FROM lockers WHERE name = ? AND truck_id = ? AND id != ?");
+                    $stmt_locker_exists->execute([$new_locker_name, $new_truck_id, $locker_id]);
+                    if ($stmt_locker_exists->fetch()) {
+                        $response = ['success' => false, 'message' => 'Another locker with this name already exists for the selected truck.'];
+                    } else {
+                        $stmt_update = $pdo->prepare("UPDATE lockers SET name = ?, truck_id = ? WHERE id = ?");
+                        $stmt_update->execute([$new_locker_name, $new_truck_id, $locker_id]);
+                        
+                        if ($stmt_update->rowCount() > 0) {
+                            $response = ['success' => true, 'message' => 'Locker updated successfully.'];
+                        } else {
+                            $stmt_check_locker = $pdo->prepare("SELECT id FROM lockers WHERE id = ?");
+                            $stmt_check_locker->execute([$locker_id]);
+                            if ($stmt_check_locker->fetch()) {
+                                $response = ['success' => true, 'message' => 'Locker details remain unchanged. No update performed.'];
+                            } else {
+                                $response = ['success' => false, 'message' => 'Locker not updated. It might not exist.'];
+                            }
+                        }
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error editing locker: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error editing locker: ' . $e->getMessage()];
+            }
+        }
+    } elseif ($action === 'delete_locker') {
+        $locker_id = $_POST['locker_id'] ?? null;
+        
+        if (empty($locker_id)) {
+            $response = ['success' => false, 'message' => 'Locker ID is required.'];
+        } elseif (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete locker.'];
+        } else {
+            try {
+                // Verify the locker belongs to the current station
+                $stmt_verify = $pdo->prepare("
+                    SELECT l.id 
+                    FROM lockers l
+                    JOIN trucks t ON l.truck_id = t.id
+                    WHERE l.id = ? AND t.station_id = ?
+                ");
+                $stmt_verify->execute([$locker_id, $current_station_id]);
+                if (!$stmt_verify->fetch()) {
+                    $response = ['success' => false, 'message' => 'Locker does not belong to the current station or does not exist.'];
+                } else {
+                    // Check if locker has any items
+                    $stmt_check_items = $pdo->prepare("SELECT COUNT(*) as item_count FROM items WHERE locker_id = ?");
+                    $stmt_check_items->execute([$locker_id]);
+                    $item_count = $stmt_check_items->fetch(PDO::FETCH_ASSOC)['item_count'];
+                    
+                    if ($item_count > 0) {
+                        $response = ['success' => false, 'message' => "Cannot delete locker. It contains {$item_count} item(s). Please remove all items first."];
+                    } else {
+                        $stmt_delete = $pdo->prepare("DELETE FROM lockers WHERE id = ?");
+                        $stmt_delete->execute([$locker_id]);
+                        
+                        if ($stmt_delete->rowCount() > 0) {
+                            $response = ['success' => true, 'message' => 'Locker deleted successfully.'];
+                        } else {
+                            $response = ['success' => false, 'message' => 'Locker could not be deleted.'];
+                        }
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error deleting locker: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error deleting locker: ' . $e->getMessage()];
+            }
+        }
+    } elseif ($action === 'edit_truck') {
+        $truck_id = $_POST['truck_id'] ?? null;
+        $new_truck_name = trim($_POST['truck_name'] ?? '');
+
+        if (empty($truck_id) || empty($new_truck_name)) {
+            $response = ['success' => false, 'message' => 'Truck ID and name are required.'];
+        } elseif (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Current station context is missing. Cannot edit truck.'];
+        } else {
+            try {
+                // Verify the truck belongs to the current station
+                $stmt_verify = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_verify->execute([$truck_id, $current_station_id]);
+                if (!$stmt_verify->fetch()) {
+                    $response = ['success' => false, 'message' => 'Truck does not belong to the current station or does not exist.'];
+                } else {
+                    // Check if a truck with the new name already exists for the current station (excluding current truck)
+                    $stmt_truck_exists = $pdo->prepare("SELECT id FROM trucks WHERE name = ? AND station_id = ? AND id != ?");
+                    $stmt_truck_exists->execute([$new_truck_name, $current_station_id, $truck_id]);
+                    if ($stmt_truck_exists->fetch()) {
+                        $response = ['success' => false, 'message' => 'Another truck with this name already exists for this station.'];
+                    } else {
+                        $stmt_update = $pdo->prepare("UPDATE trucks SET name = ? WHERE id = ?");
+                        $stmt_update->execute([$new_truck_name, $truck_id]);
+                        
+                        if ($stmt_update->rowCount() > 0) {
+                            $response = ['success' => true, 'message' => 'Truck updated successfully.'];
+                        } else {
+                            $stmt_check_truck = $pdo->prepare("SELECT id FROM trucks WHERE id = ?");
+                            $stmt_check_truck->execute([$truck_id]);
+                            if ($stmt_check_truck->fetch()) {
+                                $response = ['success' => true, 'message' => 'Truck details remain unchanged. No update performed.'];
+                            } else {
+                                $response = ['success' => false, 'message' => 'Truck not updated. It might not exist.'];
+                            }
+                        }
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error editing truck: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error editing truck: ' . $e->getMessage()];
+            }
+        }
+    } elseif ($action === 'delete_truck') {
+        $truck_id = $_POST['truck_id'] ?? null;
+        
+        if (empty($truck_id)) {
+            $response = ['success' => false, 'message' => 'Truck ID is required.'];
+        } elseif (!$current_station_id) {
+            $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete truck.'];
+        } else {
+            try {
+                // Verify the truck belongs to the current station
+                $stmt_verify = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_verify->execute([$truck_id, $current_station_id]);
+                if (!$stmt_verify->fetch()) {
+                    $response = ['success' => false, 'message' => 'Truck does not belong to the current station or does not exist.'];
+                } else {
+                    // Check if truck has any lockers
+                    $stmt_check_lockers = $pdo->prepare("SELECT COUNT(*) as locker_count FROM lockers WHERE truck_id = ?");
+                    $stmt_check_lockers->execute([$truck_id]);
+                    $locker_count = $stmt_check_lockers->fetch(PDO::FETCH_ASSOC)['locker_count'];
+                    
+                    if ($locker_count > 0) {
+                        $response = ['success' => false, 'message' => "Cannot delete truck. It contains {$locker_count} locker(s). Please remove all lockers first."];
+                    } else {
+                        $stmt_delete = $pdo->prepare("DELETE FROM trucks WHERE id = ?");
+                        $stmt_delete->execute([$truck_id]);
+                        
+                        if ($stmt_delete->rowCount() > 0) {
+                            $response = ['success' => true, 'message' => 'Truck deleted successfully.'];
+                        } else {
+                            $response = ['success' => false, 'message' => 'Truck could not be deleted.'];
+                        }
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log("Error deleting truck: " . $e->getMessage());
+                $response = ['success' => false, 'message' => 'Database error deleting truck: ' . $e->getMessage()];
+            }
+        }
     }
 
     echo json_encode($response, JSON_INVALID_UTF8_SUBSTITUTE);
@@ -591,6 +794,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
             <div class="modal-footer">
                 <button type="button" class="button secondary" onclick="closeEditItemModal()">Cancel</button>
                 <button type="button" class="button" id="save-edit-item-button">Save Changes</button>
+                <button type="button" class="button" style="background-color: #dc3545;" onclick="deleteItem()">Delete Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Locker Modal -->
+<div id="edit-locker-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close-button" onclick="closeEditLockerModal()">&times;</span>
+            <h4>Edit Locker</h4>
+        </div>
+        <form id="edit-locker-form">
+            <input type="hidden" id="edit-locker-id" name="locker_id">
+            <div class="form-group">
+                <label for="edit-locker-name">Locker Name:</label>
+                <input type="text" id="edit-locker-name" name="locker_name" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-locker-truck-id">Truck:</label>
+                <select id="edit-locker-truck-id" name="truck_id" required>
+                    <option value="">-- Select Truck --</option>
+                    <?php
+                    if ($current_station_id) {
+                        try {
+                            $stmt_trucks_locker_modal = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                            $stmt_trucks_locker_modal->execute([$current_station_id]);
+                            $trucks_for_locker_modal_list = $stmt_trucks_locker_modal->fetchAll(PDO::FETCH_ASSOC);
+                            if (count($trucks_for_locker_modal_list) > 0) {
+                                foreach ($trucks_for_locker_modal_list as $truck_locker_modal) {
+                                    echo '<option value="' . htmlspecialchars($truck_locker_modal['id'], ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($truck_locker_modal['name'], ENT_QUOTES, 'UTF-8') . '</option>';
+                                }
+                            }
+                        } catch (PDOException $e_modal_trucks_locker) {
+                            error_log("Error fetching trucks for locker edit modal dropdown: " . $e_modal_trucks_locker->getMessage());
+                        }
+                    }
+                    ?>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="button secondary" onclick="closeEditLockerModal()">Cancel</button>
+                <button type="button" class="button" id="save-edit-locker-button">Save Changes</button>
+                <button type="button" class="button" style="background-color: #dc3545;" onclick="deleteLocker()">Delete Locker</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Truck Modal -->
+<div id="edit-truck-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close-button" onclick="closeEditTruckModal()">&times;</span>
+            <h4>Edit Truck</h4>
+        </div>
+        <form id="edit-truck-form">
+            <input type="hidden" id="edit-truck-id" name="truck_id">
+            <div class="form-group">
+                <label for="edit-truck-name">Truck Name:</label>
+                <input type="text" id="edit-truck-name" name="truck_name" required>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="button secondary" onclick="closeEditTruckModal()">Cancel</button>
+                <button type="button" class="button" id="save-edit-truck-button">Save Changes</button>
+                <button type="button" class="button" style="background-color: #dc3545;" onclick="deleteTruck()">Delete Truck</button>
             </div>
         </form>
     </div>
@@ -757,7 +1027,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                                     $lockers_list_data = $stmt_lockers->fetchAll(PDO::FETCH_ASSOC);
                                     if (count($lockers_list_data) > 0) {
                                         foreach ($lockers_list_data as $locker_item) {
-                                            echo '<li><span>' . htmlspecialchars($locker_item['locker_name'], ENT_QUOTES, 'UTF-8') . ' (Truck: ' . htmlspecialchars($locker_item['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                            echo '<li><span>' . htmlspecialchars($locker_item['locker_name'], ENT_QUOTES, 'UTF-8') . ' (Truck: ' . htmlspecialchars($locker_item['truck_name'], ENT_QUOTES, 'UTF-8') . ')</span>'.
+                                                 ' <span class="actions"><button class="button secondary" style="padding:3px 6px; font-size:10px;" onclick="openEditLockerModal('.$locker_item['id'].', \''.htmlspecialchars(addslashes($locker_item['locker_name']), ENT_QUOTES).'\', \''.htmlspecialchars(addslashes($locker_item['truck_name']), ENT_QUOTES).'\')">Edit</button></span></li>';
                                         }
                                     } else {
                                         echo '<li>No lockers found for this station.</li>';
@@ -796,7 +1067,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             if ($current_station_id) {
                                 if (count($trucks_for_list) > 0) {
                                     foreach ($trucks_for_list as $truck_item) {
-                                        echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span> <span class="actions"><!-- Edit/Delete buttons here --></span></li>';
+                                        echo '<li><span>' . htmlspecialchars($truck_item['name'], ENT_QUOTES, 'UTF-8') . '</span>'.
+                                             ' <span class="actions"><button class="button secondary" style="padding:3px 6px; font-size:10px;" onclick="openEditTruckModal('.$truck_item['id'].', \''.htmlspecialchars(addslashes($truck_item['name']), ENT_QUOTES).'\')">Edit</button></span></li>';
                                     }
                                 } else {
                                     echo '<li>No trucks found for this station.</li>';
@@ -1164,6 +1436,221 @@ function handleEditItemSubmit() {
     });
 }
 
+// Locker modal functions
+let currentEditLockerId = null;
+
+function openEditLockerModal(lockerId, lockerName, truckName) {
+    currentEditLockerId = lockerId;
+    document.getElementById('edit-locker-id').value = lockerId;
+    document.getElementById('edit-locker-name').value = lockerName;
+    
+    // Find and select the truck in the dropdown
+    const truckSelect = document.getElementById('edit-locker-truck-id');
+    for (let option of truckSelect.options) {
+        if (option.text === truckName) {
+            option.selected = true;
+            break;
+        }
+    }
+    
+    document.getElementById('edit-locker-modal').style.display = 'block';
+}
+
+function closeEditLockerModal() {
+    document.getElementById('edit-locker-modal').style.display = 'none';
+    document.getElementById('edit-locker-form').reset();
+    currentEditLockerId = null;
+}
+
+function handleEditLockerSubmit() {
+    const form = document.getElementById('edit-locker-form');
+    const formData = new FormData(form);
+    formData.append('ajax_action', 'edit_locker');
+
+    const lockerName = formData.get('locker_name') ? formData.get('locker_name').trim() : '';
+    const truckId = formData.get('truck_id');
+    const lockerId = formData.get('locker_id');
+
+    if (!lockerId || !lockerName || !truckId) {
+        alert('Locker Name and Truck selection are required to save changes.');
+        return;
+    }
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (handleAjaxResponse(data, 'Locker update')) {
+            closeEditLockerModal();
+            if (typeof loadPage === 'function') {
+                loadPage('admin_modules/lockers.php');
+            } else {
+                window.location.reload();
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Network error updating locker:', error);
+        alert('Network error. Could not update locker.');
+    });
+}
+
+function deleteLocker() {
+    if (!currentEditLockerId) {
+        alert('No locker selected for deletion.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this locker? This action cannot be undone.')) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('ajax_action', 'delete_locker');
+    formData.append('locker_id', currentEditLockerId);
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (handleAjaxResponse(data, 'Locker deletion')) {
+            closeEditLockerModal();
+            if (typeof loadPage === 'function') {
+                loadPage('admin_modules/lockers.php');
+            } else {
+                window.location.reload();
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Network error deleting locker:', error);
+        alert('Network error. Could not delete locker.');
+    });
+}
+
+// Truck modal functions
+let currentEditTruckId = null;
+
+function openEditTruckModal(truckId, truckName) {
+    currentEditTruckId = truckId;
+    document.getElementById('edit-truck-id').value = truckId;
+    document.getElementById('edit-truck-name').value = truckName;
+    
+    document.getElementById('edit-truck-modal').style.display = 'block';
+}
+
+function closeEditTruckModal() {
+    document.getElementById('edit-truck-modal').style.display = 'none';
+    document.getElementById('edit-truck-form').reset();
+    currentEditTruckId = null;
+}
+
+function handleEditTruckSubmit() {
+    const form = document.getElementById('edit-truck-form');
+    const formData = new FormData(form);
+    formData.append('ajax_action', 'edit_truck');
+
+    const truckName = formData.get('truck_name') ? formData.get('truck_name').trim() : '';
+    const truckId = formData.get('truck_id');
+
+    if (!truckId || !truckName) {
+        alert('Truck Name is required to save changes.');
+        return;
+    }
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (handleAjaxResponse(data, 'Truck update')) {
+            closeEditTruckModal();
+            if (typeof loadPage === 'function') {
+                loadPage('admin_modules/lockers.php');
+            } else {
+                window.location.reload();
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Network error updating truck:', error);
+        alert('Network error. Could not update truck.');
+    });
+}
+
+function deleteTruck() {
+    if (!currentEditTruckId) {
+        alert('No truck selected for deletion.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this truck? This action cannot be undone.')) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('ajax_action', 'delete_truck');
+    formData.append('truck_id', currentEditTruckId);
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (handleAjaxResponse(data, 'Truck deletion')) {
+            closeEditTruckModal();
+            if (typeof loadPage === 'function') {
+                loadPage('admin_modules/lockers.php');
+            } else {
+                window.location.reload();
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Network error deleting truck:', error);
+        alert('Network error. Could not delete truck.');
+    });
+}
+
+function deleteItem() {
+    if (!currentEditItemId) {
+        alert('No item selected for deletion.');
+        return;
+    }
+    
+    if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('ajax_action', 'delete_item');
+    formData.append('item_id', currentEditItemId);
+
+    fetch('admin_modules/lockers.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (handleAjaxResponse(data, 'Item deletion')) {
+            closeEditItemModal();
+            const currentTruckFilter = document.getElementById('filter-items-by-truck').value;
+            const currentLockerFilter = document.getElementById('filter-items-by-locker').value;
+            loadItemsList(currentTruckFilter, currentLockerFilter);
+        }
+    })
+    .catch(error => {
+        console.error('Network error deleting item:', error);
+        alert('Network error. Could not delete item.');
+    });
+}
+
 function initializeLockersModule() {
     console.log('Lockers module initialized via JS.');
     const addTruckForm = document.getElementById('add-truck-form');
@@ -1182,13 +1669,32 @@ function initializeLockersModule() {
     // Attach to the new button's click event for editing items
     const saveEditItemButton = document.getElementById('save-edit-item-button');
     if (saveEditItemButton) {
-        saveEditItemButton.onclick = handleEditItemSubmit; // No 'event' passed, function adapted
+        saveEditItemButton.onclick = handleEditItemSubmit;
+    }
+    
+    // Attach to locker edit button
+    const saveEditLockerButton = document.getElementById('save-edit-locker-button');
+    if (saveEditLockerButton) {
+        saveEditLockerButton.onclick = handleEditLockerSubmit;
+    }
+    
+    // Attach to truck edit button
+    const saveEditTruckButton = document.getElementById('save-edit-truck-button');
+    if (saveEditTruckButton) {
+        saveEditTruckButton.onclick = handleEditTruckSubmit;
     }
     
     window.onclick = function(event) {
-        const modal = document.getElementById('edit-item-modal');
-        if (event.target == modal) {
+        const itemModal = document.getElementById('edit-item-modal');
+        const lockerModal = document.getElementById('edit-locker-modal');
+        const truckModal = document.getElementById('edit-truck-modal');
+        
+        if (event.target == itemModal) {
             closeEditItemModal();
+        } else if (event.target == lockerModal) {
+            closeEditLockerModal();
+        } else if (event.target == truckModal) {
+            closeEditTruckModal();
         }
     }
     // Initial load of items if a station is selected
