@@ -185,10 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     if ($stmt_check_item_exists->fetch()) {
                         $response = ['success' => false, 'message' => 'An item with this name already exists in this locker.'];
                     } else {
-                        $user_id_to_log = isset($user['id']) ? $user['id'] : null; 
-                        // items table DOES have station_id, so $current_station_id is correct here.
-                        $stmt_insert_item = $pdo->prepare("INSERT INTO items (name, locker_id, station_id, quantity, is_present, last_checked_by, last_checked_timestamp) VALUES (?, ?, ?, 1, 1, ?, NOW())");
-                        $stmt_insert_item->execute([$item_name, $locker_id, $current_station_id, $user_id_to_log]);
+                        // items table only has id, name, and locker_id columns based on setup.sql
+                        $stmt_insert_item = $pdo->prepare("INSERT INTO items (name, locker_id) VALUES (?, ?)");
+                        $stmt_insert_item->execute([$item_name, $locker_id]);
                         $item_id = $pdo->lastInsertId();
                         $response = ['success' => true, 'message' => 'Item added successfully.', 'item_id' => $item_id, 'item_name' => $item_name, 'locker_id' => $locker_id];
                     }
