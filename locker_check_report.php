@@ -5,6 +5,7 @@ error_reporting(E_ALL); */
 
 include 'db.php'; 
 include_once('auth.php');
+include_once('config.php');
 
 // Function to convert UTC to local timezone
 if (!function_exists('convertToLocalTZ')) {
@@ -85,7 +86,14 @@ $dates_query = $db->prepare('
     WHERE t.station_id = :station_id
     ORDER BY c.check_date DESC
 ');
-$dates_query->execute(['station_id' => $station['id']]);
+if (defined('DEBUG') && DEBUG) {
+    error_log("DEBUG: TZ_OFFSET is defined: " . (defined('TZ_OFFSET') ? 'true' : 'false'));
+    if (defined('TZ_OFFSET')) {
+        error_log("DEBUG: TZ_OFFSET value: " . TZ_OFFSET);
+    }
+    error_log("DEBUG: Parameters for dates_query: " . print_r(['station_id' => $station['id'], 'tz_offset' => (defined('TZ_OFFSET') ? TZ_OFFSET : 'UNDEFINED')], true));
+}
+$dates_query->execute(['station_id' => $station['id'], 'tz_offset' => TZ_OFFSET]);
 $dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission to filter by date
