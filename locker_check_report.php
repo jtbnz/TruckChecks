@@ -44,12 +44,19 @@ $dates_query->execute(['station_id' => $station['id']]);
 $dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission to filter by date
-$selected_date = isset($_POST['check_date']) ? $_POST['check_date'] : null;
+$selected_date_local = isset($_POST['check_date']) ? $_POST['check_date'] : null;
+$utc_start_of_day = null;
+$utc_end_of_day = null;
+
+if ($selected_date_local) {
+    $utc_start_of_day = getUtcStartOfDayFromLocal($selected_date_local);
+    $utc_end_of_day = getUtcEndOfDayFromLocal($selected_date_local);
+}
 
 $report_data = [];
 $missing_items = [];
 
-if ($selected_date) {
+if ($utc_start_of_day && $utc_end_of_day) {
     // Fetch the most recent check for each locker on the selected date - filtered by current station
     $report_query = $db->prepare("
         WITH LatestChecks AS (
@@ -59,7 +66,7 @@ if ($selected_date) {
             FROM checks c
             JOIN lockers l ON c.locker_id = l.id
             JOIN trucks t ON l.truck_id = t.id
-            WHERE DATE(c.check_date) = :selected_date
+            WHERE c.check_date BETWEEN :utc_start_of_day AND :utc_end_of_day
             AND t.station_id = :station_id
             GROUP BY c.locker_id
         )
@@ -83,7 +90,8 @@ if ($selected_date) {
         ORDER BY t.name, l.name;
     ");
     
-    $report_query->bindParam(':selected_date', $selected_date);
+    $report_query->bindParam(':utc_start_of_day', $utc_start_of_day);
+    $report_query->bindParam(':utc_end_of_day', $utc_end_of_day);
     $report_query->bindParam(':station_id', $station['id']);
     $report_query->bindParam(':station_id2', $station['id']);
     
@@ -110,28 +118,55 @@ if (!function_exists('countItemsChecked')) {
     }
 }
 
-// Function to convert UTC to NZST
-// Function to convert UTC to NZST
-if (!function_exists('convertToNZST')) {
-    function convertToNZST($utcDate) {
+// Function to convert UTC to local timezone
+if (!function_exists('convertToLocalTZ')) {
+    function convertToLocalTZ($utcDate) {
         $date = new DateTime($utcDate, new DateTimeZone('UTC'));
-        // Use TZ_OFFSET from config.php if available, otherwise default (e.g., UTC or a common fallback)
-        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC'; // Default to UTC if not set
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
         try {
             $date->setTimezone(new DateTimeZone($tz));
         } catch (Exception $e) {
-            // Fallback if TZ_OFFSET is invalid, log error or use a hardcoded default
-            error_log("Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage() . ". Falling back to UTC.");
-            $date->setTimezone(new DateTimeZone('UTC')); // Safe fallback
+            error_log("Invalid TZ_OFFSET '{$tz}' in config.php for convertToLocalTZ: " . $e->getMessage() . ". Falling back to UTC.");
+            $date->setTimezone(new DateTimeZone('UTC'));
         }
         return $date->format('Y-m-d'); // Display date only
+    }
+}
+
+// Function to get UTC start of day from local date
+if (!function_exists('getUtcStartOfDayFromLocal')) {
+    function getUtcStartOfDayFromLocal($localDate) {
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
+        try {
+            $dateTime = new DateTime($localDate . ' 00:00:00', new DateTimeZone($tz));
+            $dateTime->setTimezone(new DateTimeZone('UTC'));
+            return $dateTime->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            error_log("Error getting UTC start of day for local date '{$localDate}': " . $e->getMessage());
+            return null;
+        }
+    }
+}
+
+// Function to get UTC end of day from local date
+if (!function_exists('getUtcEndOfDayFromLocal')) {
+    function getUtcEndOfDayFromLocal($localDate) {
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
+        try {
+            $dateTime = new DateTime($localDate . ' 23:59:59', new DateTimeZone($tz));
+            $dateTime->setTimezone(new DateTimeZone('UTC'));
+            return $dateTime->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            error_log("Error getting UTC end of day for local date '{$localDate}': " . $e->getMessage());
+            return null;
+        }
     }
 }
 
 // Handle CSV export
 if (isset($_POST['export_csv'])) {
     header('Content-Type: text/csv');
-    header('Content-Disposition: attachment;filename=report_' . $selected_date . '.csv');
+    header('Content-Disposition: attachment;filename=report_' . $selected_date_local . '.csv');
     $output = fopen('php://output', 'w');
     fputcsv($output, ['Truck', 'Locker', 'Item', 'Checked', 'Check Date', 'Notes', 'Checked By']);
     foreach ($report_data as $row) {
@@ -175,21 +210,21 @@ include 'templates/header.php';
     <select name="check_date" id="check_date" required>
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
-        <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars(convertToNZST($date['last_checked'])) ?>
+        <option value="<?= htmlspecialchars(convertToLocalTZ($date['last_checked'])) ?>" <?= $selected_date_local == convertToLocalTZ($date['last_checked']) ? 'selected' : '' ?>>
+            <?= htmlspecialchars(convertToLocalTZ($date['last_checked'])) ?>
         </option>
         <?php endforeach; ?>
     </select>
     <button type="submit">View Report</button>
-    <?php if ($selected_date): ?>
+    <?php if ($selected_date_local): ?>
         <button type="submit" name="export_csv">Export as CSV</button>
     <?php endif; ?>
 </form>
 
 <!-- Missing items section -->
-<?php if ($selected_date && !empty($missing_items)): ?>
+<?php if ($selected_date_local && !empty($missing_items)): ?>
     <div class="missing-items">
-        <h2>Missing Items for <?= htmlspecialchars($selected_date) ?></h2>
+        <h2>Missing Items for <?= htmlspecialchars($selected_date_local) ?></h2>
         <ul>
             <?php foreach ($missing_items as $item): ?>
                 <li>
@@ -205,7 +240,7 @@ include 'templates/header.php';
 <?php endif; ?>
 
 <!-- Report data -->
-<?php if ($selected_date && !empty($report_data)): ?>
+<?php if ($selected_date_local && !empty($report_data)): ?>
     <div class="report">
         <?php
         $current_truck = null;
@@ -259,7 +294,7 @@ include 'templates/header.php';
         ?>
     </div>
 
-<?php elseif ($selected_date && empty($report_data)): ?>
+<?php elseif ($selected_date_local && empty($report_data)): ?>
     <div style="text-align: center; padding: 40px; color: #666;">
         <h3>No Check Data Found</h3>
         <p>No locker checks were found for the selected date in this station.</p>
