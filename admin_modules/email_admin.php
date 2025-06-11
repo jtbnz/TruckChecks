@@ -141,7 +141,7 @@ if ($sub_action === 'preview') {
             JOIN lockers l ON c.locker_id = l.id
             JOIN trucks t ON l.truck_id = t.id
             JOIN items i ON ci.item_id = i.id
-            LEFT JOIN check_notes cn on c.id = cn.check_id AND l.id = cn.locker_id
+            LEFT JOIN check_notes cn ON c.id = cn.check_id
             WHERE ci.is_present = 0 AND t.station_id = :station_id2
             ORDER BY t.name, l.name";
         $checksStmt = $pdo->prepare($checksQuery);
