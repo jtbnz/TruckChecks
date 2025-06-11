@@ -111,10 +111,12 @@ if (!function_exists('countItemsChecked')) {
 }
 
 // Function to convert UTC to NZST
-function convertToNZST($utcDate) {
-    $date = new DateTime($utcDate, new DateTimeZone('UTC'));
-    $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
-    return $date->format('Y-m-d H:i:s');
+if (!function_exists('convertToNZST')) {
+    function convertToNZST($utcDate) {
+        $date = new DateTime($utcDate, new DateTimeZone('UTC'));
+        $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
+        return $date->format('Y-m-d H:i:s');
+    }
 }
 
 // Handle CSV export
