@@ -33,14 +33,14 @@ $IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 // Fetch unique check dates for the dropdown - filtered by current station
 $dates_query = $db->prepare('
-    SELECT DISTINCT DATE(c.check_date) as last_checked 
+    SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, "+00:00", :tz_offset)) as last_checked 
     FROM checks c
     JOIN lockers l ON c.locker_id = l.id
     JOIN trucks t ON l.truck_id = t.id
     WHERE t.station_id = :station_id
     ORDER BY c.check_date DESC
 ');
-$dates_query->execute(['station_id' => $station['id']]);
+$dates_query->execute(['station_id' => $station['id'], 'tz_offset' => TZ_OFFSET]);
 $dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission to filter by date
@@ -111,29 +111,20 @@ if (!function_exists('countItemsChecked')) {
 }
 
 // Function to convert UTC to NZST
+// Function to convert UTC to NZST
 if (!function_exists('convertToNZST')) {
     function convertToNZST($utcDate) {
-        if (defined('DEBUG') && DEBUG) {
-            error_log("convertToNZST: Input UTC Date: " . $utcDate);
-        }
         $date = new DateTime($utcDate, new DateTimeZone('UTC'));
         // Use TZ_OFFSET from config.php if available, otherwise default (e.g., UTC or a common fallback)
         $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC'; // Default to UTC if not set
-        if (defined('DEBUG') && DEBUG) {
-            error_log("convertToNZST: Using Timezone: " . $tz);
-        }
         try {
             $date->setTimezone(new DateTimeZone($tz));
         } catch (Exception $e) {
             // Fallback if TZ_OFFSET is invalid, log error or use a hardcoded default
-            error_log("convertToNZST: Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage() . ". Falling back to UTC.");
+            error_log("Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage() . ". Falling back to UTC.");
             $date->setTimezone(new DateTimeZone('UTC')); // Safe fallback
         }
-        $formattedDate = $date->format('Y-m-d'); // Display date only
-        if (defined('DEBUG') && DEBUG) {
-            error_log("convertToNZST: Converted Date: " . $formattedDate);
-        }
-        return $formattedDate;
+        return $date->format('Y-m-d'); // Display date only
     }
 }
 
@@ -185,7 +176,7 @@ include 'templates/header.php';
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
         <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars(convertToNZST($date['last_checked'])) ?>
+            <?= htmlspecialchars($date['last_checked']) ?>
         </option>
         <?php endforeach; ?>
     </select>
