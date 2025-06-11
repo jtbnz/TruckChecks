@@ -6,6 +6,51 @@ error_reporting(E_ALL); */
 include 'db.php'; 
 include_once('auth.php');
 
+// Function to convert UTC to local timezone
+if (!function_exists('convertToLocalTZ')) {
+    function convertToLocalTZ($utcDate) {
+        $date = new DateTime($utcDate, new DateTimeZone('UTC'));
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
+        try {
+            $date->setTimezone(new DateTimeZone($tz));
+        } catch (Exception $e) {
+            error_log("Invalid TZ_OFFSET '{$tz}' in config.php for convertToLocalTZ: " . $e->getMessage() . ". Falling back to UTC.");
+            $date->setTimezone(new DateTimeZone('UTC'));
+        }
+        return $date->format('Y-m-d'); // Display date only
+    }
+}
+
+// Function to get UTC start of day from local date
+if (!function_exists('getUtcStartOfDayFromLocal')) {
+    function getUtcStartOfDayFromLocal($localDate) {
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
+        try {
+            $dateTime = new DateTime($localDate . ' 00:00:00', new DateTimeZone($tz));
+            $dateTime->setTimezone(new DateTimeZone('UTC'));
+            return $dateTime->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            error_log("Error getting UTC start of day for local date '{$localDate}': " . $e->getMessage());
+            return null;
+        }
+    }
+}
+
+// Function to get UTC end of day from local date
+if (!function_exists('getUtcEndOfDayFromLocal')) {
+    function getUtcEndOfDayFromLocal($localDate) {
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
+        try {
+            $dateTime = new DateTime($localDate . ' 23:59:59', new DateTimeZone($tz));
+            $dateTime->setTimezone(new DateTimeZone('UTC'));
+            return $dateTime->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            error_log("Error getting UTC end of day for local date '{$localDate}': " . $e->getMessage());
+            return null;
+        }
+    }
+}
+
 // Require authentication and station context
 $station = requireStation();
 $user = getCurrentUser();
@@ -33,7 +78,7 @@ $IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 // Fetch unique check dates for the dropdown - filtered by current station
 $dates_query = $db->prepare('
-    SELECT DISTINCT c.check_date as last_checked 
+    SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, "+00:00", :tz_offset)) as last_checked 
     FROM checks c
     JOIN lockers l ON c.locker_id = l.id
     JOIN trucks t ON l.truck_id = t.id
@@ -118,51 +163,6 @@ if (!function_exists('countItemsChecked')) {
     }
 }
 
-// Function to convert UTC to local timezone
-if (!function_exists('convertToLocalTZ')) {
-    function convertToLocalTZ($utcDate) {
-        $date = new DateTime($utcDate, new DateTimeZone('UTC'));
-        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
-        try {
-            $date->setTimezone(new DateTimeZone($tz));
-        } catch (Exception $e) {
-            error_log("Invalid TZ_OFFSET '{$tz}' in config.php for convertToLocalTZ: " . $e->getMessage() . ". Falling back to UTC.");
-            $date->setTimezone(new DateTimeZone('UTC'));
-        }
-        return $date->format('Y-m-d'); // Display date only
-    }
-}
-
-// Function to get UTC start of day from local date
-if (!function_exists('getUtcStartOfDayFromLocal')) {
-    function getUtcStartOfDayFromLocal($localDate) {
-        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
-        try {
-            $dateTime = new DateTime($localDate . ' 00:00:00', new DateTimeZone($tz));
-            $dateTime->setTimezone(new DateTimeZone('UTC'));
-            return $dateTime->format('Y-m-d H:i:s');
-        } catch (Exception $e) {
-            error_log("Error getting UTC start of day for local date '{$localDate}': " . $e->getMessage());
-            return null;
-        }
-    }
-}
-
-// Function to get UTC end of day from local date
-if (!function_exists('getUtcEndOfDayFromLocal')) {
-    function getUtcEndOfDayFromLocal($localDate) {
-        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC';
-        try {
-            $dateTime = new DateTime($localDate . ' 23:59:59', new DateTimeZone($tz));
-            $dateTime->setTimezone(new DateTimeZone('UTC'));
-            return $dateTime->format('Y-m-d H:i:s');
-        } catch (Exception $e) {
-            error_log("Error getting UTC end of day for local date '{$localDate}': " . $e->getMessage());
-            return null;
-        }
-    }
-}
-
 // Handle CSV export
 if (isset($_POST['export_csv'])) {
     header('Content-Type: text/csv');
@@ -210,8 +210,8 @@ include 'templates/header.php';
     <select name="check_date" id="check_date" required>
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
-        <option value="<?= htmlspecialchars(convertToLocalTZ($date['last_checked'])) ?>" <?= $selected_date_local == convertToLocalTZ($date['last_checked']) ? 'selected' : '' ?>>
-            <?= htmlspecialchars(convertToLocalTZ($date['last_checked'])) ?>
+        <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date_local == $date['last_checked'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($date['last_checked']) ?>
         </option>
         <?php endforeach; ?>
     </select>
