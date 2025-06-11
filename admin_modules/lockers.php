@@ -918,7 +918,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                     <form id="add-item-form">
                         <div class="form-group">
                             <label for="select-truck-for-item">Select Truck:</label>
-                            <select id="select-truck-for-item" name="truck_id_for_item" required onchange="loadLockersForItemDropdown(this.value)">
+                            <select id="select-truck-for-item" name="truck_id_for_item" required onchange="loadLockersForItemDropdown(this.value); validateAddItemForm();">
                                 <option value="">-- Select Truck --</option>
                                 <?php
                                 if (count($trucks_for_list) > 0) {
@@ -931,15 +931,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                         </div>
                         <div class="form-group">
                             <label for="select-locker-for-item">Select Locker:</label>
-                            <select id="select-locker-for-item" name="locker_id_for_item" required>
+                            <select id="select-locker-for-item" name="locker_id_for_item" required onchange="validateAddItemForm();">
                                 <option value="">-- Select Truck First --</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="new-item-name">Item Name:</label>
-                            <input type="text" id="new-item-name" name="item_name" required>
+                            <input type="text" id="new-item-name" name="item_name" required oninput="validateAddItemForm();">
                         </div>
-                        <button type="submit" class="button">Add Item</button>
+                        <button type="submit" class="button" id="add-item-button" disabled>Add Item</button>
                     </form>
                 </div>
 
@@ -1666,6 +1666,30 @@ function deleteItem() {
     });
 }
 
+function validateAddItemForm() {
+    const truckSelect = document.getElementById('select-truck-for-item');
+    const lockerSelect = document.getElementById('select-locker-for-item');
+    const itemNameInput = document.getElementById('new-item-name');
+    const addItemButton = document.getElementById('add-item-button');
+    
+    const truckSelected = truckSelect && truckSelect.value !== '';
+    const lockerSelected = lockerSelect && lockerSelect.value !== '';
+    const itemNameFilled = itemNameInput && itemNameInput.value.trim() !== '';
+    
+    const allFieldsValid = truckSelected && lockerSelected && itemNameFilled;
+    
+    if (addItemButton) {
+        addItemButton.disabled = !allFieldsValid;
+        if (allFieldsValid) {
+            addItemButton.style.opacity = '1';
+            addItemButton.style.cursor = 'pointer';
+        } else {
+            addItemButton.style.opacity = '0.6';
+            addItemButton.style.cursor = 'not-allowed';
+        }
+    }
+}
+
 function initializeLockersModule() {
     console.log('Lockers module initialized via JS.');
     const addTruckForm = document.getElementById('add-truck-form');
@@ -1695,6 +1719,9 @@ function initializeLockersModule() {
     if (saveEditTruckButton) {
         saveEditTruckButton.onclick = handleEditTruckSubmit;
     }
+    
+    // Initialize form validation on page load
+    validateAddItemForm();
     
     window.onclick = function(event) {
         const itemModal = document.getElementById('edit-item-modal');
