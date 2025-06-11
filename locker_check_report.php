@@ -114,8 +114,16 @@ if (!function_exists('countItemsChecked')) {
 if (!function_exists('convertToNZST')) {
     function convertToNZST($utcDate) {
         $date = new DateTime($utcDate, new DateTimeZone('UTC'));
-        $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
-        return $date->format('Y-m-d H:i:s');
+        // Use TZ_OFFSET from config.php if available, otherwise default (e.g., UTC or a common fallback)
+        $tz = defined('TZ_OFFSET') ? TZ_OFFSET : 'UTC'; // Default to UTC if not set
+        try {
+            $date->setTimezone(new DateTimeZone($tz));
+        } catch (Exception $e) {
+            // Fallback if TZ_OFFSET is invalid, log error or use a hardcoded default
+            error_log("Invalid TZ_OFFSET '{$tz}' in config.php: " . $e->getMessage());
+            $date->setTimezone(new DateTimeZone('UTC')); // Safe fallback
+        }
+        return $date->format('Y-m-d'); // Display date only
     }
 }
 
