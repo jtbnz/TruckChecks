@@ -33,14 +33,14 @@ $IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
 // Fetch unique check dates for the dropdown - filtered by current station
 $dates_query = $db->prepare('
-    SELECT DISTINCT DATE(CONVERT_TZ(c.check_date, "+00:00", :tz_offset)) as last_checked 
+    SELECT DISTINCT c.check_date as last_checked 
     FROM checks c
     JOIN lockers l ON c.locker_id = l.id
     JOIN trucks t ON l.truck_id = t.id
     WHERE t.station_id = :station_id
     ORDER BY c.check_date DESC
 ');
-$dates_query->execute(['station_id' => $station['id'], 'tz_offset' => TZ_OFFSET]);
+$dates_query->execute(['station_id' => $station['id']]);
 $dates = $dates_query->fetchAll(PDO::FETCH_ASSOC);
 
 // Handle form submission to filter by date
@@ -176,7 +176,7 @@ include 'templates/header.php';
         <option value="">-- Select a Date --</option>
         <?php foreach ($dates as $date): ?>
         <option value="<?= htmlspecialchars($date['last_checked']) ?>" <?= $selected_date == $date['last_checked'] ? 'selected' : '' ?>>
-            <?= htmlspecialchars($date['last_checked']) ?>
+            <?= htmlspecialchars(convertToNZST($date['last_checked'])) ?>
         </option>
         <?php endforeach; ?>
     </select>
