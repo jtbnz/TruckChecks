@@ -98,14 +98,16 @@ if ($selected_date) {
     }
 }
 
-function countItemsChecked($truck_name, $report_data) {
-    $count = 0;
-    foreach ($report_data as $entry) {
+if (!function_exists('countItemsChecked')) {
+    function countItemsChecked($truck_name, $report_data) {
+        $count = 0;
+        foreach ($report_data as $entry) {
         if ($entry['truck_name'] === $truck_name) {
             $count++;
         }
+        }
+        return $count;
     }
-    return $count;
 }
 
 // Function to convert UTC to NZST
