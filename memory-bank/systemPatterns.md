@@ -1,148 +1,75 @@
 # System Patterns & Architecture
 
-## Database Architecture
+## Database Schema & Normalization
 
-### Core Entity Relationships
+### Core Entity Hierarchy
+The TruckChecks system follows a strict hierarchical data model:
+
 ```
-trucks (id, name)
-  ↓ 1:many
-lockers (id, name, truck_id)
-  ↓ 1:many
-items (id, name, locker_id)
-  ↓ 1:many
-checks (id, item_id, status, timestamp, notes)
-```
-
-### Key Tables
-- **trucks**: Master truck registry
-- **lockers**: Locker assignments per truck
-- **items**: Individual inventory items
-- **checks**: Check history and status
-- **audit_log**: Audit trail for deletions (recently added)
-
-### Database Patterns
-- **Foreign Key Constraints**: Maintain referential integrity
-- **Cascading Deletes**: Automatic cleanup of dependent records
-- **Audit Triggers**: Track data changes for compliance
-- **Indexed Lookups**: Optimized queries for filtering
-
-## Application Architecture
-
-### File Structure Patterns
-```
-/
-├── config.php              # Database configuration
-├── db.php                   # Database connection utilities
-├── index.php               # Main dashboard
-├── login.php               # Authentication
-├── admin.php               # Administrative hub
-├── maintain_*.php          # CRUD operations
-├── *_report.php            # Report generation
-├── templates/              # Shared UI components
-├── styles/                 # CSS styling
-├── scripts/                # Utility scripts
-├── Docker/                 # Containerization
-└── memory-bank/            # Documentation
+Stations (id, name, description)
+    ↓ (station_id FK)
+Trucks (id, name, relief, station_id)
+    ↓ (truck_id FK)
+Lockers (id, name, truck_id, notes)
+    ↓ (locker_id FK)
+Items (id, name, locker_id)
 ```
 
-### Code Organization Patterns
+### Key Database Facts
+- **stations** table: Core organizational unit
+- **trucks** table: Has `station_id` foreign key (added in V4Changes.sql)
+- **lockers** table: Belongs to trucks via `truck_id`
+- **items** table: Belongs to lockers via `locker_id`
 
-#### Authentication Pattern
-```php
-// Standard auth check in all protected pages
-if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME] != 'true') {
-    header('Location: login.php');
-    exit;
-}
+### Station-Based Data Isolation
+- All data must be filtered by station context
+- Station admins only see their assigned stations
+- Superusers can select any station
+- Trucks are the primary link between stations and the rest of the hierarchy
+
+### Critical Schema Files
+- `Docker/setup.sql`: Base schema (no station_id in trucks)
+- `V4Changes.sql`: Adds station hierarchy and `station_id` to trucks
+
+## User Access Patterns
+
+### Role-Based Access
+- **superuser**: Can access any station via session selection
+- **station_admin**: Limited to assigned stations via user_stations table
+
+### Station Context Resolution
+1. Check user role
+2. For superuser: Use session-selected station
+3. For station_admin: Use assigned station(s)
+4. All queries must filter by resolved station_id
+
+## Admin Module Patterns
+
+### Station-Aware Queries
+All admin modules must:
+1. Resolve current station context
+2. Filter trucks by `station_id`
+3. Filter lockers via truck relationships
+4. Filter items via locker relationships
+
+### Example Query Pattern
+```sql
+-- Get items for current station
+SELECT i.*, l.name as locker_name, t.name as truck_name
+FROM items i
+JOIN lockers l ON i.locker_id = l.id
+JOIN trucks t ON l.truck_id = t.id
+WHERE t.station_id = ?
 ```
 
-#### Database Connection Pattern
-```php
-include('config.php');
-include 'db.php';
-$db = get_db_connection();
-```
+## Error Patterns to Avoid
 
-#### AJAX Handler Pattern
-```php
-// Handle AJAX requests FIRST, before any HTML output
-if (isset($_GET['ajax'])) {
-    header('Content-Type: application/json');
-    // Process request and return JSON
-    exit;
-}
-```
+### Database Column Mismatches
+- Never assume trucks don't have station_id (V4Changes.sql adds it)
+- Always check both setup.sql and V4Changes.sql for complete schema
+- Station isolation is critical for multi-tenant functionality
 
-## UI/UX Patterns
-
-### Responsive Design
-- **Mobile-First**: Touch-friendly buttons and inputs
-- **Flexible Layouts**: Adapt to different screen sizes
-- **Consistent Styling**: Shared CSS classes across pages
-
-### Form Patterns
-- **Input Containers**: Consistent form field styling
-- **Button Containers**: Standardized button layouts
-- **Validation**: Client and server-side validation
-- **Error Handling**: User-friendly error messages
-
-### Navigation Patterns
-- **Breadcrumb Navigation**: Clear page hierarchy
-- **Action Buttons**: Consistent placement and styling
-- **Filter Sections**: Standardized filtering interfaces
-
-## Data Flow Patterns
-
-### CRUD Operations
-1. **Create**: Form submission → Validation → Database insert → Redirect
-2. **Read**: Database query → Data processing → Template rendering
-3. **Update**: Form pre-population → Submission → Validation → Database update
-4. **Delete**: Confirmation → Database delete → Redirect
-
-### Real-time Filtering
-1. **User Selection**: Dropdown change event
-2. **AJAX Request**: Send filter parameters
-3. **Server Processing**: Query database with filters
-4. **JSON Response**: Return filtered data
-5. **DOM Update**: Update page content without reload
-
-### Report Generation
-1. **Parameter Collection**: User selects report criteria
-2. **Data Query**: Execute complex database queries
-3. **Processing**: Format data for output
-4. **Output Generation**: Create PDF/HTML/CSV
-5. **Delivery**: Download or email report
-
-## Security Patterns
-
-### Input Validation
-- **Prepared Statements**: Prevent SQL injection
-- **HTML Escaping**: Prevent XSS attacks
-- **Parameter Validation**: Check data types and ranges
-
-### Authentication
-- **Cookie-based Sessions**: Simple session management
-- **Database Name Integration**: Multi-tenant support
-- **Logout Functionality**: Secure session termination
-
-### Access Control
-- **Page-level Protection**: Authentication checks on all pages
-- **Admin Functions**: Restricted administrative operations
-- **Data Isolation**: Users only see their data
-
-## Performance Patterns
-
-### Database Optimization
-- **Indexed Queries**: Fast lookups on foreign keys
-- **Efficient JOINs**: Minimize database round trips
-- **Query Caching**: Reuse common query results
-
-### Frontend Optimization
-- **AJAX Loading**: Reduce page reloads
-- **Lazy Loading**: Load data as needed
-- **Client-side Caching**: Store frequently used data
-
-### Resource Management
-- **Connection Pooling**: Efficient database connections
-- **Memory Management**: Clean up resources properly
-- **Error Handling**: Graceful degradation on failures
+### Station Context Loss
+- Never show all stations' data to station admins
+- Always validate station ownership before operations
+- Maintain station context throughout request lifecycle

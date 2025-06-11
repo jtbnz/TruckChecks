@@ -106,16 +106,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $truck_name = trim($_POST['truck_name'] ?? '');
         if (!empty($truck_name) && $current_station_id) {
             try {
-                // trucks table doesn't have station_id column, so we can't check for duplicates per station
-                // For now, we'll check for global duplicates or remove this check entirely
-                $stmt_check = $pdo->prepare("SELECT id FROM trucks WHERE name = ?");
-                $stmt_check->execute([$truck_name]);
+                // Check if a truck with this name already exists for the current station
+                $stmt_check = $pdo->prepare("SELECT id FROM trucks WHERE name = ? AND station_id = ?");
+                $stmt_check->execute([$truck_name, $current_station_id]);
                 if ($stmt_check->fetch()) {
-                    $response = ['success' => false, 'message' => 'A truck with this name already exists.'];
+                    $response = ['success' => false, 'message' => 'A truck with this name already exists for this station.'];
                 } else {
-                    // trucks table only has id, name, relief columns - no station_id
-                    $stmt = $pdo->prepare("INSERT INTO trucks (name) VALUES (?)");
-                    $stmt->execute([$truck_name]);
+                    // Insert truck with station_id
+                    $stmt = $pdo->prepare("INSERT INTO trucks (name, station_id) VALUES (?, ?)");
+                    $stmt->execute([$truck_name, $current_station_id]);
                     $truck_id = $pdo->lastInsertId();
                     $response = ['success' => true, 'message' => 'Truck added successfully.', 'truck_id' => $truck_id, 'truck_name' => $truck_name];
                 }
@@ -134,12 +133,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 
         if (!empty($locker_name) && !empty($truck_id) && $current_station_id) {
             try {
-                // Since trucks table doesn't have station_id, we can't verify station ownership
-                // We'll just verify the truck exists
-                $stmt_truck_check = $pdo->prepare("SELECT id FROM trucks WHERE id = ?");
-                $stmt_truck_check->execute([$truck_id]);
+                // Verify the truck exists and belongs to the current station
+                $stmt_truck_check = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_truck_check->execute([$truck_id, $current_station_id]);
                 if (!$stmt_truck_check->fetch()) {
-                    $response = ['success' => false, 'message' => 'Selected truck does not exist.'];
+                    $response = ['success' => false, 'message' => 'Selected truck does not exist or does not belong to this station.'];
                 } else {
                     // Check if locker with the same name already exists for this truck
                     $stmt_check = $pdo->prepare("SELECT id FROM lockers WHERE name = ? AND truck_id = ?");
@@ -147,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     if ($stmt_check->fetch()) {
                         $response = ['success' => false, 'message' => 'A locker with this name already exists for this truck.'];
                     } else {
-                        // lockers table only has id, name, truck_id, notes columns - no station_id
+                        // Insert locker
                         $stmt = $pdo->prepare("INSERT INTO lockers (name, truck_id) VALUES (?, ?)");
                         $stmt->execute([$locker_name, $truck_id]);
                         $locker_id = $pdo->lastInsertId();
@@ -539,9 +537,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
             FROM items li
             JOIN lockers l ON li.locker_id = l.id
             JOIN trucks t ON l.truck_id = t.id
-            WHERE 1=1"; // Since trucks table doesn't have station_id, we can't filter by station
+            WHERE t.station_id = :station_id";
 
-        $params = [];
+        $params = [':station_id' => $current_station_id];
 
         if (!empty($truck_id_filter)) {
             $sql_items .= " AND t.id = :truck_id";
@@ -788,11 +786,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                 <select id="edit-item-truck-id" name="truck_id" required onchange="loadLockersForEditModal(this.value)">
                     <option value="">-- Select Truck --</option>
                     <?php
-                    // Populate with all trucks since we can't filter by station
+                    // Filter trucks by current station for edit modal
                     if ($current_station_id) {
                         try {
-                            $stmt_trucks_modal = $db->prepare("SELECT id, name FROM trucks ORDER BY name");
-                            $stmt_trucks_modal->execute();
+                            $stmt_trucks_modal = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                            $stmt_trucks_modal->execute([$current_station_id]);
                             $trucks_for_modal_list = $stmt_trucks_modal->fetchAll(PDO::FETCH_ASSOC);
                             if (count($trucks_for_modal_list) > 0) {
                                 foreach ($trucks_for_modal_list as $truck_item_modal) {
@@ -841,8 +839,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                     <?php
                     if ($current_station_id) {
                         try {
-                            $stmt_trucks_locker_modal = $db->prepare("SELECT id, name FROM trucks ORDER BY name");
-                            $stmt_trucks_locker_modal->execute();
+                            $stmt_trucks_locker_modal = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                            $stmt_trucks_locker_modal->execute([$current_station_id]);
                             $trucks_for_locker_modal_list = $stmt_trucks_locker_modal->fetchAll(PDO::FETCH_ASSOC);
                             if (count($trucks_for_locker_modal_list) > 0) {
                                 foreach ($trucks_for_locker_modal_list as $truck_locker_modal) {
@@ -899,9 +897,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
         $trucks_for_list = []; 
         if ($current_station_id) {
             try {
-                // Since trucks table doesn't have station_id, get all trucks
-                $stmt_trucks_list_data = $db->prepare("SELECT id, name FROM trucks ORDER BY name");
-                $stmt_trucks_list_data->execute();
+                // Filter trucks by current station
+                $stmt_trucks_list_data = $db->prepare("SELECT id, name FROM trucks WHERE station_id = ? ORDER BY name");
+                $stmt_trucks_list_data->execute([$current_station_id]);
                 $trucks_for_list = $stmt_trucks_list_data->fetchAll(PDO::FETCH_ASSOC); 
             } catch (PDOException $e_truck_fetch) {
                 error_log("Error fetching trucks for lists in lockers.php: " . $e_truck_fetch->getMessage());
@@ -972,15 +970,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             <?php
                             if ($current_station_id) {
                                 try {
-                                    // Since trucks table doesn't have station_id, get all items
+                                    // Filter items by current station through truck relationship
                                     $stmt_items = $db->prepare("
                                         SELECT li.id, li.name AS item_name, l.id AS locker_id, l.name AS locker_name, t.id AS truck_id, t.name AS truck_name
                                         FROM items li
                                         JOIN lockers l ON li.locker_id = l.id
                                         JOIN trucks t ON l.truck_id = t.id
+                                        WHERE t.station_id = ?
                                         ORDER BY t.name, l.name, li.name
                                     ");
-                                    $stmt_items->execute();
+                                    $stmt_items->execute([$current_station_id]);
                                     $items_list_data = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
                                     if (count($items_list_data) > 0) {
                                         foreach ($items_list_data as $item_entry) {
@@ -1037,14 +1036,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax_action'])) {
                             <?php
                             if ($current_station_id) {
                                 try {
-                                    // Since trucks table doesn't have station_id, get all lockers
+                                    // Filter lockers by current station through truck relationship
                                     $stmt_lockers = $db->prepare("
                                         SELECT l.id, l.name AS locker_name, t.name AS truck_name 
                                         FROM lockers l
                                         JOIN trucks t ON l.truck_id = t.id
+                                        WHERE t.station_id = ?
                                         ORDER BY t.name, l.name
                                     ");
-                                    $stmt_lockers->execute();
+                                    $stmt_lockers->execute([$current_station_id]);
                                     $lockers_list_data = $stmt_lockers->fetchAll(PDO::FETCH_ASSOC);
                                     if (count($lockers_list_data) > 0) {
                                         foreach ($lockers_list_data as $locker_item) {
