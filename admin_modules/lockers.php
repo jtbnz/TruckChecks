@@ -1360,7 +1360,10 @@ function escapeHTML(str) {
     });
 }
 
-let currentEditItemId = null;
+// Use window object to avoid redeclaration errors
+if (typeof window.currentEditItemId === 'undefined') {
+    window.currentEditItemId = null;
+}
 
 function openEditItemModal(itemId, itemName, currentLockerId, currentTruckId) {
     currentEditItemId = itemId;
@@ -1454,7 +1457,10 @@ function handleEditItemSubmit() {
     });
 }
 
-let currentEditLockerId = null;
+// Use window object to avoid redeclaration errors
+if (typeof window.currentEditLockerId === 'undefined') {
+    window.currentEditLockerId = null;
+}
 
 function openEditLockerModal(lockerId, lockerName, truckName) {
     currentEditLockerId = lockerId;
@@ -1548,7 +1554,10 @@ function deleteLocker() {
     });
 }
 
-let currentEditTruckId = null;
+// Use window object to avoid redeclaration errors
+if (typeof window.currentEditTruckId === 'undefined') {
+    window.currentEditTruckId = null;
+}
 
 function openEditTruckModal(truckId, truckName) {
     currentEditTruckId = truckId;
