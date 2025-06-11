@@ -272,22 +272,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete item.'];
         } else {
             try {
-                // Verify the item belongs to the current station (via its locker's truck)
-                $stmt_verify = $pdo->prepare("
-                    SELECT i.id 
+                // Get item details for logging before deletion
+                $stmt_get_item = $pdo->prepare("
+                    SELECT i.name as item_name, l.name as locker_name, t.name as truck_name
                     FROM items i
                     JOIN lockers l ON i.locker_id = l.id
                     JOIN trucks t ON l.truck_id = t.id
                     WHERE i.id = ? AND t.station_id = ?
                 ");
-                $stmt_verify->execute([$item_id, $current_station_id]);
-                if (!$stmt_verify->fetch()) {
+                $stmt_get_item->execute([$item_id, $current_station_id]);
+                $item_details = $stmt_get_item->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$item_details) {
                     $response = ['success' => false, 'message' => 'Item does not belong to the current station or does not exist.'];
                 } else {
                     $stmt_delete = $pdo->prepare("DELETE FROM items WHERE id = ?");
                     $stmt_delete->execute([$item_id]);
                     
                     if ($stmt_delete->rowCount() > 0) {
+                        // Log the deletion
+                        $stmt_log = $pdo->prepare("
+                            INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
+                            VALUES (?, ?, ?, NOW())
+                        ");
+                        $stmt_log->execute([
+                            $item_details['truck_name'],
+                            $item_details['locker_name'],
+                            $item_details['item_name']
+                        ]);
+                        
                         $response = ['success' => true, 'message' => 'Item deleted successfully.'];
                     } else {
                         $response = ['success' => false, 'message' => 'Item could not be deleted.'];
@@ -351,15 +364,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete locker.'];
         } else {
             try {
-                // Verify the locker belongs to the current station
-                $stmt_verify = $pdo->prepare("
-                    SELECT l.id 
+                // Get locker details for logging before deletion
+                $stmt_get_locker = $pdo->prepare("
+                    SELECT l.name as locker_name, t.name as truck_name
                     FROM lockers l
                     JOIN trucks t ON l.truck_id = t.id
                     WHERE l.id = ? AND t.station_id = ?
                 ");
-                $stmt_verify->execute([$locker_id, $current_station_id]);
-                if (!$stmt_verify->fetch()) {
+                $stmt_get_locker->execute([$locker_id, $current_station_id]);
+                $locker_details = $stmt_get_locker->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$locker_details) {
                     $response = ['success' => false, 'message' => 'Locker does not belong to the current station or does not exist.'];
                 } else {
                     // Check if locker has any items
@@ -374,6 +389,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         $stmt_delete->execute([$locker_id]);
                         
                         if ($stmt_delete->rowCount() > 0) {
+                            // Log the locker deletion
+                            $stmt_log = $pdo->prepare("
+                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
+                                VALUES (?, ?, ?, NOW())
+                            ");
+                            $stmt_log->execute([
+                                $locker_details['truck_name'],
+                                $locker_details['locker_name'],
+                                '[LOCKER DELETED]'
+                            ]);
+                            
                             $response = ['success' => true, 'message' => 'Locker deleted successfully.'];
                         } else {
                             $response = ['success' => false, 'message' => 'Locker could not be deleted.'];
@@ -437,10 +463,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
             $response = ['success' => false, 'message' => 'Current station context is missing. Cannot delete truck.'];
         } else {
             try {
-                // Verify the truck belongs to the current station
-                $stmt_verify = $pdo->prepare("SELECT id FROM trucks WHERE id = ? AND station_id = ?");
-                $stmt_verify->execute([$truck_id, $current_station_id]);
-                if (!$stmt_verify->fetch()) {
+                // Get truck details for logging before deletion
+                $stmt_get_truck = $pdo->prepare("SELECT name as truck_name FROM trucks WHERE id = ? AND station_id = ?");
+                $stmt_get_truck->execute([$truck_id, $current_station_id]);
+                $truck_details = $stmt_get_truck->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$truck_details) {
                     $response = ['success' => false, 'message' => 'Truck does not belong to the current station or does not exist.'];
                 } else {
                     // Check if truck has any lockers
@@ -455,6 +483,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         $stmt_delete->execute([$truck_id]);
                         
                         if ($stmt_delete->rowCount() > 0) {
+                            // Log the truck deletion
+                            $stmt_log = $pdo->prepare("
+                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
+                                VALUES (?, ?, ?, NOW())
+                            ");
+                            $stmt_log->execute([
+                                $truck_details['truck_name'],
+                                '[TRUCK DELETED]',
+                                '[TRUCK DELETED]'
+                            ]);
+                            
                             $response = ['success' => true, 'message' => 'Truck deleted successfully.'];
                         } else {
                             $response = ['success' => false, 'message' => 'Truck could not be deleted.'];
