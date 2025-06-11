@@ -1,18 +1,61 @@
 <?php
-include_once('auth.php');
-include_once('db.php');
+// deleted_items_report.php
 
-// Require authentication and station context
-$station = requireStation();
-$user = getCurrentUser();
+// This file can be included by admin.php or run standalone
+// When included by admin.php, $user, $pdo, $currentStation are already set
+// When run standalone, we need to set them up
 
-// Check if user has permission to view deleted items report
-if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
-    header('Location: login.php');
-    exit;
+if (!isset($user) || !$user) {
+    // Running standalone - set up authentication and context
+    include_once('auth.php');
+    include_once('db.php');
+    
+    requireAuth();
+    $user = getCurrentUser();
+    $pdo = get_db_connection();
+    
+    // Check if user has permission to view deleted items report
+    if ($user['role'] !== 'superuser' && $user['role'] !== 'station_admin') {
+        header('Location: login.php');
+        exit;
+    }
+    
+    include 'templates/header.php';
+    $standalone_mode = true;
+} else {
+    // Running within admin.php - context already set
+    $standalone_mode = false;
 }
 
-include 'templates/header.php';
+// Determine current station context
+$current_station = null;
+$userRole = $user['role'];
+
+if ($userRole === 'superuser') {
+    $current_station = getCurrentStation();
+} elseif ($userRole === 'station_admin') {
+    // For station admin, use the same logic as other admin modules
+    try {
+        $stmt_stations = $pdo->prepare("SELECT s.* FROM stations s JOIN user_stations us ON s.id = us.station_id WHERE us.user_id = ? ORDER BY s.name");
+        $stmt_stations->execute([$user['id']]);
+        $userStations = $stmt_stations->fetchAll();
+        
+        if (isset($_SESSION['selected_station_id'])) {
+            foreach ($userStations as $s) {
+                if ($s['id'] == $_SESSION['selected_station_id']) {
+                    $current_station = $s;
+                    break;
+                }
+            }
+        }
+        if (!$current_station && count($userStations) === 1) {
+            $current_station = $userStations[0];
+        }
+    } catch (Exception $e) {
+        error_log('Error getting user stations in deleted_items_report: ' . $e->getMessage());
+        $current_station = null;
+    }
+}
 
 // Get filter parameters
 $truck_filter = isset($_GET['truck_filter']) ? $_GET['truck_filter'] : '';
@@ -28,9 +71,9 @@ try {
     $params = [];
     
     // Role-based filtering - station admins only see their station's data
-    if ($user['role'] === 'station_admin') {
+    if ($user['role'] === 'station_admin' && $current_station) {
         $where_conditions[] = "log.station_id = ?";
-        $params[] = $station['id'];
+        $params[] = $current_station['id'];
     }
     // Superusers see all deleted items (no additional filtering needed)
     
@@ -72,14 +115,14 @@ try {
     $deleted_items = $stmt->fetchAll();
     
     // Get available trucks for filter dropdown (role-based)
-    if ($user['role'] === 'station_admin') {
+    if ($user['role'] === 'station_admin' && $current_station) {
         // For station admins, get trucks from deletion log for their station
         $trucks_sql = "SELECT DISTINCT log.truck_name 
                       FROM locker_item_deletion_log log 
                       WHERE log.station_id = ? 
                       ORDER BY log.truck_name";
         $trucks_stmt = $db->prepare($trucks_sql);
-        $trucks_stmt->execute([$station['id']]);
+        $trucks_stmt->execute([$current_station['id']]);
         $trucks = $trucks_stmt->fetchAll(PDO::FETCH_COLUMN);
     } else {
         // Superuser sees all trucks from deletion log
@@ -90,13 +133,13 @@ try {
     // Get available lockers for filter dropdown (based on selected truck)
     $lockers = [];
     if ($truck_filter) {
-        if ($user['role'] === 'station_admin') {
+        if ($user['role'] === 'station_admin' && $current_station) {
             $lockers_sql = "SELECT DISTINCT log.locker_name 
                            FROM locker_item_deletion_log log 
                            WHERE log.truck_name = ? AND log.station_id = ? 
                            ORDER BY log.locker_name";
             $lockers_stmt = $db->prepare($lockers_sql);
-            $lockers_stmt->execute([$truck_filter, $station['id']]);
+            $lockers_stmt->execute([$truck_filter, $current_station['id']]);
             $lockers = $lockers_stmt->fetchAll(PDO::FETCH_COLUMN);
         } else {
             $lockers_sql = "SELECT DISTINCT locker_name 
@@ -252,12 +295,14 @@ try {
 </style>
 
 <div class="deleted-items-container">
+    <?php if ($current_station): ?>
     <div class="station-info">
-        <div class="station-name"><?= htmlspecialchars($station['name']) ?></div>
-        <?php if ($station['description']): ?>
-            <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($station['description']) ?></div>
+        <div class="station-name"><?= htmlspecialchars($current_station['name']) ?></div>
+        <?php if ($current_station['description']): ?>
+            <div style="color: #666; margin-top: 5px;"><?= htmlspecialchars($current_station['description']) ?></div>
         <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <h1>Deleted Items Report</h1>
     

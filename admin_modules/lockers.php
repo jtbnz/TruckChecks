@@ -274,15 +274,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                     $stmt_delete->execute([$item_id]);
                     
                     if ($stmt_delete->rowCount() > 0) {
-                        // Log the deletion
+                        // Log the deletion with station_id
                         $stmt_log = $pdo->prepare("
-                            INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
-                            VALUES (?, ?, ?, NOW())
+                            INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at, station_id) 
+                            VALUES (?, ?, ?, NOW(), ?)
                         ");
                         $stmt_log->execute([
                             $item_details['truck_name'],
                             $item_details['locker_name'],
-                            $item_details['item_name']
+                            $item_details['item_name'],
+                            $current_station_id
                         ]);
                         
                         $response = ['success' => true, 'message' => 'Item deleted successfully.'];
@@ -375,15 +376,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         $stmt_delete->execute([$locker_id]);
                         
                         if ($stmt_delete->rowCount() > 0) {
-                            // Log the locker deletion
+                            // Log the locker deletion with station_id
                             $stmt_log = $pdo->prepare("
-                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
-                                VALUES (?, ?, ?, NOW())
+                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at, station_id) 
+                                VALUES (?, ?, ?, NOW(), ?)
                             ");
                             $stmt_log->execute([
                                 $locker_details['truck_name'],
                                 $locker_details['locker_name'],
-                                '[LOCKER DELETED]'
+                                '[LOCKER DELETED]',
+                                $current_station_id
                             ]);
                             
                             $response = ['success' => true, 'message' => 'Locker deleted successfully.'];
@@ -472,15 +474,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
                         $stmt_delete->execute([$truck_id]);
                         
                         if ($stmt_delete->rowCount() > 0) {
-                            // Log the truck deletion
+                            // Log the truck deletion with station_id
                             $stmt_log = $pdo->prepare("
-                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at) 
-                                VALUES (?, ?, ?, NOW())
+                                INSERT INTO locker_item_deletion_log (truck_name, locker_name, item_name, deleted_at, station_id) 
+                                VALUES (?, ?, ?, NOW(), ?)
                             ");
                             $stmt_log->execute([
                                 $truck_details['truck_name'],
                                 '[TRUCK DELETED]',
-                                '[TRUCK DELETED]'
+                                '[TRUCK DELETED]',
+                                $current_station_id
                             ]);
                             
                             $response = ['success' => true, 'message' => 'Truck deleted successfully.'];

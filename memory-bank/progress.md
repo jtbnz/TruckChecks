@@ -82,6 +82,8 @@
 - ✅ Enhanced add item workflow with truck/locker selection
 - ✅ Created comprehensive memory bank documentation
 - ✅ Converted `maintain_trucks.php`, `maintain_lockers.php`, and `manage_stations.php` to embedded AJAX modules.
+- ✅ **Fixed Email Admin Preview Issue**: Corrected SQL query in `admin_modules/email_admin.php` that was referencing non-existent column `cn.locker_id`
+- ✅ **Fixed Deleted Items Report**: Updated deletion logging to include `station_id` and made report compatible with admin modules structure
 
 ### In Progress
 - 🔄 Audit system design (ready for implementation)
