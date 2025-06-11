@@ -102,6 +102,10 @@ $sub_action = $_REQUEST['sub_action'] ?? null; // Comes from admin.php's GET/POS
 
 if ($sub_action === 'preview') {
     header('Content-Type: application/json');
+    
+    // Add basic error logging for debugging
+    error_log("Email admin preview: Starting preview generation for station_id: " . ($station_id ?? 'null'));
+    
     try {
         // Fetch the latest check date for this station
         $latestCheckQuery = "

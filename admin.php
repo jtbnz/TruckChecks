@@ -176,10 +176,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['ajax']) && $_GET['ajax'
     // Check if this is a sub_action request that should return JSON
     $sub_action = $_GET['sub_action'] ?? null;
     if ($sub_action === 'preview' || $sub_action === 'send_preview') {
-        // For JSON-returning sub_actions, suppress errors to prevent JSON corruption
-        ini_set('display_errors', 0);
-        ini_set('display_startup_errors', 0);
-        error_reporting(0);
+        // For JSON-returning sub_actions, enable errors temporarily for debugging
+        if (defined('DEBUG') && DEBUG) {
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+            error_reporting(E_ALL);
+        } else {
+            ini_set('display_errors', 0);
+            ini_set('display_startup_errors', 0);
+            error_reporting(0);
+        }
     } else {
         // For HTML content loading, allow errors if DEBUG is enabled
         if (defined('DEBUG') && DEBUG) {
