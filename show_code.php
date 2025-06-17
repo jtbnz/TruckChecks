@@ -251,19 +251,51 @@ try {
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $host = $_SERVER['HTTP_HOST'];
         
-        // Get the current script's directory path
+        // Since this is a component loaded by admin.php, we need to determine the correct path
+        // Method 1: Use SCRIPT_NAME (points to admin.php)
         $current_script_path = $_SERVER['SCRIPT_NAME']; // e.g., /admin.php or /subdir/admin.php
         $current_dir = dirname($current_script_path); // e.g., / or /subdir
         
-        // Normalize the directory path
-        if ($current_dir === '/' || $current_dir === '\\' || $current_dir === '.') {
-            $current_dir = '';
+        // Method 2: Use REQUEST_URI to get the actual path being accessed
+        $request_uri = $_SERVER['REQUEST_URI'];
+        $request_path = parse_url($request_uri, PHP_URL_PATH);
+        $request_dir = dirname($request_path);
+        
+        // Method 3: Use __DIR__ to get the actual file system path and convert to web path
+        $file_dir = __DIR__;
+        $document_root = $_SERVER['DOCUMENT_ROOT'];
+        $web_path = str_replace($document_root, '', $file_dir);
+        $web_path = str_replace('\\', '/', $web_path); // Convert Windows paths
+        
+        // Choose the most appropriate method - prefer the web path from __DIR__
+        if (!empty($web_path) && $web_path !== '/') {
+            $current_dir = $web_path;
+        } else {
+            // Fallback to script name method
+            if ($current_dir === '/' || $current_dir === '\\' || $current_dir === '.') {
+                $current_dir = '';
+            }
         }
         
-        // Construct the full URL to set_security_cookie.php in the same directory as the current script
+        // Ensure no double slashes
+        $current_dir = rtrim($current_dir, '/');
+        
+        // Construct the full URL to set_security_cookie.php in the same directory as this file
         $qr_cookie_setter_url = $protocol . $host . $current_dir . '/set_security_cookie.php';
 
         $qr_data = $qr_cookie_setter_url . '?code=' . urlencode($current_code) . '&station_id=' . urlencode($station_id) . '&station_name=' . urlencode($station_name);
+        
+        // Debug output to verify the URL construction
+        echo "<!-- DEBUG INFO:
+        SCRIPT_NAME: " . $_SERVER['SCRIPT_NAME'] . "
+        REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "
+        __DIR__: " . __DIR__ . "
+        DOCUMENT_ROOT: " . $_SERVER['DOCUMENT_ROOT'] . "
+        Web Path: " . $web_path . "
+        Final Current Dir: " . $current_dir . "
+        QR Cookie Setter URL: " . $qr_cookie_setter_url . "
+        Full QR Data: " . $qr_data . "
+        -->";
         
         // Generate the QR code
         $result = Builder::create()
