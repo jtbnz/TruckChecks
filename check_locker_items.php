@@ -27,6 +27,76 @@ try {
     error_log("Station context error: " . $e->getMessage());
 }
 
+// If no station context but we have security codes available, try to determine station from security code
+if (!$current_station) {
+    $security_code = null;
+    
+    // Check for security code in various sources
+    if (isset($_SESSION['security_code'])) {
+        $security_code = $_SESSION['security_code'];
+    } elseif (isset($_COOKIE['security_code'])) {
+        $security_code = $_COOKIE['security_code'];
+    }
+    
+    // Also check for station-specific security codes in session/cookies
+    if (!$security_code) {
+        foreach ($_SESSION as $key => $value) {
+            if (strpos($key, 'security_code_station_') === 0) {
+                $security_code = $value;
+                $station_id = str_replace('security_code_station_', '', $key);
+                break;
+            }
+        }
+        
+        if (!$security_code) {
+            foreach ($_COOKIE as $key => $value) {
+                if (strpos($key, 'security_code_station_') === 0) {
+                    $security_code = $value;
+                    $station_id = str_replace('security_code_station_', '', $key);
+                    break;
+                }
+            }
+        }
+    }
+    
+    // If we found a security code, try to determine which station it belongs to
+    if ($security_code) {
+        try {
+            if (isset($station_id)) {
+                // We already know the station ID from the cookie/session key
+                $station_query = $db->prepare("SELECT * FROM stations WHERE id = ?");
+                $station_query->execute([$station_id]);
+                $station = $station_query->fetch(PDO::FETCH_ASSOC);
+                
+                // Verify the security code is valid for this station
+                if ($station && is_code_valid($db, $security_code, $station_id)) {
+                    $current_station = $station;
+                    // Set station context for this session
+                    $_SESSION['current_station_id'] = $station_id;
+                }
+            } else {
+                // Search all stations to find which one this security code belongs to
+                $stations_query = $db->prepare("
+                    SELECT s.*, ss.setting_value as security_code
+                    FROM stations s
+                    JOIN station_settings ss ON s.id = ss.station_id
+                    WHERE ss.setting_key = 'security_code' AND ss.setting_value = ?
+                ");
+                $stations_query->execute([$security_code]);
+                $station = $stations_query->fetch(PDO::FETCH_ASSOC);
+                
+                if ($station) {
+                    $current_station = $station;
+                    // Set station context for this session
+                    $_SESSION['current_station_id'] = $station['id'];
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Security code station detection error: " . $e->getMessage());
+        }
+    }
+}
+
 // Read the cookie value for color blind mode
 $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
 
