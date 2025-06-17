@@ -297,8 +297,24 @@ $qr_code_target_base_url = $protocol . $host . rtrim(dirname($_SERVER['SCRIPT_NA
             $lockers = $query_lockers->fetchAll(PDO::FETCH_ASSOC);
             ?>
 
-            <?php if (!empty($lockers)): ?>
-                <div class="locker-grid">
+            <div class="locker-grid">
+                <?php
+                // Add truck-specific QR code for direct access to truck
+                $truck_check_url = $qr_code_target_base_url . '/check_locker_items.php?truck_id=' . $truck['id'];
+                $result_truck_qr = Builder::create()
+                    ->writer(new PngWriter())->data($truck_check_url)->encoding(new Encoding('UTF-8'))
+                    ->errorCorrectionLevel(new ErrorCorrectionLevelHigh())->size(150)->margin(5)->build();
+                $qrcode_base64_truck = base64_encode($result_truck_qr->getString());
+                ?>
+                <div class="locker-item" style="border: 2px solid #28a745; background-color: #d4edda;">
+                    <p style="color: #155724; font-weight: bold;">TRUCK ACCESS - <?= htmlspecialchars($truck['name']) ?></p>
+                    <a href="<?= htmlspecialchars($truck_check_url) ?>" target="_blank">
+                        <img src="data:image/png;base64,<?= $qrcode_base64_truck ?>" alt="Truck QR Code for <?= htmlspecialchars($truck['name']) ?>">
+                    </a>
+                    <p style="font-size: 11px; color: #155724; margin-top: 5px;">Scan to access truck</p>
+                </div>
+
+                <?php if (!empty($lockers)): ?>
                     <?php foreach ($lockers as $locker): ?>
                         <?php
                         // URL for individual locker check (points to check_locker_items.php at the application root)
@@ -315,10 +331,10 @@ $qr_code_target_base_url = $protocol . $host . rtrim(dirname($_SERVER['SCRIPT_NA
                             </a>
                         </div>
                     <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <p style="text-align:center; color:#666;">No lockers found for this truck.</p>
-            <?php endif; ?>
+                <?php else: ?>
+                    <p style="text-align:center; color:#666;">No lockers found for this truck.</p>
+                <?php endif; ?>
+            </div>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
