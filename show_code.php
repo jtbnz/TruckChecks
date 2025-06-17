@@ -250,15 +250,18 @@ try {
         // Determine the base URL more reliably
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $host = $_SERVER['HTTP_HOST'];
-        // Assuming admin.php is in the root, and set_security_cookie.php is also in the root.
-        // If admin.php is in a subdirectory, adjust path to set_security_cookie.php accordingly.
-        $base_path = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\'); // Path to current script (admin.php)
-        if ($base_path === '/' || $base_path === '') { // If admin.php is in root
-             $qr_cookie_setter_url = $protocol . $host . '/set_security_cookie.php';
-        } else { // If admin.php is in a subdir, assume set_security_cookie.php is one level up or in root
-            // This might need adjustment based on actual file structure
-            $qr_cookie_setter_url = $protocol . $host . '/set_security_cookie.php'; // Simplification: assume it's at root
+        
+        // Get the current script's directory path
+        $current_script_path = $_SERVER['SCRIPT_NAME']; // e.g., /admin.php or /subdir/admin.php
+        $current_dir = dirname($current_script_path); // e.g., / or /subdir
+        
+        // Normalize the directory path
+        if ($current_dir === '/' || $current_dir === '\\' || $current_dir === '.') {
+            $current_dir = '';
         }
+        
+        // Construct the full URL to set_security_cookie.php in the same directory as the current script
+        $qr_cookie_setter_url = $protocol . $host . $current_dir . '/set_security_cookie.php';
 
         $qr_data = $qr_cookie_setter_url . '?code=' . urlencode($current_code) . '&station_id=' . urlencode($station_id) . '&station_name=' . urlencode($station_name);
         
