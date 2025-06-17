@@ -206,6 +206,18 @@ if ($current_station) {
 $selected_truck_id = isset($_GET['truck_id']) ? $_GET['truck_id'] : null;
 $selected_locker_id = isset($_GET['locker_id']) ? $_GET['locker_id'] : null;
 
+// Auto-select first truck if no truck selected but we have a valid station context and trucks available
+if (!$selected_truck_id && $current_station && !empty($trucks)) {
+    $selected_truck_id = $trucks[0]['id'];
+    // Redirect to include the truck_id in the URL for consistency
+    $redirect_url = 'check_locker_items.php?truck_id=' . $selected_truck_id;
+    if ($selected_locker_id) {
+        $redirect_url .= '&locker_id=' . $selected_locker_id;
+    }
+    header('Location: ' . $redirect_url);
+    exit;
+}
+
 // Initialize variables
 $lockers = [];
 $items = [];

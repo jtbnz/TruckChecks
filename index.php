@@ -302,6 +302,22 @@ $locker_statuses = get_all_locker_statuses($locker_ids, $db, $colours);
 </head>
 <body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
 
+<!-- DEBUG INFO -->
+<?php if (isset($_GET['debug']) || (isset($_COOKIE['debug_mode']) && $_COOKIE['debug_mode'] === 'true')): ?>
+<div style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; font-size: 12px; z-index: 9999; max-width: 300px;">
+    <strong>DEBUG INFO:</strong><br>
+    <strong>Current Station ID:</strong> <?= $currentStation ? $currentStation['id'] : 'null' ?><br>
+    <strong>Current Station Name:</strong> <?= $currentStation ? htmlspecialchars($currentStation['name']) : 'null' ?><br>
+    <strong>Session Station ID:</strong> <?= $_SESSION['current_station_id'] ?? 'null' ?><br>
+    <strong>Cookie Station:</strong> <?= $_COOKIE['preferred_station'] ?? 'null' ?><br>
+    <strong>Total Stations:</strong> <?= count($stations) ?><br>
+    <strong>Available Stations:</strong> <?= implode(', ', array_map(function($s) { return $s['name']; }, $stations)) ?><br>
+    <strong>Trucks Count:</strong> <?= count($trucks) ?><br>
+    <a href="?debug=1" style="color: yellow;">Refresh Debug</a> |
+    <a href="javascript:document.cookie='debug_mode=false; path=/'; location.reload();" style="color: yellow;">Hide</a>
+</div>
+<?php endif; ?>
+
 <?php if ($currentStation && count($stations) > 1): ?>
     <script>
     function changeStation() {

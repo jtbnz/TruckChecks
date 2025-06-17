@@ -144,7 +144,24 @@ if (!empty($security_code)) {
     ];
 }
 
-// 3. Locker QR Codes
+// 3. Truck QR Codes (for direct truck access)
+$trucks_query = $pdo->prepare('SELECT DISTINCT t.id, t.name FROM trucks t WHERE t.station_id = :station_id ORDER BY t.name');
+$trucks_query->execute(['station_id' => $station['id']]);
+$trucks = $trucks_query->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($trucks as $truck) {
+    $truck_check_url = $web_root_url . '/check_locker_items.php?truck_id=' . $truck['id'];
+    $all_qr_items[] = [
+        'type' => 'truck',
+        'label' => 'TRUCK: ' . $truck['name'],
+        'url' => $truck_check_url,
+        'font_size' => 7,
+        'font_style' => 'B',
+        'text_color' => [40, 167, 69] // Green
+    ];
+}
+
+// 4. Locker QR Codes
 foreach ($lockers as $locker) {
     $locker_check_url = $web_root_url . '/check_locker_items.php?truck_id=' . $locker['truck_id'] . '&locker_id=' . $locker['locker_id'] . '&station_id=' . $station['id'];
     $all_qr_items[] = [
