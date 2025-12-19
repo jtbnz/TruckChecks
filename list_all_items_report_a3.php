@@ -1,6 +1,5 @@
 <?php
 require_once('vendor/autoload.php');
-use TCPDF;
 
 include('config.php');
 include 'db.php'; 

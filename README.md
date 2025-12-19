@@ -30,7 +30,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 
 ### Prerequisites
 
-- PHP 7.x or higher
+- PHP 8.0 or higher (PHP 8.3+ recommended, tested with PHP 8.4)
 - MySQL or MariaDB
 - Docker (optional, for containerized deployment)
 

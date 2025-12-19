@@ -1,6 +1,8 @@
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Install vi, nano, and MySQL extensions
+# Note: This image supports PHP 8.0, 8.1, 8.2, 8.3, and 8.4
+# Change the version in the FROM statement to use a different PHP version
 RUN apt-get update && apt-get install -y \
     vim \
     nano \
