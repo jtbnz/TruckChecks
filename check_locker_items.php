@@ -9,17 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Check if the version session variable is not set
-if (!isset($_SESSION['version'])) {
-    // Get the latest Git tag version
-    $version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-    // Set the session variable
-    $_SESSION['version'] = $version;
-} else {
-    // Use the already set session variable
-    $version = $_SESSION['version'];
-}
+$version = getVersion();
 
 // Read the cookie value
 $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;

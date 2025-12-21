@@ -32,12 +32,7 @@ if (!isset($_COOKIE['logged_in_' . DB_NAME]) || $_COOKIE['logged_in_' . DB_NAME]
 
 $showButton = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 
-// refresh the session variable every time in this page
-// Get the latest Git tag version
-$version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
-
-// Set the session variable
-$_SESSION['version'] = $version;
+$version = getVersion();
 
 ?>
 

@@ -8,7 +8,7 @@ session_start();
 include 'db.php';
 
 
-$version = trim(exec('git describe --tags $(git rev-list --tags --max-count=1)'));
+$version = getVersion();
 //IS_DEMO = isset($_SESSION['IS_DEMO']) && $_SESSION['IS_DEMO'] === true;
 ?>
 

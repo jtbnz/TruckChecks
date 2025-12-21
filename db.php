@@ -4,6 +4,17 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 include('config.php');
+
+/**
+ * Get application version from VERSION file
+ */
+function getVersion(): string {
+    $versionFile = __DIR__ . '/VERSION';
+    if (file_exists($versionFile)) {
+        return trim(file_get_contents($versionFile));
+    }
+    return 'unknown';
+}
 if (DEBUG) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
