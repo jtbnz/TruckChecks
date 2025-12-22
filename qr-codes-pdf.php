@@ -4,9 +4,6 @@ require_once('vendor/autoload.php');
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 
-
-use TCPDF;
-
 include 'db.php'; 
 $db = get_db_connection();
 
