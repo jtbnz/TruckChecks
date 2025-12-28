@@ -1,3 +1,10 @@
 # Ignore config.php file to protect sensitive credentials
 config.php
 test.php
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store

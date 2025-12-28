@@ -25,6 +25,7 @@ Truck Checks is a web application designed to manage and monitor the inventory o
 - **Interactive Quiz**: Users can participate in a quiz where they guess the location of an item. The quiz tracks the number of attempts and calculates a total score based on the number of correct guesses.
 - **Changeover Management**: Facilitate the transfer of equipment between trucks during shift changes or crew rotations, ensuring accountability and proper documentation of all transferred items.
 - **Audit Trail**: Complete audit logging for data deletions with automatic triggers.
+- **Service Workers & Progressive Enhancement**: Dynamic status updates without page reloads, offline support, and improved performance through intelligent caching.
 
 ## Installation
 
@@ -195,6 +196,23 @@ The application includes several key tables:
 - **audit_log**: Tracks all data deletions with complete row data in JSON format
 - **trucks, lockers, items, checks**: Core inventory management tables
 - **swap tables**: Handle equipment changeovers between trucks
+
+## Service Workers & Progressive Web Features
+
+TruckChecks now includes service worker support for improved performance and offline capabilities:
+
+- **Dynamic Updates**: The status page updates automatically without full page reloads, providing a smoother user experience
+- **Offline Support**: Static assets are cached for offline viewing when network is unavailable
+- **Reduced Bandwidth**: Only JSON data is transferred during updates (~90% reduction vs. full page reload)
+- **Background Sync**: API responses are cached for faster subsequent loads
+- **Progressive Enhancement**: Works in all browsers, with enhanced features in service worker-capable browsers
+
+For detailed information about the service worker implementation, see [SERVICE_WORKER_README.md](SERVICE_WORKER_README.md).
+
+To test service worker functionality:
+1. Visit `/service-worker-test.html` to see the service worker status and cache information
+2. Open browser DevTools > Application > Service Workers to inspect registration
+3. Watch the console for dynamic update logs on the main status page
 
 ## Things to Do
 

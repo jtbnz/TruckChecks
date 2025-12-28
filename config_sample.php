@@ -25,6 +25,7 @@ optional add an .htaccess to further restrict access
  if (!defined('REFRESH'))   define('REFRESH'  , 30000); // 30000 = 30 seconds this is how often the main page will auto refresh
  if (!defined('RANDORDER')) define('RANDORDER', true); // Randomize the order of the locker items on the check page
  if (!defined('DEBUG'))     define('DEBUG'    , false); // Set to true to enable debugging
+ if (!defined('CHECKPROTECT')) define('CHECKPROTECT', false); // Set to true to enable protection code for check pages
 
  // IP Geolocation API Key for ipgeolocation.io
  // Get your free API key from https://ipgeolocation.io/

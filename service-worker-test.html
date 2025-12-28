@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker Test - TruckChecks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .status.success {
+            background-color: #28a745;
+            color: white;
+        }
+        .status.error {
+            background-color: #dc3545;
+            color: white;
+        }
+        .status.pending {
+            background-color: #ffc107;
+            color: black;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <h1>Service Worker Test Page</h1>
+    
+    <div class="test-card">
+        <h2>Service Worker Status</h2>
+        <p>Registration Status: <span id="sw-status" class="status pending">Checking...</span></p>
+        <p>Controller: <span id="sw-controller">-</span></p>
+        <p>State: <span id="sw-state">-</span></p>
+        <button onclick="checkServiceWorker()">Refresh Status</button>
+        <button onclick="unregisterServiceWorker()">Unregister</button>
+    </div>
+
+    <div class="test-card">
+        <h2>Cache Status</h2>
+        <p>Available Caches:</p>
+        <ul id="cache-list"></ul>
+        <button onclick="checkCaches()">Check Caches</button>
+        <button onclick="clearCaches()">Clear All Caches</button>
+    </div>
+
+    <div class="test-card">
+        <h2>API Test</h2>
+        <p>Test the API endpoint with the service worker:</p>
+        <button onclick="testAPI()">Test API Call</button>
+        <button onclick="testAPIOffline()">Test Offline Mode</button>
+        <pre id="api-result" style="background: #f8f9fa; padding: 10px; border-radius: 4px;"></pre>
+    </div>
+
+    <div class="test-card">
+        <h2>Event Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log"></div>
+    </div>
+
+    <script src="js/sw-register.js"></script>
+    <script>
+        // Override console.log to also show in UI
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLogEntry(args.join(' '));
+        };
+
+        function addLogEntry(message) {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function checkServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                document.getElementById('sw-status').textContent = 'Not Supported';
+                document.getElementById('sw-status').className = 'status error';
+                addLogEntry('Service Worker not supported in this browser');
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    document.getElementById('sw-status').textContent = 'Registered';
+                    document.getElementById('sw-status').className = 'status success';
+                    document.getElementById('sw-controller').textContent = navigator.serviceWorker.controller ? 'Active' : 'None';
+                    document.getElementById('sw-state').textContent = registration.active ? registration.active.state : 'None';
+                    addLogEntry('Service Worker is registered and active');
+                } else {
+                    document.getElementById('sw-status').textContent = 'Not Registered';
+                    document.getElementById('sw-status').className = 'status error';
+                    addLogEntry('Service Worker is not registered');
+                }
+            } catch (error) {
+                document.getElementById('sw-status').textContent = 'Error';
+                document.getElementById('sw-status').className = 'status error';
+                addLogEntry('Error checking Service Worker: ' + error.message);
+            }
+        }
+
+        async function unregisterServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                addLogEntry('Service Worker not supported');
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    await registration.unregister();
+                    addLogEntry('Service Worker unregistered successfully');
+                    checkServiceWorker();
+                } else {
+                    addLogEntry('No Service Worker to unregister');
+                }
+            } catch (error) {
+                addLogEntry('Error unregistering: ' + error.message);
+            }
+        }
+
+        async function checkCaches() {
+            if (!('caches' in window)) {
+                addLogEntry('Cache API not supported');
+                return;
+            }
+
+            try {
+                const cacheNames = await caches.keys();
+                const list = document.getElementById('cache-list');
+                list.innerHTML = '';
+                
+                if (cacheNames.length === 0) {
+                    list.innerHTML = '<li>No caches found</li>';
+                    addLogEntry('No caches found');
+                } else {
+                    for (const name of cacheNames) {
+                        const cache = await caches.open(name);
+                        const keys = await cache.keys();
+                        const li = document.createElement('li');
+                        li.textContent = `${name} (${keys.length} entries)`;
+                        list.appendChild(li);
+                    }
+                    addLogEntry(`Found ${cacheNames.length} cache(s)`);
+                }
+            } catch (error) {
+                addLogEntry('Error checking caches: ' + error.message);
+            }
+        }
+
+        async function clearCaches() {
+            if (!('caches' in window)) {
+                addLogEntry('Cache API not supported');
+                return;
+            }
+
+            try {
+                const cacheNames = await caches.keys();
+                for (const name of cacheNames) {
+                    await caches.delete(name);
+                }
+                addLogEntry(`Cleared ${cacheNames.length} cache(s)`);
+                checkCaches();
+            } catch (error) {
+                addLogEntry('Error clearing caches: ' + error.message);
+            }
+        }
+
+        async function testAPI() {
+            addLogEntry('Testing API endpoint...');
+            try {
+                const response = await fetch('api_status.php');
+                const data = await response.json();
+                document.getElementById('api-result').textContent = JSON.stringify(data, null, 2);
+                addLogEntry('API call successful: ' + response.status);
+            } catch (error) {
+                document.getElementById('api-result').textContent = 'Error: ' + error.message;
+                addLogEntry('API call failed: ' + error.message);
+            }
+        }
+
+        async function testAPIOffline() {
+            addLogEntry('Testing offline mode (using cached data)...');
+            // Note: This won't truly simulate offline mode, but will show if cached data exists
+            try {
+                const cache = await caches.open('truckChecks-api-v1');
+                const cachedResponse = await cache.match('api_status.php');
+                if (cachedResponse) {
+                    const data = await cachedResponse.json();
+                    document.getElementById('api-result').textContent = '[CACHED] ' + JSON.stringify(data, null, 2);
+                    addLogEntry('Cached data found and loaded');
+                } else {
+                    document.getElementById('api-result').textContent = 'No cached data available';
+                    addLogEntry('No cached data available');
+                }
+            } catch (error) {
+                document.getElementById('api-result').textContent = 'Error: ' + error.message;
+                addLogEntry('Error accessing cache: ' + error.message);
+            }
+        }
+
+        // Initial check on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                checkServiceWorker();
+                checkCaches();
+            }, 1000); // Wait a bit for SW registration to complete
+        });
+    </script>
+</body>
+</html>
