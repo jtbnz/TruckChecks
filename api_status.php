@@ -42,8 +42,14 @@ function get_locker_status($locker_id, $db, $colours) {
         return ['status' => $colours['red'], 'check' => null, 'missing_items' => []];
     }
 
-    // Check if the locker was checked in the last 7 days
-    $recent_check = (new DateTime())->diff(new DateTime($check['check_date']))->days < 6 && !$check['ignore_check'];
+    try {
+        // Check if the locker was checked in the last 7 days
+        $recent_check = (new DateTime())->diff(new DateTime($check['check_date']))->days < 6 && !$check['ignore_check'];
+    } catch (Exception $e) {
+        // If date parsing fails, treat as not recent
+        error_log('Invalid check_date in database: ' . $check['check_date']);
+        $recent_check = false;
+    }
 
     // Fetch missing items from the last check
     $query = $db->prepare('SELECT items.name FROM check_items INNER JOIN items ON check_items.item_id = items.id WHERE check_items.check_id = :check_id AND check_items.is_present = 0');
@@ -61,9 +67,15 @@ function get_locker_status($locker_id, $db, $colours) {
 
 // Function to convert UTC to NZST
 function convertToNZST($utcDate) {
-    $date = new DateTime($utcDate, new DateTimeZone('UTC'));
-    $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
-    return $date->format('Y-m-d H:i:s');
+    try {
+        $date = new DateTime($utcDate, new DateTimeZone('UTC'));
+        $date->setTimezone(new DateTimeZone('Pacific/Auckland')); // NZST timezone
+        return $date->format('Y-m-d H:i:s');
+    } catch (Exception $e) {
+        // If date is invalid, return as-is
+        error_log('Invalid date format in convertToNZST: ' . $utcDate);
+        return $utcDate;
+    }
 }
 
 $data = [

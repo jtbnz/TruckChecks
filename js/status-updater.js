@@ -112,8 +112,10 @@ class StatusUpdater {
 
                                 // Update the onclick handler to use updated data
                                 const lockerUrl = 'check_locker_items.php?truck_id=' + truck.id + '&locker_id=' + locker.id;
+                                // Escape JSON for safe attribute insertion
+                                const escapedMissingItems = this.escapeHtml(JSON.stringify(locker.missing_items));
                                 cell.setAttribute('onclick', 
-                                    `showLockerInfo('${this.escapeHtml(locker.name)}', '${this.escapeHtml(locker.last_checked)}', '${this.escapeHtml(locker.checked_by)}', ${JSON.stringify(locker.missing_items)}, '${lockerUrl}')`
+                                    `showLockerInfo('${this.escapeHtml(locker.name)}', '${this.escapeHtml(locker.last_checked)}', '${this.escapeHtml(locker.checked_by)}', ${escapedMissingItems}, '${lockerUrl}')`
                                 );
                             }
                         }
@@ -127,6 +129,10 @@ class StatusUpdater {
 
     // Helper function to escape HTML
     escapeHtml(text) {
+        // Handle null, undefined, and non-string values
+        if (text === null || text === undefined) {
+            return '';
+        }
         const map = {
             '&': '&amp;',
             '<': '&lt;',
@@ -134,7 +140,7 @@ class StatusUpdater {
             '"': '&quot;',
             "'": '&#039;'
         };
-        return text.replace(/[&<>"']/g, m => map[m]);
+        return String(text).replace(/[&<>"']/g, m => map[m]);
     }
 }
 

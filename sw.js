@@ -18,7 +18,8 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Service Worker: Caching static assets');
-                return cache.addAll(STATIC_ASSETS.map(url => new Request(url, { cache: 'reload' })))
+                // Use default cache behavior for better installation performance
+                return cache.addAll(STATIC_ASSETS)
                     .catch(err => {
                         console.log('Service Worker: Error caching static assets', err);
                         // Don't fail install if some assets can't be cached
@@ -103,7 +104,7 @@ self.addEventListener('fetch', (event) => {
                     return fetch(request)
                         .then((response) => {
                             // Don't cache POST requests or non-successful responses
-                            if (request.method !== 'GET' || !response || response.status !== 200) {
+                            if (request.method !== 'GET' || !response || !response.ok) {
                                 return response;
                             }
                             // Clone and cache the response
