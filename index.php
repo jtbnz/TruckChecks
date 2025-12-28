@@ -20,24 +20,12 @@ $version = getVersion();
     <meta name="description" content="Overview of current locker Status Check">
     <title>Truck Checks</title>
     <link rel="stylesheet" href="styles/styles.css?id=<?php  echo $version;  ?> ">
-    <script>
-        // Automatically refresh the page using the REFRESH interval in config.php
-        setTimeout(function(){
-            window.location.reload(1);
-        }, <?php echo REFRESH; ?>); 
-
-        // Function to display the last refreshed time in local browser time zone
-        function displayLastRefreshed() {
-            const now = new Date();
-            const formattedTime = now.toLocaleString(); // Local time string
-            document.getElementById('last-refreshed').textContent = 'Last refreshed at: ' + formattedTime;
-        }
-
-        // Run the function when the page loads
-        window.onload = displayLastRefreshed;
-    </script>
+    <!-- Service Worker Registration -->
+    <script src="js/sw-register.js" defer></script>
+    <!-- Status Updater for dynamic updates -->
+    <script src="js/status-updater.js" defer></script>
 </head>
-<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>">
+<body class="<?php echo IS_DEMO ? 'demo-mode' : ''; ?>" data-refresh-interval="<?php echo REFRESH; ?>">
 
 
 <?php
