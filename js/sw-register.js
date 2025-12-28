@@ -6,10 +6,11 @@ if ('serviceWorker' in navigator) {
             .then((registration) => {
                 console.log('Service Worker registered successfully:', registration.scope);
                 
-                // Check for updates periodically
+                // Check for updates periodically (every 5 minutes)
+                // This balances freshness with battery/performance impact
                 setInterval(() => {
                     registration.update();
-                }, 60000); // Check every minute
+                }, 300000); // Check every 5 minutes
 
                 // Listen for updates
                 registration.addEventListener('updatefound', () => {

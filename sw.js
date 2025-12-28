@@ -18,7 +18,9 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Service Worker: Caching static assets');
-                // Use default cache behavior for better installation performance
+                // Use default cache behavior (not 'reload') to avoid forcing fresh network requests
+                // during installation. This improves installation performance and allows the browser
+                // to use existing HTTP caches when available.
                 return cache.addAll(STATIC_ASSETS)
                     .catch(err => {
                         console.log('Service Worker: Error caching static assets', err);

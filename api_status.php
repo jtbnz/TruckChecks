@@ -12,6 +12,10 @@ if (!file_exists('config.php')) {
 session_start();
 include 'db.php';
 
+// Note: This API endpoint does not require authentication as it serves the same
+// data visible on the public index.php page. If the main status page becomes 
+// protected in the future, add authentication checks here as well.
+
 // Read the cookie value
 $colorBlindMode = isset($_COOKIE['color_blind_mode']) ? $_COOKIE['color_blind_mode'] : false;
 

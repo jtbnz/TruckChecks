@@ -9,8 +9,31 @@ class StatusUpdater {
     // Initialize the status updater
     init() {
         console.log('StatusUpdater: Initializing...');
+        this.buildLockerIndex();
         this.startAutoUpdate();
         this.displayLastRefreshed();
+    }
+
+    // Build an index of locker cells for O(1) lookup
+    buildLockerIndex() {
+        this.lockerIndex = new Map();
+        const truckListings = document.querySelectorAll('.truck-listing');
+        
+        truckListings.forEach(truckListing => {
+            const truckButton = truckListing.querySelector('.truck-button');
+            const truckName = truckButton ? truckButton.textContent.split(' - ')[0].trim() : null;
+            
+            if (truckName) {
+                const lockerCells = truckListing.querySelectorAll('.locker-cell');
+                lockerCells.forEach(cell => {
+                    const lockerName = cell.textContent.trim().replace('!', '').trim();
+                    const key = `${truckName}:${lockerName}`;
+                    this.lockerIndex.set(key, cell);
+                });
+            }
+        });
+        
+        console.log(`StatusUpdater: Indexed ${this.lockerIndex.size} locker cells`);
     }
 
     // Start automatic updates
@@ -80,47 +103,40 @@ class StatusUpdater {
             return;
         }
 
-        // Update each truck's lockers
+        // Update each truck's lockers using the index for O(1) lookup
         data.trucks.forEach(truck => {
             truck.lockers.forEach(locker => {
-                // Find the locker cell by its data attributes or ID
-                const lockerCells = document.querySelectorAll('.locker-cell');
-                lockerCells.forEach(cell => {
-                    // Check if this cell corresponds to the locker we're updating
-                    const cellText = cell.textContent.trim().replace('!', '').trim();
-                    if (cellText === locker.name) {
-                        // Get the parent container to identify the truck
-                        const truckContainer = cell.closest('.truck-listing');
-                        if (truckContainer) {
-                            const truckButton = truckContainer.querySelector('.truck-button');
-                            if (truckButton && truckButton.textContent.includes(truck.name)) {
-                                // Update background color
-                                cell.style.backgroundColor = locker.background_color;
-                                
-                                // Update badge for missing items
-                                const existingBadge = cell.querySelector('.badge');
-                                if (locker.has_missing_items && !existingBadge) {
-                                    // Add badge
-                                    const badge = document.createElement('span');
-                                    badge.className = 'badge';
-                                    badge.textContent = '!';
-                                    cell.appendChild(badge);
-                                } else if (!locker.has_missing_items && existingBadge) {
-                                    // Remove badge
-                                    existingBadge.remove();
-                                }
-
-                                // Update the onclick handler to use updated data
-                                const lockerUrl = 'check_locker_items.php?truck_id=' + truck.id + '&locker_id=' + locker.id;
-                                // Escape JSON for safe attribute insertion
-                                const escapedMissingItems = this.escapeHtml(JSON.stringify(locker.missing_items));
-                                cell.setAttribute('onclick', 
-                                    `showLockerInfo('${this.escapeHtml(locker.name)}', '${this.escapeHtml(locker.last_checked)}', '${this.escapeHtml(locker.checked_by)}', ${escapedMissingItems}, '${lockerUrl}')`
-                                );
-                            }
-                        }
+                const key = `${truck.name}:${locker.name}`;
+                const cell = this.lockerIndex.get(key);
+                
+                if (cell) {
+                    // Update background color
+                    cell.style.backgroundColor = locker.background_color;
+                    
+                    // Update badge for missing items
+                    const existingBadge = cell.querySelector('.badge');
+                    if (locker.has_missing_items && !existingBadge) {
+                        // Add badge
+                        const badge = document.createElement('span');
+                        badge.className = 'badge';
+                        badge.textContent = '!';
+                        cell.appendChild(badge);
+                    } else if (!locker.has_missing_items && existingBadge) {
+                        // Remove badge
+                        existingBadge.remove();
                     }
-                });
+
+                    // Update the onclick handler to use updated data
+                    const lockerUrl = 'check_locker_items.php?truck_id=' + truck.id + '&locker_id=' + locker.id;
+                    // JSON encode missing items - escaping happens at PHP render time in original
+                    // For JS, we need to properly escape for HTML attribute context
+                    const missingItemsJson = JSON.stringify(locker.missing_items)
+                        .replace(/\\/g, '\\\\')
+                        .replace(/'/g, "\\'");
+                    cell.setAttribute('onclick', 
+                        `showLockerInfo('${this.escapeHtml(locker.name)}', '${this.escapeHtml(locker.last_checked)}', '${this.escapeHtml(locker.checked_by)}', ${missingItemsJson}, '${lockerUrl}')`
+                    );
+                }
             });
         });
 
