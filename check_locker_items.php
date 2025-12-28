@@ -201,6 +201,8 @@ if ($selected_truck_id) {
     <title>Check Locker Items</title>
     <link rel="stylesheet" href="styles/check_locker_items.css?id=<?php echo $version; ?>">
     <link rel="stylesheet" href="styles/styles.css?id=<?php echo $version; ?>">
+    <!-- Service Worker Registration for offline support -->
+    <script src="js/sw-register.js" defer></script>
     <script>
         function checkProtection() {
             const CHECKPROTECT = <?php echo CHECKPROTECT ? 'true' : 'false'; ?>;
