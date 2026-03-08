@@ -41,6 +41,9 @@ $version = getVersion();
 <!-- <img src="images/scania.png" alt="scania" class="truck-image"> -->
 
 <div class="button-container" style="margin-top: 20px;">
+    <a href="maintain.php" class="button touch-button">Maintain (Trucks, Lockers, Items)</a>
+</div>
+<div class="button-container" style="margin-top: 20px;">
     <a href="maintain_trucks.php" class="button touch-button">Maintain Trucks</a>
     <a href="maintain_lockers.php" class="button touch-button">Maintain Lockers</a>
     <a href="maintain_locker_items.php" class="button touch-button">Maintain Locker Items</a>
