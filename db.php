@@ -40,6 +40,11 @@ function get_db_connection() {
 
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+
+        // Run database migrations to apply any missing schema changes
+        require_once __DIR__ . '/db_migrate.php';
+        run_migrations($pdo);
+
         return $pdo;
     } catch (PDOException $e) {
         // Log the error message to a file or another logging system
