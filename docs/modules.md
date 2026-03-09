@@ -49,13 +49,43 @@ Complete reference for all application modules, their responsibilities, data flo
 | `IP_API_KEY` | string | ipgeolocation.io API key (empty to disable) |
 
 ### db.php
-**Purpose**: Database connection factory and version management.
+**Purpose**: Database connection factory, version management, and migration trigger.
 
 **Functions**:
-- `get_db_connection(): PDO` — Returns PDO connection with exception mode, associative fetch, native prepared statements.
+- `get_db_connection(): PDO` — Returns PDO connection with exception mode, associative fetch, native prepared statements. **Automatically calls `run_migrations()` on every connection** to ensure the schema is up to date.
 - `getVersion(): string` — Reads version from `VERSION` file. Used for cache busting and display.
 
 **Error handling**: Logs to `db_errors.log`, displays user-friendly message on connection failure.
+
+### db_migrate.php
+**Purpose**: Automatic database schema migration system. Required by `db.php` via `require_once` and executed on every `get_db_connection()` call.
+
+**IMPORTANT**: Any database schema change (new table, new column, new trigger) **must** be added here as a migration. Never rely on manual SQL — multiple deployed instances may be at different schema versions.
+
+**How it works**:
+- `run_migrations(PDO $db)` iterates through a list of migration function names
+- Each migration checks `information_schema` before applying (idempotent — safe to run repeatedly)
+- Failures are logged to `db_errors.log` without crashing the page
+- Three helper functions: `table_exists()`, `column_exists()`, `trigger_exists()`
+
+**Adding a new migration**:
+1. Write a function named `migrate_your_change_name(PDO $db)` that checks before applying
+2. Add `'your_change_name'` to the `$migrations` array in `run_migrations()`
+
+**Current migrations** (in execution order):
+
+| Migration | Schema Change |
+|-----------|--------------|
+| `add_check_notes_table` | `check_notes` table for locker check notes |
+| `add_swap_tables` | `swap`, `swap_items`, `swap_notes` tables for changeover tracking |
+| `add_ignore_check_column` | `ignore_check` column on `checks` table |
+| `add_protection_codes_table` | `protection_codes` table with initial random code |
+| `add_relief_column` | `relief` boolean column on `trucks` table |
+| `add_locker_item_deletion_log_table` | `locker_item_deletion_log` legacy deletion tracking |
+| `add_audit_log_table` | `audit_log` table for deletion audit trail |
+| `add_audit_triggers` | 4 BEFORE DELETE triggers on items, lockers, trucks, checks |
+| `add_login_log_table` | `login_log` table with indexes for login attempt tracking |
+| `add_notes_column_to_lockers` | `notes` TEXT column on `lockers` table |
 
 ### VERSION
 Plain text file containing the current version string (e.g., `v3.2.01`). Read by `getVersion()` in `db.php`.

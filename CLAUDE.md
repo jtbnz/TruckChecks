@@ -65,6 +65,17 @@ if (isset($_GET['ajax'])) {
 - **Edit**: `POST` with `isset($_POST['edit_xxx'])`, triggered by `?edit_id=XX` in URL
 - **Delete**: `GET` with `isset($_GET['delete_xxx_id'])`, with `confirm()` dialog
 
+## Database Migrations
+
+**Any schema change must be added to `db_migrate.php`** — never rely on manual SQL. Migrations run automatically on every `get_db_connection()` call. Each migration is idempotent (checks `information_schema` before applying).
+
+To add a new migration:
+1. Add a function `migrate_your_change(PDO $db)` in `db_migrate.php`
+2. Use `table_exists()`, `column_exists()`, or `trigger_exists()` to check before applying
+3. Add the function name (without `migrate_` prefix) to the `$migrations` array in `run_migrations()`
+
+This ensures all deployed instances (which may be at different schema versions) stay in sync automatically.
+
 ## Database Schema (key relationships)
 
 ```
