@@ -19,49 +19,84 @@ function run_migrations(PDO $db): void {
         'add_audit_triggers',
         'add_login_log_table',
         'add_notes_column_to_lockers',
+        'add_email_addresses_table',
     ];
 
     // Buffer all output so migrations never leak text into AJAX responses
     ob_start();
     foreach ($migrations as $migration) {
         try {
-            call_user_func('migrate_' . $migration, $db);
-        } catch (\Throwable $e) {
-            error_log("Migration '$migration' failed: " . $e->getMessage(), 3, __DIR__ . '/db_errors.log');
+            $func = 'migrate_' . $migration;
+            if (function_exists($func)) {
+                call_user_func($func, $db);
+            }
+        } catch (\Exception $e) {
+            @error_log("Migration '$migration' failed: " . $e->getMessage() . "\n", 3, __DIR__ . '/db_errors.log');
+        } catch (\Error $e) {
+            @error_log("Migration '$migration' error: " . $e->getMessage() . "\n", 3, __DIR__ . '/db_errors.log');
         }
     }
     $output = ob_get_clean();
     // Log any unexpected output from migrations
     if (!empty($output)) {
-        error_log("Migration output captured: " . $output, 3, __DIR__ . '/db_errors.log');
+        @error_log("Migration output captured: " . $output . "\n", 3, __DIR__ . '/db_errors.log');
     }
 }
 
 // ─── Helper: check if a table exists ────────────────────────
 function table_exists(PDO $db, string $table): bool {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?");
-    $stmt->execute([DB_NAME, $table]);
-    return (int)$stmt->fetchColumn() > 0;
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?");
+        $stmt->execute([DB_NAME, $table]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (\Exception $e) {
+        return false;
+    }
 }
 
 // ─── Helper: check if a column exists ───────────────────────
 function column_exists(PDO $db, string $table, string $column): bool {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?");
-    $stmt->execute([DB_NAME, $table, $column]);
-    return (int)$stmt->fetchColumn() > 0;
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?");
+        $stmt->execute([DB_NAME, $table, $column]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (\Exception $e) {
+        return true; // Assume exists on error to avoid breaking ALTER
+    }
 }
 
 // ─── Helper: check if a trigger exists ──────────────────────
 function trigger_exists(PDO $db, string $trigger): bool {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = ? AND TRIGGER_NAME = ?");
-    $stmt->execute([DB_NAME, $trigger]);
-    return (int)$stmt->fetchColumn() > 0;
+    try {
+        $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = ? AND TRIGGER_NAME = ?");
+        $stmt->execute([DB_NAME, $trigger]);
+        return (int)$stmt->fetchColumn() > 0;
+    } catch (\Exception $e) {
+        return true; // Assume exists on error to avoid breaking CREATE TRIGGER
+    }
+}
+
+// ─── Helper: log migration messages safely ──────────────────
+function migration_log(string $message): void {
+    $logFile = __DIR__ . '/db_errors.log';
+    @error_log(date('[Y-m-d H:i:s] ') . $message . "\n", 3, $logFile);
+}
+
+// ─── Helper: safely execute SQL, return true on success ─────
+function safe_exec(PDO $db, string $sql): bool {
+    try {
+        $db->exec($sql);
+        return true;
+    } catch (\Exception $e) {
+        migration_log("SQL exec failed: " . $e->getMessage() . " | SQL: " . substr($sql, 0, 200));
+        return false;
+    }
 }
 
 // ─── Migration: check_notes table ───────────────────────────
 function migrate_add_check_notes_table(PDO $db): void {
     if (table_exists($db, 'check_notes')) return;
-    $db->exec("CREATE TABLE `check_notes` (
+    safe_exec($db, "CREATE TABLE `check_notes` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `check_id` INT NOT NULL,
         `note` TEXT NOT NULL,
@@ -72,7 +107,7 @@ function migrate_add_check_notes_table(PDO $db): void {
 // ─── Migration: swap tables (changeover system) ─────────────
 function migrate_add_swap_tables(PDO $db): void {
     if (!table_exists($db, 'swap')) {
-        $db->exec("CREATE TABLE `swap` (
+        safe_exec($db, "CREATE TABLE `swap` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
             `locker_id` INT DEFAULT NULL,
             `swapped_by` VARCHAR(255) DEFAULT NULL,
@@ -82,7 +117,7 @@ function migrate_add_swap_tables(PDO $db): void {
         )");
     }
     if (!table_exists($db, 'swap_items')) {
-        $db->exec("CREATE TABLE `swap_items` (
+        safe_exec($db, "CREATE TABLE `swap_items` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
             `swap_id` INT DEFAULT NULL,
             `item_id` INT DEFAULT NULL,
@@ -92,7 +127,7 @@ function migrate_add_swap_tables(PDO $db): void {
         )");
     }
     if (!table_exists($db, 'swap_notes')) {
-        $db->exec("CREATE TABLE `swap_notes` (
+        safe_exec($db, "CREATE TABLE `swap_notes` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
             `swap_id` INT NOT NULL,
             `note` TEXT NOT NULL,
@@ -104,30 +139,31 @@ function migrate_add_swap_tables(PDO $db): void {
 // ─── Migration: ignore_check column on checks ───────────────
 function migrate_add_ignore_check_column(PDO $db): void {
     if (column_exists($db, 'checks', 'ignore_check')) return;
-    $db->exec("ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`");
+    safe_exec($db, "ALTER TABLE `checks` ADD `ignore_check` BOOLEAN NOT NULL DEFAULT FALSE AFTER `checked_by`");
 }
 
 // ─── Migration: protection_codes table ──────────────────────
 function migrate_add_protection_codes_table(PDO $db): void {
     if (table_exists($db, 'protection_codes')) return;
-    $db->exec("CREATE TABLE `protection_codes` (
+    if (safe_exec($db, "CREATE TABLE `protection_codes` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `code` VARCHAR(255) NOT NULL,
         `description` TEXT
-    )");
-    $db->exec("INSERT INTO `protection_codes` (`code`, `description`) VALUES (SUBSTRING(MD5(RAND()) FROM 1 FOR 32), 'Initial code')");
+    )")) {
+        safe_exec($db, "INSERT INTO `protection_codes` (`code`, `description`) VALUES (SUBSTRING(MD5(RAND()) FROM 1 FOR 32), 'Initial code')");
+    }
 }
 
 // ─── Migration: relief column on trucks ─────────────────────
 function migrate_add_relief_column(PDO $db): void {
     if (column_exists($db, 'trucks', 'relief')) return;
-    $db->exec("ALTER TABLE `trucks` ADD `relief` BOOLEAN NOT NULL DEFAULT FALSE");
+    safe_exec($db, "ALTER TABLE `trucks` ADD `relief` BOOLEAN NOT NULL DEFAULT FALSE");
 }
 
 // ─── Migration: locker_item_deletion_log table ──────────────
 function migrate_add_locker_item_deletion_log_table(PDO $db): void {
     if (table_exists($db, 'locker_item_deletion_log')) return;
-    $db->exec("CREATE TABLE `locker_item_deletion_log` (
+    safe_exec($db, "CREATE TABLE `locker_item_deletion_log` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `truck_name` VARCHAR(255),
         `locker_name` VARCHAR(255),
@@ -139,7 +175,7 @@ function migrate_add_locker_item_deletion_log_table(PDO $db): void {
 // ─── Migration: audit_log table ─────────────────────────────
 function migrate_add_audit_log_table(PDO $db): void {
     if (table_exists($db, 'audit_log')) return;
-    $db->exec("CREATE TABLE `audit_log` (
+    safe_exec($db, "CREATE TABLE `audit_log` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `table_name` VARCHAR(50) NOT NULL,
         `record_id` INT NOT NULL,
@@ -150,11 +186,13 @@ function migrate_add_audit_log_table(PDO $db): void {
 }
 
 // ─── Migration: audit triggers ──────────────────────────────
+// Note: CREATE TRIGGER requires TRIGGER privilege which some shared
+// hosting providers do not grant. Failures are logged and skipped.
 function migrate_add_audit_triggers(PDO $db): void {
     if (!table_exists($db, 'audit_log')) return;
 
     if (!trigger_exists($db, 'audit_items_delete')) {
-        $db->exec("
+        safe_exec($db, "
             CREATE TRIGGER audit_items_delete
                 BEFORE DELETE ON items
                 FOR EACH ROW
@@ -167,7 +205,7 @@ function migrate_add_audit_triggers(PDO $db): void {
     }
 
     if (!trigger_exists($db, 'audit_lockers_delete')) {
-        $db->exec("
+        safe_exec($db, "
             CREATE TRIGGER audit_lockers_delete
                 BEFORE DELETE ON lockers
                 FOR EACH ROW
@@ -181,7 +219,7 @@ function migrate_add_audit_triggers(PDO $db): void {
     }
 
     if (!trigger_exists($db, 'audit_trucks_delete')) {
-        $db->exec("
+        safe_exec($db, "
             CREATE TRIGGER audit_trucks_delete
                 BEFORE DELETE ON trucks
                 FOR EACH ROW
@@ -194,7 +232,7 @@ function migrate_add_audit_triggers(PDO $db): void {
     }
 
     if (!trigger_exists($db, 'audit_checks_delete')) {
-        $db->exec("
+        safe_exec($db, "
             CREATE TRIGGER audit_checks_delete
                 BEFORE DELETE ON checks
                 FOR EACH ROW
@@ -212,7 +250,7 @@ function migrate_add_audit_triggers(PDO $db): void {
 // ─── Migration: login_log table ─────────────────────────────
 function migrate_add_login_log_table(PDO $db): void {
     if (table_exists($db, 'login_log')) return;
-    $db->exec("CREATE TABLE `login_log` (
+    safe_exec($db, "CREATE TABLE `login_log` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `ip_address` VARCHAR(45) NOT NULL,
         `user_agent` TEXT,
@@ -233,5 +271,14 @@ function migrate_add_login_log_table(PDO $db): void {
 // ─── Migration: notes column on lockers ─────────────────────
 function migrate_add_notes_column_to_lockers(PDO $db): void {
     if (column_exists($db, 'lockers', 'notes')) return;
-    $db->exec("ALTER TABLE `lockers` ADD `notes` TEXT AFTER `truck_id`");
+    safe_exec($db, "ALTER TABLE `lockers` ADD `notes` TEXT AFTER `truck_id`");
+}
+
+// ─── Migration: email_addresses table ───────────────────────
+function migrate_add_email_addresses_table(PDO $db): void {
+    if (table_exists($db, 'email_addresses')) return;
+    safe_exec($db, "CREATE TABLE `email_addresses` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `email` VARCHAR(255) NOT NULL
+    )");
 }

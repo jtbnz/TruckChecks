@@ -219,6 +219,26 @@ if (isset($_GET['ajax'])) {
         exit;
     }
 
+    if ($_GET['ajax'] === 'debug_info') {
+        $info = [
+            'php_version' => PHP_VERSION,
+            'db_connected' => true,
+        ];
+        try {
+            $info['tables'] = $db->query("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . DB_NAME . "'")->fetchAll(PDO::FETCH_COLUMN);
+        } catch (\Exception $e) {
+            $info['tables_error'] = $e->getMessage();
+        }
+        $logFile = __DIR__ . '/db_errors.log';
+        if (file_exists($logFile)) {
+            $info['migration_log'] = substr(file_get_contents($logFile), -2000);
+        } else {
+            $info['migration_log'] = 'No log file';
+        }
+        echo json_encode($info, JSON_PRETTY_PRINT);
+        exit;
+    }
+
     echo json_encode(['error' => 'Unknown action']);
     exit;
 }
