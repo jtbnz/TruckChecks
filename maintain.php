@@ -421,10 +421,14 @@ function ajax(method, endpoint, data) {
                     try {
                         resolve(JSON.parse(xhr.responseText));
                     } catch (e) {
-                        reject('Invalid response');
+                        console.error('AJAX parse error for ' + endpoint + ':', xhr.responseText.substring(0, 500));
+                        showToast('Server error - check console', 'error');
+                        reject('Invalid JSON from ' + endpoint);
                     }
                 } else {
-                    reject('Request failed');
+                    console.error('AJAX HTTP error for ' + endpoint + ': ' + xhr.status, xhr.responseText.substring(0, 500));
+                    showToast('Server error (' + xhr.status + ')', 'error');
+                    reject('HTTP ' + xhr.status);
                 }
             }
         };

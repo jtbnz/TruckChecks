@@ -15,13 +15,16 @@ function getVersion(): string {
     }
     return 'unknown';
 }
-if (DEBUG) {
+if (isset($_GET['ajax'])) {
+    // Never output errors directly during AJAX — they corrupt JSON responses
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(DEBUG ? E_ALL : 0);
+} elseif (DEBUG) {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
     error_reporting(E_ALL);
-    if (!isset($_GET['ajax'])) {
-        echo "Debug mode is on";
-    }
+    echo "Debug mode is on";
 } else {
     ini_set('display_errors', 0);
     ini_set('display_startup_errors', 0);
@@ -52,8 +55,12 @@ function get_db_connection() {
         // Log the error message to a file or another logging system
         error_log($e->getMessage(), 3, 'db_errors.log');
 
-        // Display a user-friendly error message (or redirect to an error page)
-        echo "<p>There was an error connecting to the database. Please try again later.</p>";
+        if (isset($_GET['ajax'])) {
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Database connection failed']);
+        } else {
+            echo "<p>There was an error connecting to the database. Please try again later.</p>";
+        }
 
         // Stop script execution
         exit;

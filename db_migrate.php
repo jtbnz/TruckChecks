@@ -21,12 +21,19 @@ function run_migrations(PDO $db): void {
         'add_notes_column_to_lockers',
     ];
 
+    // Buffer all output so migrations never leak text into AJAX responses
+    ob_start();
     foreach ($migrations as $migration) {
         try {
             call_user_func('migrate_' . $migration, $db);
-        } catch (PDOException $e) {
+        } catch (\Throwable $e) {
             error_log("Migration '$migration' failed: " . $e->getMessage(), 3, __DIR__ . '/db_errors.log');
         }
+    }
+    $output = ob_get_clean();
+    // Log any unexpected output from migrations
+    if (!empty($output)) {
+        error_log("Migration output captured: " . $output, 3, __DIR__ . '/db_errors.log');
     }
 }
 
