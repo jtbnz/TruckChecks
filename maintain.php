@@ -229,6 +229,11 @@ if (isset($_GET['ajax'])) {
         } catch (\Exception $e) {
             $info['tables_error'] = $e->getMessage();
         }
+        try {
+            $info['triggers'] = $db->query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = '" . DB_NAME . "'")->fetchAll(PDO::FETCH_COLUMN);
+        } catch (\Exception $e) {
+            $info['triggers_error'] = $e->getMessage();
+        }
         $logFile = __DIR__ . '/db_errors.log';
         if (file_exists($logFile)) {
             $info['migration_log'] = substr(file_get_contents($logFile), -2000);
@@ -236,6 +241,15 @@ if (isset($_GET['ajax'])) {
             $info['migration_log'] = 'No log file';
         }
         echo json_encode($info, JSON_PRETTY_PRINT);
+        exit;
+    }
+
+    if ($_GET['ajax'] === 'clear_log') {
+        $logFile = __DIR__ . '/db_errors.log';
+        if (file_exists($logFile)) {
+            @unlink($logFile);
+        }
+        echo json_encode(['success' => true]);
         exit;
     }
 
