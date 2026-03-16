@@ -183,6 +183,7 @@ if ($selected_truck_id) {
     } else {
         $items = [];
         $locker_notes = '';
+        $last_five_checks = [];
         $days_since_last_check_text = "Never Checked";
         $last_check_text = "";
     }
@@ -190,6 +191,7 @@ if ($selected_truck_id) {
     $lockers = [];
     $items = [];
     $locker_notes = '';
+    $last_five_checks = [];
     $days_since_last_check_text = "Never Checked";
     $last_check_text = "";
 }
@@ -228,19 +230,24 @@ if ($selected_truck_id) {
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Load the last checked-by name from localStorage
-            const lastCheckedBy = localStorage.getItem('lastCheckedBy');
             const checkedByInput = document.getElementById('checked_by');
+            if (!checkedByInput) return;
 
-            if (lastCheckedBy) {
-                checkedByInput.value = lastCheckedBy;
+            // Pre-fill from localStorage if the cookie didn't provide a value
+            if (!checkedByInput.value) {
+                const lastCheckedBy = localStorage.getItem('lastCheckedBy');
+                if (lastCheckedBy) {
+                    checkedByInput.value = lastCheckedBy;
+                }
             }
 
-            // Save the checked-by name to localStorage when the form is submitted
-            document.querySelector('form').addEventListener('submit', function() {
-                const checkedBy = checkedByInput.value;
-                localStorage.setItem('lastCheckedBy', checkedBy);
-            });
+            // Save to localStorage when the check form is submitted
+            const checkForm = checkedByInput.closest('form');
+            if (checkForm) {
+                checkForm.addEventListener('submit', function() {
+                    localStorage.setItem('lastCheckedBy', checkedByInput.value);
+                });
+            }
         });
 
         function toggleCheck(card) {
