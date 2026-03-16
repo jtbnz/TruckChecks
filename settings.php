@@ -1,6 +1,7 @@
 <?php
 
 include('config.php');
+include 'db.php';
 include 'templates/header.php';
 
 // Read the cookie value

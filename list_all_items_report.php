@@ -4,9 +4,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL); */
 
 include('config.php');
-include 'templates/header.php';
-// Include the database connection file
 require_once 'db.php';
+include 'templates/header.php';
 $db = get_db_connection();
 // Query to retrieve all items, including truck name and locker name, sorted by truck name and locker name
 

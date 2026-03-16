@@ -1,9 +1,6 @@
 <?php
 include('config.php');
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+include 'db.php';
 
 include 'templates/header.php';
 

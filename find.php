@@ -5,8 +5,8 @@ error_reporting(E_ALL); */
 
 
 include('config.php');
+include 'db.php';
 include 'templates/header.php';
-include 'db.php'; // Include the database connection file
 
 $db = get_db_connection();
 
