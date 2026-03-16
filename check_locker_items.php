@@ -136,6 +136,9 @@ if ($selected_truck_id) {
         ");
         $last_check_query->execute(['locker_id' => $selected_locker_id]);
         $last_notes = $last_check_query->fetchColumn();
+        if ($last_notes === false || $last_notes === null) {
+            $last_notes = '';
+        }
 
         // Fetch last check date and checked_by
         $last_check_query = $db->prepare("SELECT CONVERT_TZ(check_date,'+00:00', '+12:00') as check_date, checked_by FROM checks WHERE locker_id = :locker_id ORDER BY check_date DESC LIMIT 1");
@@ -339,7 +342,7 @@ if ($selected_truck_id) {
                     
                     <!-- New notes input field -->
                     <label for="notes">Any notes for this check?</label>
-                    <textarea id="notes" name="notes"><?php echo htmlspecialchars($last_notes); ?></textarea>
+                    <textarea id="notes" name="notes"><?php echo htmlspecialchars((string)$last_notes); ?></textarea>
 
                     <button type="submit" name="check_items" class="submit-button">Submit Checks</button>
                 </form>
@@ -355,7 +358,6 @@ if ($selected_truck_id) {
 <?php endif; ?>
 
 <footer>
-    <?php $version = $_SESSION['version']; ?>
     <p><a href="index.php" class="button touch-button">Return to Home</a></p>
 
     <!-- Display the last 5 checks -->
@@ -363,13 +365,13 @@ if ($selected_truck_id) {
         <h3>Last 5 Checks:</h3>
 
             <?php foreach ($last_five_checks as $check): ?>
-                <?= htmlspecialchars($check['checked_by']) ?> - <?= htmlspecialchars($check['check_date']) ?><br>
+                <?= htmlspecialchars((string)($check['checked_by'] ?? '')) ?> - <?= htmlspecialchars((string)($check['check_date'] ?? '')) ?><br>
             <?php endforeach; ?>
 
     </div>
     <p id="last-refreshed" style="margin-top: 10px;"></p>
     <div class="version-number">
-        Version: <?php echo htmlspecialchars($version); ?>
+        Version: <?php echo htmlspecialchars((string)$version); ?>
     </div>
 </footer>
 </body>

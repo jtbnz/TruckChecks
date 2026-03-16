@@ -32,6 +32,7 @@ if (isset($_GET['ajax'])) {
 }
 
 function get_db_connection() {
+    static $migrationsChecked = false;
 
     $charset = 'utf8mb4';
 
@@ -46,9 +47,11 @@ function get_db_connection() {
     try {
         $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
-        // Run database migrations to apply any missing schema changes
         require_once __DIR__ . '/db_migrate.php';
-        run_migrations($pdo);
+        if (!$migrationsChecked) {
+            ensure_migrations_current($pdo);
+            $migrationsChecked = true;
+        }
 
         return $pdo;
     } catch (PDOException $e) {

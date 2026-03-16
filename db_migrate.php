@@ -7,8 +7,8 @@
  * run repeatedly. Called from db.php after connection is established.
  */
 
-function run_migrations(PDO $db): void {
-    $migrations = [
+function get_migration_plan(): array {
+    return [
         // Core tables MUST be first — everything else depends on them
         'create_trucks_table',
         'create_lockers_table',
@@ -31,6 +31,43 @@ function run_migrations(PDO $db): void {
         // Triggers must come after all columns they reference exist
         'add_audit_triggers',
     ];
+}
+
+function get_migration_signature(): string {
+    return hash('sha256', implode('|', get_migration_plan()));
+}
+
+function ensure_migrations_current(PDO $db): void {
+    $signature = get_migration_signature();
+
+    // Fast path: check local file cache first (no DB hit)
+    if (migration_signature_cached($signature)) {
+        return;
+    }
+
+    // Slow path: check DB, run migrations if needed
+    if (get_runtime_meta($db, 'schema_migration_signature') === $signature) {
+        cache_migration_signature($signature);
+        return;
+    }
+
+    with_migration_lock(function () use ($db, $signature): void {
+        ensure_runtime_meta_table($db);
+
+        if (get_runtime_meta($db, 'schema_migration_signature') === $signature) {
+            cache_migration_signature($signature);
+            return;
+        }
+
+        run_migrations($db);
+        set_runtime_meta($db, 'schema_migration_signature', $signature);
+        set_runtime_meta($db, 'schema_migration_checked_at', gmdate('Y-m-d H:i:s'));
+        cache_migration_signature($signature);
+    });
+}
+
+function run_migrations(PDO $db): void {
+    $migrations = get_migration_plan();
 
     // Buffer all output so migrations never leak text into AJAX responses
     ob_start();
@@ -86,6 +123,80 @@ function trigger_exists(PDO $db, string $trigger): bool {
 
 function migration_log(string $message): void {
     @error_log(date('[Y-m-d H:i:s] ') . $message . "\n", 3, __DIR__ . '/db_errors.log');
+}
+
+function ensure_runtime_meta_table(PDO $db): void {
+    safe_exec($db, "CREATE TABLE IF NOT EXISTS `app_runtime_meta` (
+        `state_key` VARCHAR(100) NOT NULL PRIMARY KEY,
+        `state_value` TEXT,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+function get_runtime_meta(PDO $db, string $key): ?string {
+    try {
+        $stmt = $db->prepare("SELECT state_value FROM app_runtime_meta WHERE state_key = ? LIMIT 1");
+        $stmt->execute([$key]);
+        $value = $stmt->fetchColumn();
+        return $value === false ? null : (string)$value;
+    } catch (\Exception $e) {
+        return null;
+    }
+}
+
+function set_runtime_meta(PDO $db, string $key, string $value): void {
+    $stmt = $db->prepare("INSERT INTO app_runtime_meta (state_key, state_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE state_value = VALUES(state_value), updated_at = CURRENT_TIMESTAMP");
+    $stmt->execute([$key, $value]);
+}
+
+function with_migration_lock(callable $callback, int $timeoutSeconds = 5): void {
+    $instance = preg_replace('/[^a-zA-Z0-9_-]/', '_', DB_NAME);
+    $lockFile = sys_get_temp_dir() . '/truckchecks-' . $instance . '-migrations-' . md5(__DIR__ . '|' . DB_NAME) . '.lock';
+    $handle = @fopen($lockFile, 'c');
+
+    if ($handle === false) {
+        migration_log('Migration lock file could not be opened; running migrations without a lock.');
+        $callback();
+        return;
+    }
+
+    $deadline = microtime(true) + $timeoutSeconds;
+    $locked = false;
+
+    do {
+        $locked = flock($handle, LOCK_EX | LOCK_NB);
+        if (!$locked) {
+            usleep(250000);
+        }
+    } while (!$locked && microtime(true) < $deadline);
+
+    if (!$locked) {
+        fclose($handle);
+        migration_log('Migration lock wait timed out; another request is handling schema checks.');
+        return;
+    }
+
+    try {
+        $callback();
+    } finally {
+        flock($handle, LOCK_UN);
+        fclose($handle);
+    }
+}
+
+function get_migration_cache_path(): string {
+    $instance = preg_replace('/[^a-zA-Z0-9_-]/', '_', DB_NAME);
+    return sys_get_temp_dir() . '/truckchecks-' . $instance . '-migration-sig-' . md5(__DIR__ . '|' . DB_NAME) . '.cache';
+}
+
+function migration_signature_cached(string $signature): bool {
+    $path = get_migration_cache_path();
+    return @file_get_contents($path) === $signature;
+}
+
+function cache_migration_signature(string $signature): void {
+    $path = get_migration_cache_path();
+    @file_put_contents($path, $signature, LOCK_EX);
 }
 
 function safe_exec(PDO $db, string $sql): bool {
